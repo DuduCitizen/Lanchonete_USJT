@@ -1,1 +1,40 @@
-# Lanchonete_USJT
+# Sistema PDV - ERP / CRM
+
+Projeto desenvolvido para a Unidade Curricular
+Exploração Digital e Fundamentos Tecnológicos.
+
+Universidade São Judas Tadeu
+
+Professor:
+Prof. Dr. Anacé Nunes da Silva
+
+## Segmento
+
+Loja de Eletrônicos
+
+## Tecnologias
+
+- HTML
+- CSS
+- JavaScript
+- Firebase
+- Cloud Firestore
+- Firebase Authentication
+- GitHub
+
+## Módulos
+
+- Gestão de Produtos
+- PDV
+- Estoque
+- CRM
+- Financeiro
+- Autenticação
+- Dashboard
+
+## Integrantes
+
+- Nome 1
+- Nome 2
+- Nome 3
+- Nome 4
