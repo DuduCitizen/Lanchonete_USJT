@@ -10,7 +10,7 @@ Prof. Dr. Anacé Nunes da Silva
 
 ## Segmento
 
-Loja de Eletrônicos
+Lanchonete
 
 ## Tecnologias
 
