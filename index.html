@@ -1,156 +1,788 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Lancheira | PDV</title>
+
   <link rel="stylesheet" href="css/style.css">
 </head>
+
 <body>
+
+  <!-- ==================================================
+       BARRA SUPERIOR
+  =================================================== -->
+
   <header class="topbar">
+
     <div class="brand">
-      <div class="brand-icon">🍔</div>
+
+      <div class="brand-icon">
+        🍔
+      </div>
+
       <div>
         <h1>Lancheira</h1>
         <span>PDV • Lanchonete</span>
       </div>
+
     </div>
+
 
     <div class="top-actions">
-      <button class="icon-button" id="openCartButton" aria-label="Abrir carrinho">
-        🛒 <span id="cartCount">0</span>
+
+      <button
+        class="icon-button"
+        id="openCartButton"
+        aria-label="Abrir carrinho">
+
+        🛒
+
+        <span id="cartCount">
+          0
+        </span>
+
       </button>
+
+
       <div class="user-badge">
-        <span class="avatar">OP</span>
-        <span>Operador</span>
+
+        <span class="avatar">
+          OP
+        </span>
+
+        <span>
+          Operador
+        </span>
+
       </div>
+
     </div>
+
   </header>
 
+
+
+  <!-- ==================================================
+       CONTEÚDO PRINCIPAL
+  =================================================== -->
+
   <main class="page">
+
+
+    <!-- ==================================================
+         BANNER
+    =================================================== -->
+
     <section class="hero">
+
       <div>
-        <span class="eyebrow">CARDÁPIO DIGITAL</span>
-        <h2>Escolha seu lanche.</h2>
-        <p>Selecione um produto para ver os detalhes ou adicione direto ao carrinho.</p>
+
+        <span class="eyebrow">
+          CARDÁPIO DIGITAL
+        </span>
+
+        <h2>
+          Escolha seu lanche.
+        </h2>
+
+        <p>
+          Selecione um produto para ver os detalhes
+          ou adicione direto ao carrinho.
+        </p>
+
       </div>
-      <div class="hero-badge">🍟 Feito na hora</div>
+
+
+      <div class="hero-badge">
+        🍟 Feito na hora
+      </div>
+
     </section>
+
+
+
+    <!-- ==================================================
+         BUSCA E CATEGORIAS
+    =================================================== -->
 
     <section class="toolbar">
+
+
+      <!-- BUSCA -->
+
       <div class="search-box">
-        <span>⌕</span>
-        <input id="searchInput" type="search" placeholder="Buscar produto..." autocomplete="off">
+
+        <span>
+          ⌕
+        </span>
+
+        <input
+          id="searchInput"
+          type="search"
+          placeholder="Buscar produto..."
+          autocomplete="off">
+
       </div>
 
-      <div class="categories" id="categoryButtons">
-        <button class="category active" data-category="Todos">Todos</button>
-        <button class="category" data-category="Hambúrgueres">Hambúrgueres</button>
-        <button class="category" data-category="Combos">Combos</button>
-        <button class="category" data-category="Porções">Porções</button>
-        <button class="category" data-category="Bebidas">Bebidas</button>
-        <button class="category" data-category="Sobremesas">Sobremesas</button>
+
+
+      <!-- CATEGORIAS -->
+
+      <div
+        class="categories"
+        id="categoryButtons">
+
+
+        <button
+          class="category active"
+          data-category="Todos">
+
+          Todos
+
+        </button>
+
+
+        <button
+          class="category"
+          data-category="Lanches">
+
+          Lanches
+
+        </button>
+
+
+        <button
+          class="category"
+          data-category="Combos">
+
+          Combos
+
+        </button>
+
+
+        <button
+          class="category"
+          data-category="Porções">
+
+          Porções
+
+        </button>
+
+
+        <button
+          class="category"
+          data-category="Bebidas">
+
+          Bebidas
+
+        </button>
+
+
+        <button
+          class="category"
+          data-category="Sobremesas">
+
+          Sobremesas
+
+        </button>
+
       </div>
+
     </section>
+
+
+
+    <!-- ==================================================
+         PRODUTOS + CARRINHO
+    =================================================== -->
 
     <section class="content-layout">
+
+
+      <!-- ==================================================
+           LISTA DE PRODUTOS
+      =================================================== -->
+
       <div>
+
+
+        <!-- CABEÇALHO -->
+
         <div class="section-heading">
+
           <div>
-            <span class="section-kicker">CARDÁPIO</span>
-            <h3>Produtos</h3>
+
+            <span class="section-kicker">
+              CARDÁPIO
+            </span>
+
+            <h3>
+              Produtos
+            </h3>
+
           </div>
-          <span id="productResult" class="result-count"></span>
+
+
+          <span
+            id="productResult"
+            class="result-count">
+
+          </span>
+
         </div>
 
-        <div id="productGrid" class="product-grid"></div>
 
-        <div id="emptyState" class="empty-state hidden">
-          <div>🔎</div>
-          <h3>Nenhum produto encontrado</h3>
-          <p>Tente outro nome ou categoria.</p>
+
+        <!-- GRID DOS PRODUTOS -->
+
+        <div
+          id="productGrid"
+          class="product-grid">
+
         </div>
+
+
+
+        <!-- ESTADO VAZIO -->
+
+        <div
+          id="emptyState"
+          class="empty-state hidden">
+
+          <div>
+            🔎
+          </div>
+
+          <h3>
+            Nenhum produto encontrado
+          </h3>
+
+          <p>
+            Tente outro nome ou categoria.
+          </p>
+
+        </div>
+
       </div>
 
-      <aside class="cart-panel" id="cartPanel">
+
+
+      <!-- ==================================================
+           CARRINHO
+      =================================================== -->
+
+      <aside
+        class="cart-panel"
+        id="cartPanel">
+
+
+        <!-- CABEÇALHO DO CARRINHO -->
+
         <div class="cart-header">
+
           <div>
-            <span class="section-kicker">PEDIDO ATUAL</span>
-            <h3>Seu carrinho</h3>
+
+            <span class="section-kicker">
+              PEDIDO ATUAL
+            </span>
+
+            <h3>
+              Seu carrinho
+            </h3>
+
           </div>
-          <button class="clear-button" id="clearCartButton">Limpar</button>
+
+
+          <button
+            class="clear-button"
+            id="clearCartButton">
+
+            Limpar
+
+          </button>
+
         </div>
 
-        <div id="cartItems" class="cart-items">
+
+
+        <!-- ITENS DO CARRINHO -->
+
+        <div
+          id="cartItems"
+          class="cart-items">
+
+
+          <!--
+            O JavaScript substituirá este conteúdo
+            automaticamente.
+          -->
+
           <div class="cart-empty">
-            <div>🛒</div>
-            <strong>Seu carrinho está vazio</strong>
-            <span>Adicione produtos do cardápio.</span>
+
+            <div>
+              🛒
+            </div>
+
+            <strong>
+              Seu carrinho está vazio
+            </strong>
+
+            <span>
+              Adicione produtos do cardápio.
+            </span>
+
           </div>
+
         </div>
+
+
+
+        <!-- RESUMO -->
 
         <div class="cart-summary">
-          <div><span>Subtotal</span><strong id="subtotal">R$ 0,00</strong></div>
-          <div><span>Desconto</span><strong id="discount">R$ 0,00</strong></div>
-          <div class="total-row"><span>Total</span><strong id="total">R$ 0,00</strong></div>
-          <button class="checkout-button" id="checkoutButton" disabled>Finalizar venda</button>
+
+
+          <div>
+
+            <span>
+              Subtotal
+            </span>
+
+            <strong id="subtotal">
+              R$ 0,00
+            </strong>
+
+          </div>
+
+
+          <div>
+
+            <span>
+              Desconto
+            </span>
+
+            <strong id="discount">
+              R$ 0,00
+            </strong>
+
+          </div>
+
+
+          <div class="total-row">
+
+            <span>
+              Total
+            </span>
+
+            <strong id="total">
+              R$ 0,00
+            </strong>
+
+          </div>
+
+
+          <button
+            class="checkout-button"
+            id="checkoutButton"
+            disabled>
+
+            Finalizar venda
+
+          </button>
+
         </div>
+
       </aside>
+
     </section>
+
   </main>
 
-  <!-- Modal de detalhes do produto -->
-  <div class="modal-backdrop hidden" id="productModal">
-    <div class="modal product-modal" role="dialog" aria-modal="true" aria-labelledby="modalProductName">
-      <button class="modal-close" id="closeProductModal" aria-label="Fechar">×</button>
-      <div class="modal-product-image" id="modalProductImage">🍔</div>
-      <div class="modal-content">
-        <span class="modal-category" id="modalProductCategory"></span>
-        <h2 id="modalProductName"></h2>
-        <p id="modalProductDescription"></p>
-        <div class="modal-meta">
-          <strong id="modalProductPrice"></strong>
-          <span id="modalProductCode"></span>
-        </div>
-        <div class="quantity-control">
-          <button id="modalDecrease">−</button>
-          <span id="modalQuantity">1</span>
-          <button id="modalIncrease">+</button>
-        </div>
-        <button class="primary-button" id="modalAddButton">Adicionar ao pedido</button>
+
+
+  <!-- ==================================================
+       MODAL DE DETALHES DO PRODUTO
+  =================================================== -->
+
+  <div
+    class="modal-backdrop hidden"
+    id="productModal">
+
+
+    <div
+      class="modal product-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modalProductName">
+
+
+      <!-- FECHAR -->
+
+      <button
+        class="modal-close"
+        id="closeProductModal"
+        aria-label="Fechar">
+
+        ×
+
+      </button>
+
+
+
+      <!-- IMAGEM / EMOJI -->
+
+      <div
+        class="modal-product-image"
+        id="modalProductImage">
+
+        🍔
+
       </div>
+
+
+
+      <!-- INFORMAÇÕES -->
+
+      <div class="modal-content">
+
+
+        <span
+          class="modal-category"
+          id="modalProductCategory">
+
+        </span>
+
+
+        <h2 id="modalProductName">
+        </h2>
+
+
+        <p id="modalProductDescription">
+        </p>
+
+
+        <!-- PREÇO E CÓDIGO -->
+
+        <div class="modal-meta">
+
+          <strong
+            id="modalProductPrice">
+
+          </strong>
+
+
+          <span
+            id="modalProductCode">
+
+          </span>
+
+        </div>
+
+
+
+        <!-- QUANTIDADE -->
+
+        <div class="quantity-control">
+
+
+          <button
+            id="modalDecrease"
+            type="button">
+
+            −
+
+          </button>
+
+
+          <span id="modalQuantity">
+            1
+          </span>
+
+
+          <button
+            id="modalIncrease"
+            type="button">
+
+            +
+
+          </button>
+
+        </div>
+
+
+
+        <!-- ADICIONAR -->
+
+        <button
+          class="primary-button"
+          id="modalAddButton"
+          type="button">
+
+          Adicionar ao pedido
+
+        </button>
+
+      </div>
+
     </div>
+
   </div>
 
-  <!-- Modal de pagamento -->
-  <div class="modal-backdrop hidden" id="checkoutModal">
-    <div class="modal checkout-modal" role="dialog" aria-modal="true">
-      <button class="modal-close" id="closeCheckoutModal" aria-label="Fechar">×</button>
-      <span class="section-kicker">FECHAMENTO</span>
-      <h2>Finalizar venda</h2>
+
+
+  <!-- ==================================================
+       MODAL DE PAGAMENTO
+  =================================================== -->
+
+  <div
+    class="modal-backdrop hidden"
+    id="checkoutModal">
+
+
+    <div
+      class="modal checkout-modal"
+      role="dialog"
+      aria-modal="true">
+
+
+      <!-- FECHAR -->
+
+      <button
+        class="modal-close"
+        id="closeCheckoutModal"
+        aria-label="Fechar">
+
+        ×
+
+      </button>
+
+
+
+      <span class="section-kicker">
+        FECHAMENTO
+      </span>
+
+
+      <h2>
+        Finalizar venda
+      </h2>
+
+
+
+      <!-- TOTAL -->
 
       <div class="checkout-total">
-        <span>Total do pedido</span>
-        <strong id="checkoutTotal">R$ 0,00</strong>
+
+        <span>
+          Total do pedido
+        </span>
+
+        <strong id="checkoutTotal">
+          R$ 0,00
+        </strong>
+
       </div>
 
-      <label class="field-label" for="customerName">Cliente</label>
-      <input class="text-input" id="customerName" type="text" placeholder="Nome do cliente">
 
-      <span class="field-label">Forma de pagamento</span>
+
+      <!-- CLIENTE -->
+
+      <label
+        class="field-label"
+        for="customerName">
+
+        Cliente
+
+      </label>
+
+
+      <input
+        class="text-input"
+        id="customerName"
+        type="text"
+        placeholder="Nome do cliente"
+        autocomplete="off">
+
+
+
+      <!-- PAGAMENTO -->
+
+      <span class="field-label">
+
+        Forma de pagamento
+
+      </span>
+
+
       <div class="payment-options">
-        <label><input type="radio" name="payment" value="PIX" checked><span>⚡ PIX</span></label>
-        <label><input type="radio" name="payment" value="Dinheiro"><span>💵 Dinheiro</span></label>
-        <label><input type="radio" name="payment" value="Débito"><span>💳 Débito</span></label>
-        <label><input type="radio" name="payment" value="Crédito"><span>💳 Crédito</span></label>
+
+
+        <label>
+
+          <input
+            type="radio"
+            name="payment"
+            value="PIX"
+            checked>
+
+          <span>
+            ⚡ PIX
+          </span>
+
+        </label>
+
+
+        <label>
+
+          <input
+            type="radio"
+            name="payment"
+            value="Dinheiro">
+
+          <span>
+            💵 Dinheiro
+          </span>
+
+        </label>
+
+
+        <label>
+
+          <input
+            type="radio"
+            name="payment"
+            value="Débito">
+
+          <span>
+            💳 Débito
+          </span>
+
+        </label>
+
+
+        <label>
+
+          <input
+            type="radio"
+            name="payment"
+            value="Crédito">
+
+          <span>
+            💳 Crédito
+          </span>
+
+        </label>
+
       </div>
 
-      <button class="checkout-button" id="confirmSaleButton">Confirmar venda</button>
+
+
+      <!-- CONFIRMAR VENDA -->
+
+      <button
+        class="checkout-button"
+        id="confirmSaleButton"
+        type="button">
+
+        Confirmar venda
+
+      </button>
+
     </div>
+
   </div>
 
-  <div class="toast hidden" id="toast"></div>
 
-  <script src="js/app.js"></script>
+
+  <!-- ==================================================
+       TOAST
+  =================================================== -->
+
+  <div
+    class="toast hidden"
+    id="toast">
+
+  </div>
+
+
+
+  <!-- ==================================================
+       FIREBASE + JAVASCRIPT
+  =================================================== -->
+
+  <!--
+    O Firebase precisa ser inicializado antes
+    do app.js tentar utilizar window.db.
+  -->
+
+  <script type="module">
+
+    import {
+      initializeApp
+    } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+
+
+    import {
+      getFirestore
+    } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+
+
+    // ================================================
+    // CONFIGURAÇÃO DO FIREBASE
+    // ================================================
+
+    const firebaseConfig = {
+
+      apiKey: "AIzaSyCDBhEvK6KxiSAFbK6KxiSAFbK6X",
+      authDomain: "sistema-pdv-usjt.firebaseapp.com",
+      projectId: "sistema-pdv-usjt",
+      storageBucket: "sistema-pdv-usjt.firebasestorage.app",
+      messagingSenderId: "803225322517",
+      appId: "1:803225322517:web:89b28e01bbd0d5f484ba1c"
+
+    };
+
+
+    // ================================================
+    // INICIALIZAR FIREBASE
+    // ================================================
+
+    const app =
+      initializeApp(firebaseConfig);
+
+
+    // ================================================
+    // INICIALIZAR FIRESTORE
+    // ================================================
+
+    const db =
+      getFirestore(app);
+
+
+    // ================================================
+    // DISPONIBILIZAR PARA O app.js
+    // ================================================
+
+    window.db = db;
+
+  </script>
+
+
+  <!--
+    IMPORTANTE:
+    app.js usa import, portanto também precisa
+    ser carregado como module.
+  -->
+
+  <script
+    type="module"
+    src="js/app.js">
+  </script>
+
 </body>
+
 </html>
