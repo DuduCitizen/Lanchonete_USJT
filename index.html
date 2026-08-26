@@ -31,8 +31,21 @@
 
     </div>
 
-
     <div class="top-actions">
+
+      <button
+        class="nav-button active"
+        id="goToPdvButton"
+        type="button">
+        🛒 PDV
+      </button>
+
+      <button
+        class="nav-button"
+        id="goToHistoryButton"
+        type="button">
+        📋 Histórico
+      </button>
 
       <button
         class="icon-button"
@@ -46,7 +59,6 @@
         </span>
 
       </button>
-
 
       <div class="user-badge">
 
@@ -65,7 +77,6 @@
   </header>
 
 
-
   <!-- ==================================================
        CONTEÚDO PRINCIPAL
   =================================================== -->
@@ -74,334 +85,433 @@
 
 
     <!-- ==================================================
-         BANNER
+         PDV
     =================================================== -->
 
-    <section class="hero">
-
-      <div>
-
-        <span class="eyebrow">
-          CARDÁPIO DIGITAL
-        </span>
-
-        <h2>
-          Escolha seu lanche.
-        </h2>
-
-        <p>
-          Selecione um produto para ver os detalhes
-          ou adicione direto ao carrinho.
-        </p>
-
-      </div>
-
-
-      <div class="hero-badge">
-        🍟 Feito na hora
-      </div>
-
-    </section>
-
-
-
-    <!-- ==================================================
-         BUSCA E CATEGORIAS
-    =================================================== -->
-
-    <section class="toolbar">
-
-
-      <!-- BUSCA -->
-
-      <div class="search-box">
-
-        <span>
-          ⌕
-        </span>
-
-        <input
-          id="searchInput"
-          type="search"
-          placeholder="Buscar produto..."
-          autocomplete="off">
-
-      </div>
-
-
-
-      <!-- CATEGORIAS -->
-
-      <div
-        class="categories"
-        id="categoryButtons">
-
-
-        <button
-          class="category active"
-          data-category="Todos">
-
-          Todos
-
-        </button>
-
-
-        <button
-          class="category"
-          data-category="Lanches">
-
-          Lanches
-
-        </button>
-
-
-        <button
-          class="category"
-          data-category="Combos">
-
-          Combos
-
-        </button>
-
-
-        <button
-          class="category"
-          data-category="Porções">
-
-          Porções
-
-        </button>
-
-
-        <button
-          class="category"
-          data-category="Bebidas">
-
-          Bebidas
-
-        </button>
-
-
-        <button
-          class="category"
-          data-category="Sobremesas">
-
-          Sobremesas
-
-        </button>
-
-      </div>
-
-    </section>
-
-
-
-    <!-- ==================================================
-         PRODUTOS + CARRINHO
-    =================================================== -->
-
-    <section class="content-layout">
+    <section id="pdvSection">
 
 
       <!-- ==================================================
-           LISTA DE PRODUTOS
+           BANNER
       =================================================== -->
 
-      <div>
+      <section class="hero">
 
+        <div>
 
-        <!-- CABEÇALHO -->
-
-        <div class="section-heading">
-
-          <div>
-
-            <span class="section-kicker">
-              CARDÁPIO
-            </span>
-
-            <h3>
-              Produtos
-            </h3>
-
-          </div>
-
-
-          <span
-            id="productResult"
-            class="result-count">
-
+          <span class="eyebrow">
+            CARDÁPIO DIGITAL
           </span>
 
-        </div>
-
-
-
-        <!-- GRID DOS PRODUTOS -->
-
-        <div
-          id="productGrid"
-          class="product-grid">
-
-        </div>
-
-
-
-        <!-- ESTADO VAZIO -->
-
-        <div
-          id="emptyState"
-          class="empty-state hidden">
-
-          <div>
-            🔎
-          </div>
-
-          <h3>
-            Nenhum produto encontrado
-          </h3>
+          <h2>
+            Escolha seu lanche.
+          </h2>
 
           <p>
-            Tente outro nome ou categoria.
+            Selecione um produto para ver os detalhes
+            ou adicione direto ao carrinho.
           </p>
 
         </div>
 
-      </div>
+        <div class="hero-badge">
+          🍟 Feito na hora
+        </div>
 
+      </section>
 
 
       <!-- ==================================================
-           CARRINHO
+           BUSCA E CATEGORIAS
       =================================================== -->
 
-      <aside
-        class="cart-panel"
-        id="cartPanel">
+      <section class="toolbar">
 
+        <div class="search-box">
 
-        <!-- CABEÇALHO DO CARRINHO -->
+          <span>
+            ⌕
+          </span>
 
-        <div class="cart-header">
-
-          <div>
-
-            <span class="section-kicker">
-              PEDIDO ATUAL
-            </span>
-
-            <h3>
-              Seu carrinho
-            </h3>
-
-          </div>
-
-
-          <button
-            class="clear-button"
-            id="clearCartButton">
-
-            Limpar
-
-          </button>
+          <input
+            id="searchInput"
+            type="search"
+            placeholder="Buscar produto..."
+            autocomplete="off">
 
         </div>
 
-
-
-        <!-- ITENS DO CARRINHO -->
 
         <div
-          id="cartItems"
-          class="cart-items">
-
-
-          <!--
-            O JavaScript substituirá este conteúdo
-            automaticamente.
-          -->
-
-          <div class="cart-empty">
-
-            <div>
-              🛒
-            </div>
-
-            <strong>
-              Seu carrinho está vazio
-            </strong>
-
-            <span>
-              Adicione produtos do cardápio.
-            </span>
-
-          </div>
-
-        </div>
-
-
-
-        <!-- RESUMO -->
-
-        <div class="cart-summary">
-
-
-          <div>
-
-            <span>
-              Subtotal
-            </span>
-
-            <strong id="subtotal">
-              R$ 0,00
-            </strong>
-
-          </div>
-
-
-          <div>
-
-            <span>
-              Desconto
-            </span>
-
-            <strong id="discount">
-              R$ 0,00
-            </strong>
-
-          </div>
-
-
-          <div class="total-row">
-
-            <span>
-              Total
-            </span>
-
-            <strong id="total">
-              R$ 0,00
-            </strong>
-
-          </div>
-
+          class="categories"
+          id="categoryButtons">
 
           <button
-            class="checkout-button"
-            id="checkoutButton"
-            disabled>
+            class="category active"
+            data-category="Todos">
+            Todos
+          </button>
 
-            Finalizar venda
+          <button
+            class="category"
+            data-category="Lanches">
+            Lanches
+          </button>
 
+          <button
+            class="category"
+            data-category="Combos">
+            Combos
+          </button>
+
+          <button
+            class="category"
+            data-category="Porções">
+            Porções
+          </button>
+
+          <button
+            class="category"
+            data-category="Bebidas">
+            Bebidas
+          </button>
+
+          <button
+            class="category"
+            data-category="Sobremesas">
+            Sobremesas
           </button>
 
         </div>
 
-      </aside>
+      </section>
+
+
+      <!-- ==================================================
+           PRODUTOS + CARRINHO
+      =================================================== -->
+
+      <section class="content-layout">
+
+
+        <!-- PRODUTOS -->
+
+        <div>
+
+          <div class="section-heading">
+
+            <div>
+
+              <span class="section-kicker">
+                CARDÁPIO
+              </span>
+
+              <h3>
+                Produtos
+              </h3>
+
+            </div>
+
+            <span
+              id="productResult"
+              class="result-count">
+            </span>
+
+          </div>
+
+
+          <div
+            id="productGrid"
+            class="product-grid">
+          </div>
+
+
+          <div
+            id="emptyState"
+            class="empty-state hidden">
+
+            <div>
+              🔎
+            </div>
+
+            <h3>
+              Nenhum produto encontrado
+            </h3>
+
+            <p>
+              Tente outro nome ou categoria.
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <!-- ==================================================
+             CARRINHO
+        =================================================== -->
+
+        <aside
+          class="cart-panel"
+          id="cartPanel">
+
+          <div class="cart-header">
+
+            <div>
+
+              <span class="section-kicker">
+                PEDIDO ATUAL
+              </span>
+
+              <h3>
+                Seu carrinho
+              </h3>
+
+            </div>
+
+            <button
+              class="clear-button"
+              id="clearCartButton">
+              Limpar
+            </button>
+
+          </div>
+
+
+          <div
+            id="cartItems"
+            class="cart-items">
+
+            <div class="cart-empty">
+
+              <div>
+                🛒
+              </div>
+
+              <strong>
+                Seu carrinho está vazio
+              </strong>
+
+              <span>
+                Adicione produtos do cardápio.
+              </span>
+
+            </div>
+
+          </div>
+
+
+          <div class="cart-summary">
+
+            <div>
+
+              <span>
+                Subtotal
+              </span>
+
+              <strong id="subtotal">
+                R$ 0,00
+              </strong>
+
+            </div>
+
+            <div>
+
+              <span>
+                Desconto
+              </span>
+
+              <strong id="discount">
+                R$ 0,00
+              </strong>
+
+            </div>
+
+            <div class="total-row">
+
+              <span>
+                Total
+              </span>
+
+              <strong id="total">
+                R$ 0,00
+              </strong>
+
+            </div>
+
+            <button
+              class="checkout-button"
+              id="checkoutButton"
+              disabled>
+
+              Finalizar venda
+
+            </button>
+
+          </div>
+
+        </aside>
+
+      </section>
+
+    </section>
+
+
+    <!-- ==================================================
+         HISTÓRICO DE VENDAS
+    =================================================== -->
+
+    <section
+      id="historySection"
+      class="history-section hidden">
+
+
+      <div class="section-heading">
+
+        <div>
+
+          <span class="section-kicker">
+            MOVIMENTAÇÃO
+          </span>
+
+          <h3>
+            Histórico de vendas
+          </h3>
+
+          <p>
+            Consulte as vendas registradas no sistema.
+          </p>
+
+        </div>
+
+
+        <button
+          class="clear-button"
+          id="refreshHistoryButton"
+          type="button">
+
+          ↻ Atualizar
+
+        </button>
+
+      </div>
+
+
+      <!-- ==================================================
+           FILTROS
+      =================================================== -->
+
+      <div class="history-filters">
+
+        <div class="search-box">
+
+          <span>
+            ⌕
+          </span>
+
+          <input
+            id="historySearchInput"
+            type="search"
+            placeholder="Buscar por cliente..."
+            autocomplete="off">
+
+        </div>
+
+
+        <select
+          id="historyPaymentFilter"
+          class="text-input">
+
+          <option value="Todos">
+            Todos os pagamentos
+          </option>
+
+          <option value="PIX">
+            PIX
+          </option>
+
+          <option value="Dinheiro">
+            Dinheiro
+          </option>
+
+          <option value="Débito">
+            Débito
+          </option>
+
+          <option value="Crédito">
+            Crédito
+          </option>
+
+        </select>
+
+      </div>
+
+
+      <!-- ==================================================
+           RESUMO DO HISTÓRICO
+      =================================================== -->
+
+      <div class="history-summary">
+
+        <div class="history-stat">
+
+          <span>
+            Vendas encontradas
+          </span>
+
+          <strong id="historyCount">
+            0
+          </strong>
+
+        </div>
+
+
+        <div class="history-stat">
+
+          <span>
+            Total vendido
+          </span>
+
+          <strong id="historyTotal">
+            R$ 0,00
+          </strong>
+
+        </div>
+
+      </div>
+
+
+      <!-- ==================================================
+           LISTA
+      =================================================== -->
+
+      <div
+        id="salesList"
+        class="sales-list">
+      </div>
+
+
+      <div
+        id="salesEmptyState"
+        class="empty-state hidden">
+
+        <div>
+          📋
+        </div>
+
+        <h3>
+          Nenhuma venda encontrada
+        </h3>
+
+        <p>
+          As vendas realizadas aparecerão aqui.
+        </p>
+
+      </div>
 
     </section>
 
   </main>
-
 
 
   <!-- ==================================================
@@ -412,15 +522,11 @@
     class="modal-backdrop hidden"
     id="productModal">
 
-
     <div
       class="modal product-modal"
       role="dialog"
       aria-modal="true"
       aria-labelledby="modalProductName">
-
-
-      <!-- FECHAR -->
 
       <button
         class="modal-close"
@@ -431,10 +537,6 @@
 
       </button>
 
-
-
-      <!-- IMAGEM / EMOJI -->
-
       <div
         class="modal-product-image"
         id="modalProductImage">
@@ -443,79 +545,48 @@
 
       </div>
 
-
-
-      <!-- INFORMAÇÕES -->
-
       <div class="modal-content">
-
 
         <span
           class="modal-category"
           id="modalProductCategory">
-
         </span>
-
 
         <h2 id="modalProductName">
         </h2>
 
-
         <p id="modalProductDescription">
         </p>
 
-
-        <!-- PREÇO E CÓDIGO -->
-
         <div class="modal-meta">
 
-          <strong
-            id="modalProductPrice">
-
+          <strong id="modalProductPrice">
           </strong>
 
-
-          <span
-            id="modalProductCode">
-
+          <span id="modalProductCode">
           </span>
 
         </div>
 
-
-
-        <!-- QUANTIDADE -->
-
         <div class="quantity-control">
-
 
           <button
             id="modalDecrease"
             type="button">
-
             −
-
           </button>
-
 
           <span id="modalQuantity">
             1
           </span>
 
-
           <button
             id="modalIncrease"
             type="button">
-
             +
-
           </button>
 
         </div>
-
-
-
-        <!-- ADICIONAR -->
 
         <button
           class="primary-button"
@@ -533,7 +604,6 @@
   </div>
 
 
-
   <!-- ==================================================
        MODAL DE PAGAMENTO
   =================================================== -->
@@ -542,14 +612,10 @@
     class="modal-backdrop hidden"
     id="checkoutModal">
 
-
     <div
       class="modal checkout-modal"
       role="dialog"
       aria-modal="true">
-
-
-      <!-- FECHAR -->
 
       <button
         class="modal-close"
@@ -560,20 +626,13 @@
 
       </button>
 
-
-
       <span class="section-kicker">
         FECHAMENTO
       </span>
 
-
       <h2>
         Finalizar venda
       </h2>
-
-
-
-      <!-- TOTAL -->
 
       <div class="checkout-total">
 
@@ -587,10 +646,6 @@
 
       </div>
 
-
-
-      <!-- CLIENTE -->
-
       <label
         class="field-label"
         for="customerName">
@@ -599,7 +654,6 @@
 
       </label>
 
-
       <input
         class="text-input"
         id="customerName"
@@ -607,19 +661,11 @@
         placeholder="Nome do cliente"
         autocomplete="off">
 
-
-
-      <!-- PAGAMENTO -->
-
       <span class="field-label">
-
         Forma de pagamento
-
       </span>
 
-
       <div class="payment-options">
-
 
         <label>
 
@@ -635,7 +681,6 @@
 
         </label>
 
-
         <label>
 
           <input
@@ -649,7 +694,6 @@
 
         </label>
 
-
         <label>
 
           <input
@@ -662,7 +706,6 @@
           </span>
 
         </label>
-
 
         <label>
 
@@ -679,10 +722,6 @@
 
       </div>
 
-
-
-      <!-- CONFIRMAR VENDA -->
-
       <button
         class="checkout-button"
         id="confirmSaleButton"
@@ -697,6 +736,103 @@
   </div>
 
 
+  <!-- ==================================================
+       MODAL DE DETALHES DA VENDA
+  =================================================== -->
+
+  <div
+    class="modal-backdrop hidden"
+    id="saleDetailsModal">
+
+    <div
+      class="modal sale-details-modal"
+      role="dialog"
+      aria-modal="true">
+
+      <button
+        class="modal-close"
+        id="closeSaleDetailsModal"
+        aria-label="Fechar">
+
+        ×
+
+      </button>
+
+
+      <span class="section-kicker">
+        VENDA
+      </span>
+
+      <h2>
+        Detalhes da venda
+      </h2>
+
+
+      <div class="sale-detail-header">
+
+        <div>
+
+          <span>
+            Cliente
+          </span>
+
+          <strong id="detailCustomer">
+            -
+          </strong>
+
+        </div>
+
+
+        <div>
+
+          <span>
+            Pagamento
+          </span>
+
+          <strong id="detailPayment">
+            -
+          </strong>
+
+        </div>
+
+
+        <div>
+
+          <span>
+            Data
+          </span>
+
+          <strong id="detailDate">
+            -
+          </strong>
+
+        </div>
+
+      </div>
+
+
+      <div
+        id="saleDetailItems"
+        class="sale-detail-items">
+      </div>
+
+
+      <div class="sale-detail-total">
+
+        <span>
+          Total
+        </span>
+
+        <strong id="detailTotal">
+          R$ 0,00
+        </strong>
+
+      </div>
+
+    </div>
+
+  </div>
+
 
   <!-- ==================================================
        TOAST
@@ -705,19 +841,12 @@
   <div
     class="toast hidden"
     id="toast">
-
   </div>
 
 
-
   <!-- ==================================================
-       FIREBASE + JAVASCRIPT
+       FIREBASE
   =================================================== -->
-
-  <!--
-    O Firebase precisa ser inicializado antes
-    do app.js tentar utilizar window.db.
-  -->
 
   <script type="module">
 
@@ -731,13 +860,9 @@
     } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
 
-    // ================================================
-    // CONFIGURAÇÃO DO FIREBASE
-    // ================================================
-
     const firebaseConfig = {
 
-      apiKey: "AIzaSyCDBhEvK6KxiSAFbK6KxiSAFbK6X",
+      apiKey: "AIzaSyCDBhEvK6KxiSAFbK6XiSAFbK6X",
       authDomain: "sistema-pdv-usjt.firebaseapp.com",
       projectId: "sistema-pdv-usjt",
       storageBucket: "sistema-pdv-usjt.firebasestorage.app",
@@ -747,36 +872,22 @@
     };
 
 
-    // ================================================
-    // INICIALIZAR FIREBASE
-    // ================================================
-
     const app =
-      initializeApp(firebaseConfig);
+      initializeApp(
+        firebaseConfig
+      );
 
-
-    // ================================================
-    // INICIALIZAR FIRESTORE
-    // ================================================
 
     const db =
-      getFirestore(app);
+      getFirestore(
+        app
+      );
 
-
-    // ================================================
-    // DISPONIBILIZAR PARA O app.js
-    // ================================================
 
     window.db = db;
 
   </script>
 
-
-  <!--
-    IMPORTANTE:
-    app.js usa import, portanto também precisa
-    ser carregado como module.
-  -->
 
   <script
     type="module"
