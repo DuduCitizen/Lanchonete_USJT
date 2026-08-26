@@ -3,9 +3,7 @@ import {
   getDocs,
   doc,
   serverTimestamp,
-  runTransaction,
-  query,
-  orderBy
+  runTransaction
 } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
 
@@ -17,23 +15,21 @@ let products = [];
 
 
 // ======================================================
-// VENDAS
-// ======================================================
-
-let sales = [];
-
-
-// ======================================================
 // ESTADO DA APLICAÇÃO
 // ======================================================
 
 let cart = [];
-
 let activeCategory = "Todos";
-
 let selectedProduct = null;
-
 let modalQuantity = 1;
+
+
+// ======================================================
+// HISTÓRICO DE VENDAS
+// ======================================================
+
+let sales = [];
+let selectedSale = null;
 
 
 // ======================================================
@@ -79,12 +75,59 @@ const productModal =
 const checkoutModal =
   document.getElementById("checkoutModal");
 
+
+// ======================================================
+// ELEMENTOS DO HISTÓRICO
+// ======================================================
+
+const historySection =
+  document.getElementById("historySection");
+
+const pdvSection =
+  document.getElementById("pdvSection");
+
+const openHistoryButton =
+  document.getElementById("openHistoryButton");
+
+const backToPdvButton =
+  document.getElementById("backToPdvButton");
+
+const historySearchInput =
+  document.getElementById("historySearchInput");
+
+const historyDateFilter =
+  document.getElementById("historyDateFilter");
+
+const historyPaymentFilter =
+  document.getElementById("historyPaymentFilter");
+
+const clearHistoryFilters =
+  document.getElementById("clearHistoryFilters");
+
+const salesHistory =
+  document.getElementById("salesHistory");
+
+const historyEmptyState =
+  document.getElementById("historyEmptyState");
+
+const historyTotalSales =
+  document.getElementById("historyTotalSales");
+
+const historyRevenue =
+  document.getElementById("historyRevenue");
+
+const historyAverage =
+  document.getElementById("historyAverage");
+
 const saleDetailsModal =
   document.getElementById("saleDetailsModal");
 
+const closeSaleDetailsModal =
+  document.getElementById("closeSaleDetailsModal");
+
 
 // ======================================================
-// FORMATAÇÃO
+// FORMATAÇÃO DE PREÇO
 // ======================================================
 
 const brl = value => {
@@ -103,63 +146,168 @@ const brl = value => {
 };
 
 
-function formatDate(timestamp) {
+// ======================================================
+// FORMATAÇÃO DE DATA
+// ======================================================
+
+function formatSaleDate(timestamp) {
 
   if (!timestamp) {
     return "Data não disponível";
   }
 
 
-  let date;
+  try {
+
+    let date;
 
 
-  if (
-    timestamp &&
-    typeof timestamp.toDate === "function"
-  ) {
+    // Firestore Timestamp
+    if (
+      typeof timestamp.toDate === "function"
+    ) {
 
-    date =
-      timestamp.toDate();
+      date =
+        timestamp.toDate();
 
-  } else if (
-    timestamp instanceof Date
-  ) {
+    }
 
-    date =
-      timestamp;
+    // Date normal
+    else if (
+      timestamp instanceof Date
+    ) {
 
-  } else {
+      date =
+        timestamp;
 
-    date =
-      new Date(timestamp);
+    }
 
-  }
+    // Timestamp em segundos
+    else if (
+      timestamp.seconds !== undefined
+    ) {
+
+      date =
+        new Date(
+          timestamp.seconds * 1000
+        );
+
+    }
+
+    else {
+
+      date =
+        new Date(timestamp);
+
+    }
 
 
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
+    if (
+      Number.isNaN(
+        date.getTime()
+      )
+    ) {
+
+      return "Data inválida";
+
+    }
+
+
+    return date.toLocaleString(
+      "pt-BR",
+      {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+      }
+    );
+
+  } catch (error) {
+
+    console.error(
+      "Erro ao formatar data:",
+      error
+    );
 
     return "Data inválida";
 
   }
 
+}
 
-  return date.toLocaleString(
-    "pt-BR",
-    {
-      dateStyle: "short",
-      timeStyle: "short"
+
+// ======================================================
+// CONVERTER DATA PARA FILTRO
+// ======================================================
+
+function getSaleDate(timestamp) {
+
+  if (!timestamp) {
+    return null;
+  }
+
+
+  try {
+
+    if (
+      typeof timestamp.toDate === "function"
+    ) {
+
+      return timestamp.toDate();
+
     }
-  );
+
+
+    if (
+      timestamp.seconds !== undefined
+    ) {
+
+      return new Date(
+        timestamp.seconds * 1000
+      );
+
+    }
+
+
+    if (
+      timestamp instanceof Date
+    ) {
+
+      return timestamp;
+
+    }
+
+
+    const date =
+      new Date(timestamp);
+
+
+    if (
+      Number.isNaN(
+        date.getTime()
+      )
+    ) {
+
+      return null;
+
+    }
+
+
+    return date;
+
+  } catch {
+
+    return null;
+
+  }
 
 }
 
 
 // ======================================================
-// CARREGAR PRODUTOS
+// CARREGAR PRODUTOS DO FIRESTORE
 // ======================================================
 
 async function loadProducts() {
@@ -263,219 +411,6 @@ async function loadProducts() {
     );
 
   }
-
-}
-
-
-// ======================================================
-// CARREGAR HISTÓRICO DE VENDAS
-// ======================================================
-
-async function loadSales() {
-
-  try {
-
-    console.log(
-      "Carregando histórico de vendas..."
-    );
-
-
-    const salesCollection =
-      collection(
-        window.db,
-        "vendas"
-      );
-
-
-    let snapshot;
-
-
-    try {
-
-      const salesQuery =
-        query(
-          salesCollection,
-          orderBy(
-            "createdAt",
-            "desc"
-          )
-        );
-
-
-      snapshot =
-        await getDocs(
-          salesQuery
-        );
-
-    } catch (orderError) {
-
-      console.warn(
-        "Não foi possível ordenar pelo createdAt. Carregando sem ordenação.",
-        orderError
-      );
-
-
-      snapshot =
-        await getDocs(
-          salesCollection
-        );
-
-    }
-
-
-    sales =
-      snapshot.docs.map(
-        documentSnapshot => {
-
-          const data =
-            documentSnapshot.data();
-
-
-          return {
-
-            id:
-              documentSnapshot.id,
-
-            customerName:
-              String(
-                data.customerName ||
-                "Cliente não identificado"
-              ),
-
-            payment:
-              String(
-                data.payment ||
-                "Não informado"
-              ),
-
-            subtotal:
-              Number(
-                data.subtotal
-              ) || 0,
-
-            discount:
-              Number(
-                data.discount
-              ) || 0,
-
-            total:
-              Number(
-                data.total
-              ) || 0,
-
-            items:
-              Array.isArray(
-                data.items
-              )
-                ? data.items
-                : [],
-
-            createdAt:
-              data.createdAt || null,
-
-            status:
-              String(
-                data.status ||
-                "finalizada"
-              )
-
-          };
-
-        }
-      );
-
-
-    // ----------------------------------------------------
-    // FALLBACK DE ORDENAÇÃO
-    // ----------------------------------------------------
-
-    sales.sort(
-      (a, b) => {
-
-        const dateA =
-          getTimestampMillis(
-            a.createdAt
-          );
-
-        const dateB =
-          getTimestampMillis(
-            b.createdAt
-          );
-
-        return dateB - dateA;
-
-      }
-    );
-
-
-    console.log(
-      "Vendas carregadas:",
-      sales
-    );
-
-
-    renderSales();
-
-
-  } catch (error) {
-
-    console.error(
-      "Erro ao carregar histórico:",
-      error
-    );
-
-
-    showToast(
-      "Erro ao carregar o histórico de vendas."
-    );
-
-  }
-
-}
-
-
-// ======================================================
-// CONVERTER TIMESTAMP PARA MILISSEGUNDOS
-// ======================================================
-
-function getTimestampMillis(
-  timestamp
-) {
-
-  if (!timestamp) {
-    return 0;
-  }
-
-
-  if (
-    typeof timestamp.toMillis ===
-    "function"
-  ) {
-
-    return timestamp.toMillis();
-
-  }
-
-
-  if (
-    typeof timestamp.toDate ===
-    "function"
-  ) {
-
-    return timestamp.toDate().getTime();
-
-  }
-
-
-  const date =
-    new Date(timestamp);
-
-
-  return Number.isNaN(
-    date.getTime()
-  )
-    ? 0
-    : date.getTime();
 
 }
 
@@ -637,7 +572,7 @@ function renderProducts() {
 
 
 // ======================================================
-// VERIFICAR DISPONIBILIDADE
+// VERIFICAR DISPONIBILIDADE E ESTOQUE
 // ======================================================
 
 function canAddProduct(
@@ -754,8 +689,11 @@ function addToCart(
   } else {
 
     cart.push({
+
       ...product,
+
       quantity
+
     });
 
   }
@@ -792,15 +730,16 @@ function updateQuantity(
   }
 
 
-  if (
-    delta > 0 &&
-    !canAddProduct(
-      item,
-      delta
-    )
-  ) {
+  if (delta > 0) {
 
-    return;
+    if (
+      !canAddProduct(
+        item,
+        delta
+      )
+    ) {
+      return;
+    }
 
   }
 
@@ -903,10 +842,12 @@ function renderCart() {
               </div>
 
               <div class="cart-item-price">
+
                 ${brl(
                   item.price *
                   item.quantity
                 )}
+
               </div>
 
             </div>
@@ -930,8 +871,7 @@ function renderCart() {
     );
 
 
-  const discount =
-    0;
+  const discount = 0;
 
 
   const total =
@@ -1076,9 +1016,11 @@ function openProductModal(
 // FECHAR MODAL
 // ======================================================
 
-function closeModal(
-  modal
-) {
+function closeModal(modal) {
+
+  if (!modal) {
+    return;
+  }
 
   modal.classList.add(
     "hidden"
@@ -1091,9 +1033,7 @@ function closeModal(
 // TOAST
 // ======================================================
 
-function showToast(
-  message
-) {
+function showToast(message) {
 
   toast.textContent =
     message;
@@ -1120,366 +1060,6 @@ function showToast(
       },
       3000
     );
-
-}
-
-
-// ======================================================
-// RENDERIZAR HISTÓRICO
-// ======================================================
-
-function renderSales() {
-
-  const searchInputHistory =
-    document.getElementById(
-      "historySearchInput"
-    );
-
-
-  const paymentFilter =
-    document.getElementById(
-      "historyPaymentFilter"
-    );
-
-
-  const search =
-    searchInputHistory
-      ? searchInputHistory.value
-          .trim()
-          .toLowerCase()
-      : "";
-
-
-  const payment =
-    paymentFilter
-      ? paymentFilter.value
-      : "Todos";
-
-
-  const filteredSales =
-    sales.filter(
-      sale => {
-
-        const matchesCustomer =
-          sale.customerName
-            .toLowerCase()
-            .includes(search);
-
-
-        const matchesPayment =
-          payment === "Todos" ||
-          sale.payment === payment;
-
-
-        return (
-          matchesCustomer &&
-          matchesPayment
-        );
-
-      }
-    );
-
-
-  const salesList =
-    document.getElementById(
-      "salesList"
-    );
-
-
-  const salesEmptyState =
-    document.getElementById(
-      "salesEmptyState"
-    );
-
-
-  const historyCount =
-    document.getElementById(
-      "historyCount"
-    );
-
-
-  const historyTotal =
-    document.getElementById(
-      "historyTotal"
-    );
-
-
-  // ====================================================
-  // TOTAL
-  // ====================================================
-
-  const total =
-    filteredSales.reduce(
-      (sum, sale) =>
-        sum +
-        (
-          Number(sale.total) || 0
-        ),
-      0
-    );
-
-
-  historyCount.textContent =
-    filteredSales.length;
-
-
-  historyTotal.textContent =
-    brl(total);
-
-
-  // ====================================================
-  // ESTADO VAZIO
-  // ====================================================
-
-  if (
-    filteredSales.length === 0
-  ) {
-
-    salesList.innerHTML = "";
-
-    salesEmptyState.classList.remove(
-      "hidden"
-    );
-
-    return;
-
-  }
-
-
-  salesEmptyState.classList.add(
-    "hidden"
-  );
-
-
-  // ====================================================
-  // LISTA
-  // ====================================================
-
-  salesList.innerHTML =
-    filteredSales
-      .map(
-        sale => {
-
-          const itemsCount =
-            sale.items.reduce(
-              (sum, item) =>
-                sum +
-                (
-                  Number(
-                    item.quantity
-                  ) || 0
-                ),
-              0
-            );
-
-
-          return `
-
-            <article
-              class="sale-card"
-              data-sale-id="${sale.id}">
-
-              <div class="sale-card-main">
-
-                <div class="sale-icon">
-                  🧾
-                </div>
-
-                <div class="sale-info">
-
-                  <strong>
-                    ${escapeHtml(
-                      sale.customerName
-                    )}
-                  </strong>
-
-                  <span>
-                    ${formatDate(
-                      sale.createdAt
-                    )}
-                  </span>
-
-                </div>
-
-              </div>
-
-
-              <div class="sale-card-middle">
-
-                <span class="sale-payment">
-                  ${escapeHtml(
-                    sale.payment
-                  )}
-                </span>
-
-                <span>
-                  ${itemsCount}
-                  ${
-                    itemsCount === 1
-                      ? " item"
-                      : " itens"
-                  }
-                </span>
-
-              </div>
-
-
-              <div class="sale-card-total">
-
-                <strong>
-                  ${brl(
-                    sale.total
-                  )}
-                </strong>
-
-                <button
-                  class="detail-button"
-                  data-sale-action="details"
-                  data-sale-id="${sale.id}"
-                  type="button">
-
-                  Ver detalhes
-
-                </button>
-
-              </div>
-
-            </article>
-
-          `;
-
-        }
-      )
-      .join("");
-
-}
-
-
-// ======================================================
-// ESCAPAR HTML
-// ======================================================
-
-function escapeHtml(
-  value
-) {
-
-  return String(value)
-    .replace(
-      /&/g,
-      "&amp;"
-    )
-    .replace(
-      /</g,
-      "&lt;"
-    )
-    .replace(
-      />/g,
-      "&gt;"
-    )
-    .replace(
-      /"/g,
-      "&quot;"
-    )
-    .replace(
-      /'/g,
-      "&#039;"
-    );
-
-}
-
-
-// ======================================================
-// ABRIR DETALHES DA VENDA
-// ======================================================
-
-function openSaleDetails(
-  saleId
-) {
-
-  const sale =
-    sales.find(
-      item =>
-        item.id === saleId
-    );
-
-
-  if (!sale) {
-    return;
-  }
-
-
-  document.getElementById(
-    "detailCustomer"
-  ).textContent =
-    sale.customerName;
-
-
-  document.getElementById(
-    "detailPayment"
-  ).textContent =
-    sale.payment;
-
-
-  document.getElementById(
-    "detailDate"
-  ).textContent =
-    formatDate(
-      sale.createdAt
-    );
-
-
-  document.getElementById(
-    "detailTotal"
-  ).textContent =
-    brl(
-      sale.total
-    );
-
-
-  const itemsContainer =
-    document.getElementById(
-      "saleDetailItems"
-    );
-
-
-  itemsContainer.innerHTML =
-    sale.items
-      .map(
-        item => `
-
-          <div class="sale-detail-item">
-
-            <div>
-
-              <strong>
-                ${escapeHtml(
-                  item.name
-                )}
-              </strong>
-
-              <span>
-                ${item.quantity} ×
-                ${brl(item.price)}
-              </span>
-
-            </div>
-
-            <strong>
-              ${brl(
-                item.subtotal
-              )}
-            </strong>
-
-          </div>
-
-        `
-      )
-      .join("");
-
-
-  saleDetailsModal.classList.remove(
-    "hidden"
-  );
 
 }
 
@@ -1571,9 +1151,7 @@ productGrid.addEventListener(
       "details"
     ) {
 
-      openProductModal(
-        id
-      );
+      openProductModal(id);
 
     }
 
@@ -1583,9 +1161,7 @@ productGrid.addEventListener(
       "add"
     ) {
 
-      addToCart(
-        id
-      );
+      addToCart(id);
 
     }
 
@@ -1662,7 +1238,7 @@ document
 
 
 // ======================================================
-// IR PARA O CARRINHO
+// ABRIR CARRINHO
 // ======================================================
 
 document
@@ -1681,196 +1257,6 @@ document
           behavior: "smooth",
           block: "start"
         });
-
-    }
-  );
-
-
-// ======================================================
-// NAVEGAÇÃO PDV
-// ======================================================
-
-document
-  .getElementById(
-    "goToPdvButton"
-  )
-  .addEventListener(
-    "click",
-    () => {
-
-      document
-        .getElementById(
-          "pdvSection"
-        )
-        .classList.remove(
-          "hidden"
-        );
-
-
-      document
-        .getElementById(
-          "historySection"
-        )
-        .classList.add(
-          "hidden"
-        );
-
-
-      document
-        .getElementById(
-          "goToPdvButton"
-        )
-        .classList.add(
-          "active"
-        );
-
-
-      document
-        .getElementById(
-          "goToHistoryButton"
-        )
-        .classList.remove(
-          "active"
-        );
-
-    }
-  );
-
-
-// ======================================================
-// NAVEGAÇÃO HISTÓRICO
-// ======================================================
-
-document
-  .getElementById(
-    "goToHistoryButton"
-  )
-  .addEventListener(
-    "click",
-    async () => {
-
-      document
-        .getElementById(
-          "pdvSection"
-        )
-        .classList.add(
-          "hidden"
-        );
-
-
-      document
-        .getElementById(
-          "historySection"
-        )
-        .classList.remove(
-          "hidden"
-        );
-
-
-      document
-        .getElementById(
-          "goToPdvButton"
-        )
-        .classList.remove(
-          "active"
-        );
-
-
-      document
-        .getElementById(
-          "goToHistoryButton"
-        )
-        .classList.add(
-          "active"
-        );
-
-
-      await loadSales();
-
-    }
-  );
-
-
-// ======================================================
-// ATUALIZAR HISTÓRICO
-// ======================================================
-
-document
-  .getElementById(
-    "refreshHistoryButton"
-  )
-  .addEventListener(
-    "click",
-    async () => {
-
-      await loadSales();
-
-
-      showToast(
-        "Histórico atualizado."
-      );
-
-    }
-  );
-
-
-// ======================================================
-// FILTRO DO HISTÓRICO
-// ======================================================
-
-document
-  .getElementById(
-    "historySearchInput"
-  )
-  .addEventListener(
-    "input",
-    renderSales
-  );
-
-
-document
-  .getElementById(
-    "historyPaymentFilter"
-  )
-  .addEventListener(
-    "change",
-    renderSales
-  );
-
-
-// ======================================================
-// CLIQUES NO HISTÓRICO
-// ======================================================
-
-document
-  .getElementById(
-    "salesList"
-  )
-  .addEventListener(
-    "click",
-    event => {
-
-      const button =
-        event.target.closest(
-          "[data-sale-action]"
-        );
-
-
-      if (!button) {
-        return;
-      }
-
-
-      if (
-        button.dataset.saleAction ===
-        "details"
-      ) {
-
-        openSaleDetails(
-          button.dataset.saleId
-        );
-
-      }
 
     }
   );
@@ -1897,7 +1283,7 @@ document
 
 
 // ======================================================
-// QUANTIDADE DO MODAL
+// DIMINUIR QUANTIDADE NO MODAL
 // ======================================================
 
 document
@@ -1925,7 +1311,7 @@ document
 
 
 // ======================================================
-// AUMENTAR QUANTIDADE
+// AUMENTAR QUANTIDADE NO MODAL
 // ======================================================
 
 document
@@ -2080,7 +1466,15 @@ document
 
 
 // ======================================================
-// SALVAR VENDA + BAIXAR ESTOQUE
+// SALVAR VENDA E DAR BAIXA NO ESTOQUE
+//
+// ATENÇÃO:
+// A lógica desta função foi preservada.
+// A transação continua fazendo:
+// 1. leitura dos produtos
+// 2. validação do estoque
+// 3. baixa do estoque
+// 4. criação da venda
 // ======================================================
 
 async function finalizeSale() {
@@ -2098,6 +1492,10 @@ async function finalizeSale() {
   }
 
 
+  // ====================================================
+  // CLIENTE
+  // ====================================================
+
   const customerName =
     document
       .getElementById(
@@ -2107,6 +1505,10 @@ async function finalizeSale() {
       .trim() ||
     "Cliente não identificado";
 
+
+  // ====================================================
+  // PAGAMENTO
+  // ====================================================
 
   const paymentInput =
     document.querySelector(
@@ -2129,6 +1531,10 @@ async function finalizeSale() {
     paymentInput.value;
 
 
+  // ====================================================
+  // TOTAL
+  // ====================================================
+
   const total =
     cart.reduce(
       (sum, item) =>
@@ -2140,6 +1546,10 @@ async function finalizeSale() {
       0
     );
 
+
+  // ====================================================
+  // DESABILITAR BOTÃO
+  // ====================================================
 
   const confirmButton =
     document.getElementById(
@@ -2168,6 +1578,10 @@ async function finalizeSale() {
     );
 
 
+    // ==================================================
+    // REFERÊNCIA DA COLEÇÃO DE VENDAS
+    // ==================================================
+
     const saleCollection =
       collection(
         window.db,
@@ -2175,15 +1589,32 @@ async function finalizeSale() {
       );
 
 
+    // ==================================================
+    // ID DA VENDA
+    // ==================================================
+
     const saleRef =
       doc(
         saleCollection
       );
 
 
+    // ==================================================
+    // TRANSAÇÃO
+    // ==================================================
+
     await runTransaction(
       window.db,
       async transaction => {
+
+        console.log(
+          "Iniciando transação..."
+        );
+
+
+        // ----------------------------------------------
+        // REFERÊNCIAS DOS PRODUTOS
+        // ----------------------------------------------
 
         const productReferences =
           cart.map(
@@ -2202,13 +1633,12 @@ async function finalizeSale() {
           );
 
 
-        const productSnapshots =
-          [];
-
-
         // ----------------------------------------------
-        // LER PRODUTOS
+        // PRIMEIRO: LER TODOS OS PRODUTOS
         // ----------------------------------------------
+
+        const productSnapshots = [];
+
 
         for (
           const productData
@@ -2233,7 +1663,7 @@ async function finalizeSale() {
 
 
         // ----------------------------------------------
-        // VALIDAR ESTOQUE
+        // SEGUNDO: VALIDAR ESTOQUE
         // ----------------------------------------------
 
         for (
@@ -2272,6 +1702,15 @@ async function finalizeSale() {
             data.available === true;
 
 
+          console.log(
+            `Produto ${item.id}: estoque atual = ${currentStock}`
+          );
+
+
+          // --------------------------------------------
+          // VERIFICAR AVAILABLE
+          // --------------------------------------------
+
           if (
             !currentAvailable
           ) {
@@ -2282,6 +1721,10 @@ async function finalizeSale() {
 
           }
 
+
+          // --------------------------------------------
+          // VERIFICAR ESTOQUE
+          // --------------------------------------------
 
           if (
             currentStock <
@@ -2298,7 +1741,7 @@ async function finalizeSale() {
 
 
         // ----------------------------------------------
-        // BAIXAR ESTOQUE
+        // TERCEIRO: DAR BAIXA NO ESTOQUE
         // ----------------------------------------------
 
         for (
@@ -2327,6 +1770,11 @@ async function finalizeSale() {
             item.quantity;
 
 
+          console.log(
+            `Atualizando ${item.name}: ${currentStock} → ${newStock}`
+          );
+
+
           transaction.update(
             productData.reference,
             {
@@ -2338,7 +1786,7 @@ async function finalizeSale() {
 
 
         // ----------------------------------------------
-        // ITENS DA VENDA
+        // QUARTO: SALVAR VENDA
         // ----------------------------------------------
 
         const saleItems =
@@ -2371,52 +1819,50 @@ async function finalizeSale() {
           );
 
 
-        // ----------------------------------------------
-        // SALVAR VENDA
-        // ----------------------------------------------
-
         transaction.set(
           saleRef,
           {
 
             customerName:
-
               customerName,
 
             payment:
-
               payment,
 
             subtotal:
-
               total,
 
             discount:
-
               0,
 
             total:
-
               total,
 
             items:
-
               saleItems,
 
             createdAt:
-
               serverTimestamp(),
 
             status:
-
               "finalizada"
 
           }
         );
 
+
+        console.log(
+          "Venda preparada para gravação:",
+          saleRef.id
+        );
+
       }
     );
 
+
+    // ==================================================
+    // TRANSAÇÃO CONCLUÍDA
+    // ==================================================
 
     console.log(
       "Venda gravada com sucesso!"
@@ -2440,7 +1886,7 @@ async function finalizeSale() {
 
 
     // ==================================================
-    // FECHAR CHECKOUT
+    // FECHAR MODAL
     // ==================================================
 
     closeModal(
@@ -2458,7 +1904,7 @@ async function finalizeSale() {
 
 
     // ==================================================
-    // ATUALIZAR PRODUTOS
+    // RECARREGAR PRODUTOS
     // ==================================================
 
     await loadProducts();
@@ -2534,14 +1980,1167 @@ document
 
 
 // ======================================================
-// FECHAR DETALHES DA VENDA
+// ======================================================
+// HISTÓRICO DE VENDAS
+// ======================================================
 // ======================================================
 
-document
-  .getElementById(
-    "closeSaleDetailsModal"
-  )
-  .addEventListener(
+
+// ======================================================
+// CARREGAR VENDAS DO FIRESTORE
+// ======================================================
+
+async function loadSales() {
+
+  if (!window.db) {
+
+    console.error(
+      "Firebase ainda não foi inicializado."
+    );
+
+    return;
+
+  }
+
+
+  try {
+
+    console.log(
+      "Carregando histórico de vendas..."
+    );
+
+
+    salesHistory.innerHTML = `
+
+      <div class="history-loading">
+
+        <div class="history-loading-icon">
+          ⏳
+        </div>
+
+        <strong>
+          Carregando vendas...
+        </strong>
+
+        <span>
+          Buscando informações no Firebase.
+        </span>
+
+      </div>
+
+    `;
+
+
+    const salesCollection =
+      collection(
+        window.db,
+        "vendas"
+      );
+
+
+    const snapshot =
+      await getDocs(
+        salesCollection
+      );
+
+
+    sales =
+      snapshot.docs.map(
+        documentSnapshot => {
+
+          const data =
+            documentSnapshot.data();
+
+
+          return {
+
+            id:
+              documentSnapshot.id,
+
+            customerName:
+              String(
+                data.customerName ||
+                "Cliente não identificado"
+              ),
+
+            payment:
+              String(
+                data.payment ||
+                "Não informado"
+              ),
+
+            subtotal:
+              Number(
+                data.subtotal
+              ) || 0,
+
+            discount:
+              Number(
+                data.discount
+              ) || 0,
+
+            total:
+              Number(
+                data.total
+              ) || 0,
+
+            items:
+              Array.isArray(
+                data.items
+              )
+                ? data.items
+                : [],
+
+            createdAt:
+              data.createdAt || null,
+
+            status:
+              String(
+                data.status ||
+                "finalizada"
+              )
+
+          };
+
+        }
+      );
+
+
+    // ==================================================
+    // ORDENAR DA MAIS RECENTE PARA A MAIS ANTIGA
+    // ==================================================
+
+    sales.sort(
+      (a, b) => {
+
+        const dateA =
+          getSaleDate(
+            a.createdAt
+          );
+
+        const dateB =
+          getSaleDate(
+            b.createdAt
+          );
+
+
+        if (!dateA && !dateB) {
+          return 0;
+        }
+
+
+        if (!dateA) {
+          return 1;
+        }
+
+
+        if (!dateB) {
+          return -1;
+        }
+
+
+        return (
+          dateB.getTime() -
+          dateA.getTime()
+        );
+
+      }
+    );
+
+
+    console.log(
+      "Vendas vindas do Firebase:",
+      sales
+    );
+
+
+    renderSalesHistory();
+
+
+  } catch (error) {
+
+    console.error(
+      "Erro ao carregar histórico:",
+      error
+    );
+
+
+    salesHistory.innerHTML = `
+
+      <div class="history-loading">
+
+        <div class="history-loading-icon">
+          ⚠️
+        </div>
+
+        <strong>
+          Erro ao carregar vendas
+        </strong>
+
+        <span>
+          ${error.message}
+        </span>
+
+      </div>
+
+    `;
+
+
+    showToast(
+      "Não foi possível carregar o histórico."
+    );
+
+  }
+
+}
+
+
+// ======================================================
+// CALCULAR QUANTIDADE TOTAL DE ITENS
+// ======================================================
+
+function getSaleItemsQuantity(sale) {
+
+  if (
+    !Array.isArray(
+      sale.items
+    )
+  ) {
+    return 0;
+  }
+
+
+  return sale.items.reduce(
+    (sum, item) =>
+      sum +
+      (
+        Number(
+          item.quantity
+        ) || 0
+      ),
+    0
+  );
+
+}
+
+
+// ======================================================
+// OBTER ÍCONES DE PAGAMENTO
+// ======================================================
+
+function getPaymentIcon(payment) {
+
+  switch (
+    String(payment).toLowerCase()
+  ) {
+
+    case "pix":
+      return "⚡";
+
+    case "dinheiro":
+      return "💵";
+
+    case "débito":
+    case "debito":
+      return "💳";
+
+    case "crédito":
+    case "credito":
+      return "💳";
+
+    default:
+      return "💰";
+
+  }
+
+}
+
+
+// ======================================================
+// RENDERIZAR HISTÓRICO
+// ======================================================
+
+function renderSalesHistory() {
+
+  if (
+    !salesHistory
+  ) {
+    return;
+  }
+
+
+  const search =
+    historySearchInput
+      ? historySearchInput.value
+          .trim()
+          .toLowerCase()
+      : "";
+
+
+  const selectedDate =
+    historyDateFilter
+      ? historyDateFilter.value
+      : "";
+
+
+  const selectedPayment =
+    historyPaymentFilter
+      ? historyPaymentFilter.value
+      : "Todos";
+
+
+  // ==================================================
+  // FILTRAR
+  // ==================================================
+
+  const filteredSales =
+    sales.filter(
+      sale => {
+
+        // ----------------------------------------------
+        // BUSCA
+        // ----------------------------------------------
+
+        let matchesSearch =
+          true;
+
+
+        if (search) {
+
+          const customer =
+            String(
+              sale.customerName || ""
+            ).toLowerCase();
+
+
+          const saleId =
+            String(
+              sale.id || ""
+            ).toLowerCase();
+
+
+          const payment =
+            String(
+              sale.payment || ""
+            ).toLowerCase();
+
+
+          const productNames =
+            sale.items
+              .map(
+                item =>
+                  String(
+                    item.name || ""
+                  ).toLowerCase()
+              )
+              .join(" ");
+
+
+          matchesSearch =
+            customer.includes(search) ||
+            saleId.includes(search) ||
+            payment.includes(search) ||
+            productNames.includes(search);
+
+        }
+
+
+        // ----------------------------------------------
+        // DATA
+        // ----------------------------------------------
+
+        let matchesDate =
+          true;
+
+
+        if (selectedDate) {
+
+          const saleDate =
+            getSaleDate(
+              sale.createdAt
+            );
+
+
+          if (!saleDate) {
+
+            matchesDate = false;
+
+          } else {
+
+            const year =
+              saleDate.getFullYear()
+                .toString()
+                .padStart(4, "0");
+
+
+            const month =
+              String(
+                saleDate.getMonth() + 1
+              ).padStart(2, "0");
+
+
+            const day =
+              String(
+                saleDate.getDate()
+              ).padStart(2, "0");
+
+
+            const saleDateString =
+              `${year}-${month}-${day}`;
+
+
+            matchesDate =
+              saleDateString ===
+              selectedDate;
+
+          }
+
+        }
+
+
+        // ----------------------------------------------
+        // PAGAMENTO
+        // ----------------------------------------------
+
+        const matchesPayment =
+          selectedPayment === "Todos" ||
+          sale.payment === selectedPayment;
+
+
+        return (
+          matchesSearch &&
+          matchesDate &&
+          matchesPayment
+        );
+
+      }
+    );
+
+
+  // ==================================================
+  // ATUALIZAR INDICADORES
+  // ==================================================
+
+  updateHistoryStats(
+    filteredSales
+  );
+
+
+  // ==================================================
+  // ESTADO VAZIO
+  // ==================================================
+
+  if (
+    filteredSales.length === 0
+  ) {
+
+    salesHistory.innerHTML = "";
+
+    historyEmptyState.classList.remove(
+      "hidden"
+    );
+
+    return;
+
+  }
+
+
+  historyEmptyState.classList.add(
+    "hidden"
+  );
+
+
+  // ==================================================
+  // RENDERIZAR VENDAS
+  // ==================================================
+
+  salesHistory.innerHTML =
+    filteredSales
+      .map(
+        sale => {
+
+          const itemsQuantity =
+            getSaleItemsQuantity(
+              sale
+            );
+
+
+          const paymentIcon =
+            getPaymentIcon(
+              sale.payment
+            );
+
+
+          const date =
+            formatSaleDate(
+              sale.createdAt
+            );
+
+
+          const shortId =
+            sale.id.length > 10
+              ? `${sale.id.substring(0, 10)}...`
+              : sale.id;
+
+
+          return `
+
+            <div
+              class="sale-row"
+              data-sale-id="${sale.id}">
+
+
+              <!-- VENDA -->
+
+              <div
+                class="sale-cell sale-id-cell"
+                data-label="Venda">
+
+                <strong>
+                  #${shortId}
+                </strong>
+
+                <small>
+                  ID da venda
+                </small>
+
+              </div>
+
+
+              <!-- CLIENTE -->
+
+              <div
+                class="sale-cell"
+                data-label="Cliente">
+
+                <strong>
+                  ${escapeHtml(
+                    sale.customerName
+                  )}
+                </strong>
+
+              </div>
+
+
+              <!-- ITENS -->
+
+              <div
+                class="sale-cell"
+                data-label="Itens">
+
+                <strong>
+                  ${itemsQuantity}
+                </strong>
+
+                <small>
+                  ${itemsQuantity === 1
+                    ? "item"
+                    : "itens"}
+                </small>
+
+              </div>
+
+
+              <!-- PAGAMENTO -->
+
+              <div
+                class="sale-cell"
+                data-label="Pagamento">
+
+                <span class="payment-badge">
+
+                  ${paymentIcon}
+
+                  ${escapeHtml(
+                    sale.payment
+                  )}
+
+                </span>
+
+              </div>
+
+
+              <!-- TOTAL -->
+
+              <div
+                class="sale-cell sale-total-cell"
+                data-label="Total">
+
+                <strong>
+                  ${brl(sale.total)}
+                </strong>
+
+              </div>
+
+
+              <!-- DATA -->
+
+              <div
+                class="sale-cell sale-date-cell"
+                data-label="Data">
+
+                ${date}
+
+              </div>
+
+
+              <!-- AÇÃO -->
+
+              <div
+                class="sale-cell sale-action-cell"
+                data-label="Ação">
+
+                <button
+                  class="sale-view-button"
+                  type="button"
+                  data-sale-action="view"
+                  data-sale-id="${sale.id}">
+
+                  Ver detalhes
+
+                </button>
+
+              </div>
+
+
+            </div>
+
+          `;
+
+        }
+      )
+      .join("");
+
+}
+
+
+// ======================================================
+// ATUALIZAR INDICADORES DO HISTÓRICO
+// ======================================================
+
+function updateHistoryStats(
+  filteredSales
+) {
+
+  const totalSales =
+    filteredSales.length;
+
+
+  const revenue =
+    filteredSales.reduce(
+      (sum, sale) =>
+        sum +
+        (
+          Number(
+            sale.total
+          ) || 0
+        ),
+      0
+    );
+
+
+  const average =
+    totalSales > 0
+      ? revenue / totalSales
+      : 0;
+
+
+  historyTotalSales.textContent =
+    totalSales;
+
+
+  historyRevenue.textContent =
+    brl(revenue);
+
+
+  historyAverage.textContent =
+    brl(average);
+
+}
+
+
+// ======================================================
+// ESCAPAR HTML
+// Evita problemas quando nomes vêm do Firebase.
+// ======================================================
+
+function escapeHtml(value) {
+
+  return String(value)
+    .replace(
+      /&/g,
+      "&amp;"
+    )
+    .replace(
+      /</g,
+      "&lt;"
+    )
+    .replace(
+      />/g,
+      "&gt;"
+    )
+    .replace(
+      /"/g,
+      "&quot;"
+    )
+    .replace(
+      /'/g,
+      "&#039;"
+    );
+
+}
+
+
+// ======================================================
+// ABRIR DETALHES DA VENDA
+// ======================================================
+
+function openSaleDetails(
+  saleId
+) {
+
+  const sale =
+    sales.find(
+      item =>
+        item.id === saleId
+    );
+
+
+  if (!sale) {
+
+    showToast(
+      "Venda não encontrada."
+    );
+
+    return;
+
+  }
+
+
+  selectedSale =
+    sale;
+
+
+  // ==================================================
+  // ID
+  // ==================================================
+
+  document.getElementById(
+    "saleDetailsTitle"
+  ).textContent =
+    `Venda #${sale.id.substring(0, 10)}`;
+
+
+  document.getElementById(
+    "saleDetailsId"
+  ).textContent =
+    sale.id;
+
+
+  // ==================================================
+  // CLIENTE
+  // ==================================================
+
+  document.getElementById(
+    "saleDetailsCustomer"
+  ).textContent =
+    sale.customerName;
+
+
+  // ==================================================
+  // PAGAMENTO
+  // ==================================================
+
+  document.getElementById(
+    "saleDetailsPayment"
+  ).textContent =
+    `${getPaymentIcon(sale.payment)} ${sale.payment}`;
+
+
+  // ==================================================
+  // DATA
+  // ==================================================
+
+  document.getElementById(
+    "saleDetailsDate"
+  ).textContent =
+    formatSaleDate(
+      sale.createdAt
+    );
+
+
+  // ==================================================
+  // STATUS
+  // ==================================================
+
+  const statusElement =
+    document.getElementById(
+      "saleDetailsStatus"
+    );
+
+
+  statusElement.textContent =
+    sale.status;
+
+
+  statusElement.className =
+    "sale-status";
+
+
+  if (
+    sale.status === "finalizada"
+  ) {
+
+    statusElement.classList.add(
+      "success"
+    );
+
+  }
+
+
+  // ==================================================
+  // ITENS
+  // ==================================================
+
+  const itemsContainer =
+    document.getElementById(
+      "saleDetailsItems"
+    );
+
+
+  if (
+    !sale.items ||
+    sale.items.length === 0
+  ) {
+
+    itemsContainer.innerHTML = `
+
+      <div class="sale-no-items">
+        Nenhum item registrado.
+      </div>
+
+    `;
+
+  } else {
+
+    itemsContainer.innerHTML =
+      sale.items
+        .map(
+          item => {
+
+            const quantity =
+              Number(
+                item.quantity
+              ) || 0;
+
+
+            const price =
+              Number(
+                item.price
+              ) || 0;
+
+
+            const subtotal =
+              Number(
+                item.subtotal
+              ) ||
+              (
+                price *
+                quantity
+              );
+
+
+            return `
+
+              <div class="sale-detail-item">
+
+                <div class="sale-detail-item-main">
+
+                  <strong>
+                    ${escapeHtml(
+                      item.name
+                    )}
+                  </strong>
+
+                  <span>
+                    ${quantity} × ${brl(price)}
+                  </span>
+
+                </div>
+
+                <strong>
+                  ${brl(subtotal)}
+                </strong>
+
+              </div>
+
+            `;
+
+          }
+        )
+        .join("");
+
+  }
+
+
+  // ==================================================
+  // RESUMO
+  // ==================================================
+
+  document.getElementById(
+    "saleDetailsSubtotal"
+  ).textContent =
+    brl(
+      sale.subtotal
+    );
+
+
+  document.getElementById(
+    "saleDetailsDiscount"
+  ).textContent =
+    brl(
+      sale.discount
+    );
+
+
+  document.getElementById(
+    "saleDetailsTotal"
+  ).textContent =
+    brl(
+      sale.total
+    );
+
+
+  // ==================================================
+  // ABRIR MODAL
+  // ==================================================
+
+  saleDetailsModal.classList.remove(
+    "hidden"
+  );
+
+}
+
+
+// ======================================================
+// ABRIR HISTÓRICO
+// ======================================================
+
+async function openHistory() {
+
+  // Esconde o PDV
+  pdvSection.classList.add(
+    "hidden"
+  );
+
+
+  // Mostra histórico
+  historySection.classList.remove(
+    "hidden"
+  );
+
+
+  // Carrega dados atualizados
+  await loadSales();
+
+
+  // Scroll até histórico
+  historySection.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
+
+}
+
+
+// ======================================================
+// VOLTAR PARA O PDV
+// ======================================================
+
+function backToPdv() {
+
+  historySection.classList.add(
+    "hidden"
+  );
+
+
+  pdvSection.classList.remove(
+    "hidden"
+  );
+
+
+  pdvSection.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
+
+}
+
+
+// ======================================================
+// BOTÃO HISTÓRICO
+// ======================================================
+
+if (openHistoryButton) {
+
+  openHistoryButton.addEventListener(
+    "click",
+    openHistory
+  );
+
+}
+
+
+// ======================================================
+// BOTÃO VOLTAR AO PDV
+// ======================================================
+
+if (backToPdvButton) {
+
+  backToPdvButton.addEventListener(
+    "click",
+    backToPdv
+  );
+
+}
+
+
+// ======================================================
+// PESQUISA NO HISTÓRICO
+// ======================================================
+
+if (historySearchInput) {
+
+  historySearchInput.addEventListener(
+    "input",
+    renderSalesHistory
+  );
+
+}
+
+
+// ======================================================
+// FILTRO POR DATA
+// ======================================================
+
+if (historyDateFilter) {
+
+  historyDateFilter.addEventListener(
+    "change",
+    renderSalesHistory
+  );
+
+}
+
+
+// ======================================================
+// FILTRO POR PAGAMENTO
+// ======================================================
+
+if (historyPaymentFilter) {
+
+  historyPaymentFilter.addEventListener(
+    "change",
+    renderSalesHistory
+  );
+
+}
+
+
+// ======================================================
+// LIMPAR FILTROS
+// ======================================================
+
+if (clearHistoryFilters) {
+
+  clearHistoryFilters.addEventListener(
+    "click",
+    () => {
+
+      if (historySearchInput) {
+
+        historySearchInput.value =
+          "";
+
+      }
+
+
+      if (historyDateFilter) {
+
+        historyDateFilter.value =
+          "";
+
+      }
+
+
+      if (historyPaymentFilter) {
+
+        historyPaymentFilter.value =
+          "Todos";
+
+      }
+
+
+      renderSalesHistory();
+
+    }
+  );
+
+}
+
+
+// ======================================================
+// CLIQUES NA LISTA DE VENDAS
+// ======================================================
+
+if (salesHistory) {
+
+  salesHistory.addEventListener(
+    "click",
+    event => {
+
+      const button =
+        event.target.closest(
+          "[data-sale-action]"
+        );
+
+
+      if (!button) {
+        return;
+      }
+
+
+      const action =
+        button.dataset.saleAction;
+
+
+      const saleId =
+        button.dataset.saleId;
+
+
+      if (
+        action === "view"
+      ) {
+
+        openSaleDetails(
+          saleId
+        );
+
+      }
+
+    }
+  );
+
+}
+
+
+// ======================================================
+// FECHAR MODAL DE DETALHES
+// ======================================================
+
+if (closeSaleDetailsModal) {
+
+  closeSaleDetailsModal.addEventListener(
     "click",
     () => {
 
@@ -2552,42 +3151,38 @@ document
     }
   );
 
+}
+
 
 // ======================================================
-// FECHAR MODAIS CLICANDO FORA
+// FECHAR MODAL DE DETALHES CLICANDO FORA
 // ======================================================
 
-[
-  productModal,
-  checkoutModal,
-  saleDetailsModal
-].forEach(
-  modal => {
+if (saleDetailsModal) {
 
-    modal.addEventListener(
-      "click",
-      event => {
+  saleDetailsModal.addEventListener(
+    "click",
+    event => {
 
-        if (
-          event.target ===
-          modal
-        ) {
+      if (
+        event.target ===
+        saleDetailsModal
+      ) {
 
-          closeModal(
-            modal
-          );
-
-        }
+        closeModal(
+          saleDetailsModal
+        );
 
       }
-    );
 
-  }
-);
+    }
+  );
+
+}
 
 
 // ======================================================
-// ESC
+// FECHAR MODAIS COM ESC
 // ======================================================
 
 document.addEventListener(
@@ -2598,9 +3193,7 @@ document.addEventListener(
       event.key !==
       "Escape"
     ) {
-
       return;
-
     }
 
 
@@ -2628,6 +3221,11 @@ document.addEventListener(
 
 loadProducts();
 
-loadSales();
-
 renderCart();
+
+
+// ======================================================
+// CARREGAR HISTÓRICO EM SEGUNDO PLANO
+// ======================================================
+
+loadSales();
