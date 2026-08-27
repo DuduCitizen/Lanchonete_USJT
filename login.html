@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Lancheira | Login</title>
+
+  <style>
+
+    :root {
+      --bg: #f7f7f5;
+      --surface: #ffffff;
+      --text: #1e1e1e;
+      --muted: #747474;
+      --line: #e8e8e5;
+      --accent: #e85d04;
+      --accent-dark: #c94d00;
+      --soft-accent: #fff0e6;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+
+      display: grid;
+      place-items: center;
+
+      padding: 20px;
+
+      font-family:
+        Inter,
+        ui-sans-serif,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+
+      background:
+        radial-gradient(
+          circle at top right,
+          #fff0e6 0,
+          transparent 35%
+        ),
+        var(--bg);
+
+      color: var(--text);
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    .login-container {
+      width: min(430px, 100%);
+    }
+
+    .brand {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .brand-icon {
+      width: 64px;
+      height: 64px;
+
+      display: grid;
+      place-items: center;
+
+      margin: 0 auto 14px;
+
+      border-radius: 18px;
+
+      background: var(--soft-accent);
+
+      font-size: 32px;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 27px;
+    }
+
+    .brand p {
+      margin: 6px 0 0;
+
+      color: var(--muted);
+
+      font-size: 13px;
+    }
+
+    .login-card {
+      padding: 30px;
+
+      background: var(--surface);
+
+      border: 1px solid var(--line);
+
+      border-radius: 20px;
+
+      box-shadow:
+        0 20px 60px rgba(30, 30, 30, .08);
+    }
+
+    .login-card h2 {
+      margin: 0 0 6px;
+
+      font-size: 23px;
+    }
+
+    .login-description {
+      margin: 0 0 24px;
+
+      color: var(--muted);
+
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .field {
+      margin-bottom: 16px;
+    }
+
+    .field label {
+      display: block;
+
+      margin-bottom: 7px;
+
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .field input {
+      width: 100%;
+
+      padding: 13px 14px;
+
+      border: 1px solid var(--line);
+
+      border-radius: 10px;
+
+      outline: none;
+
+      font: inherit;
+
+      background: white;
+    }
+
+    .field input:focus {
+      border-color: var(--accent);
+    }
+
+    .login-button {
+      width: 100%;
+
+      padding: 13px;
+
+      border: 0;
+
+      border-radius: 10px;
+
+      background: var(--accent);
+
+      color: white;
+
+      font-weight: 800;
+
+      cursor: pointer;
+
+      transition:
+        background .18s ease,
+        transform .18s ease;
+    }
+
+    .login-button:hover {
+      background: var(--accent-dark);
+    }
+
+    .login-button:active {
+      transform: translateY(1px);
+    }
+
+    .login-button:disabled {
+      opacity: .6;
+      cursor: not-allowed;
+    }
+
+    .divider {
+      display: flex;
+      align-items: center;
+
+      gap: 12px;
+
+      margin: 22px 0;
+
+      color: #aaa;
+
+      font-size: 11px;
+    }
+
+    .divider::before,
+    .divider::after {
+      content: "";
+
+      flex: 1;
+
+      height: 1px;
+
+      background: var(--line);
+    }
+
+    .google-button {
+      width: 100%;
+
+      padding: 12px;
+
+      border: 1px solid var(--line);
+
+      border-radius: 10px;
+
+      background: white;
+
+      color: var(--text);
+
+      font-weight: 700;
+
+      cursor: pointer;
+
+      transition:
+        background .18s ease,
+        border-color .18s ease;
+    }
+
+    .google-button:hover {
+      background: #fafafa;
+      border-color: #d8d8d5;
+    }
+
+    .google-button:disabled {
+      opacity: .6;
+      cursor: not-allowed;
+    }
+
+    .error-message {
+      display: none;
+
+      margin-bottom: 16px;
+
+      padding: 11px 13px;
+
+      border-radius: 10px;
+
+      background: #fff0f0;
+
+      color: #b42318;
+
+      border: 1px solid #ffd6d6;
+
+      font-size: 12px;
+
+      line-height: 1.4;
+    }
+
+    .error-message.show {
+      display: block;
+    }
+
+    .success-message {
+      display: none;
+
+      margin-bottom: 16px;
+
+      padding: 11px 13px;
+
+      border-radius: 10px;
+
+      background: #effaf2;
+
+      color: #187a35;
+
+      border: 1px solid #ccebd3;
+
+      font-size: 12px;
+
+      line-height: 1.4;
+    }
+
+    .success-message.show {
+      display: block;
+    }
+
+    .footer {
+      margin-top: 18px;
+
+      text-align: center;
+
+      color: #999;
+
+      font-size: 11px;
+    }
+
+  </style>
+
+</head>
+
+
+<body>
+
+  <main class="login-container">
+
+
+    <!-- ==========================================
+         MARCA
+    =========================================== -->
+
+    <div class="brand">
+
+      <div class="brand-icon">
+        🍔
+      </div>
+
+      <h1>
+        Lancheira
+      </h1>
+
+      <p>
+        Sistema PDV • Lanchonete
+      </p>
+
+    </div>
+
+
+    <!-- ==========================================
+         CARD DE LOGIN
+    =========================================== -->
+
+    <section class="login-card">
+
+      <h2>
+        Entrar no sistema
+      </h2>
+
+      <p class="login-description">
+        Acesse sua conta para utilizar o sistema de vendas.
+      </p>
+
+
+      <!-- ERRO -->
+
+      <div
+        id="errorMessage"
+        class="error-message">
+      </div>
+
+
+      <!-- SUCESSO -->
+
+      <div
+        id="successMessage"
+        class="success-message">
+      </div>
+
+
+      <!-- ========================================
+           LOGIN COM E-MAIL
+      ========================================= -->
+
+      <form id="loginForm">
+
+
+        <div class="field">
+
+          <label for="email">
+            E-mail
+          </label>
+
+          <input
+            id="email"
+            type="email"
+            placeholder="seuemail@email.com"
+            autocomplete="email"
+            required>
+
+        </div>
+
+
+        <div class="field">
+
+          <label for="password">
+            Senha
+          </label>
+
+          <input
+            id="password"
+            type="password"
+            placeholder="Digite sua senha"
+            autocomplete="current-password"
+            required>
+
+        </div>
+
+
+        <button
+          class="login-button"
+          id="loginButton"
+          type="submit">
+
+          Entrar
+
+        </button>
+
+      </form>
+
+
+      <!-- ========================================
+           DIVISOR
+      ========================================= -->
+
+      <div class="divider">
+        ou
+      </div>
+
+
+      <!-- ========================================
+           LOGIN COM GOOGLE
+      ========================================= -->
+
+      <button
+        class="google-button"
+        id="googleButton"
+        type="button">
+
+        🔵 Entrar com Google
+
+      </button>
+
+    </section>
+
+
+    <!-- ==========================================
+         RODAPÉ
+    =========================================== -->
+
+    <div class="footer">
+      Lancheira • Sistema de Ponto de Venda
+    </div>
+
+
+  </main>
+
+
+  <!-- ==================================================
+       FIREBASE + AUTENTICAÇÃO
+  =================================================== -->
+
+  <script type="module">
+
+    /* =================================================
+       IMPORTS DO FIREBASE
+    ================================================= */
+
+    import {
+      initializeApp
+    } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+
+
+    import {
+      getAuth,
+      signInWithEmailAndPassword,
+      GoogleAuthProvider,
+      signInWithRedirect,
+      getRedirectResult
+    } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+
+
+    /* =================================================
+       CONFIGURAÇÃO DO FIREBASE
+    ================================================= */
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCDBhEvK6KxiSAFbQKxHWPdyfSe553M17s",
+        authDomain: "sistema-pdv-usjt.firebaseapp.com",
+        projectId: "sistema-pdv-usjt",
+        storageBucket: "sistema-pdv-usjt.firebasestorage.app",
+        messagingSenderId: "803225322517",
+        appId: "1:803225322517:web:89b28e01bbd0d5f484ba1c"
+    };
+
+
+    /* =================================================
+       INICIALIZAÇÃO DO FIREBASE
+    ================================================= */
+
+    const app =
+      initializeApp(firebaseConfig);
+
+
+    /* =================================================
+       FIREBASE AUTH
+    ================================================= */
+
+    const auth =
+      getAuth(app);
+
+
+    /* =================================================
+       ELEMENTOS DA PÁGINA
+    ================================================= */
+
+    const loginForm =
+      document.getElementById("loginForm");
+
+
+    const emailInput =
+      document.getElementById("email");
+
+
+    const passwordInput =
+      document.getElementById("password");
+
+
+    const loginButton =
+      document.getElementById("loginButton");
+
+
+    const googleButton =
+      document.getElementById("googleButton");
+
+
+    const errorMessage =
+      document.getElementById("errorMessage");
+
+
+    const successMessage =
+      document.getElementById("successMessage");
+
+
+    /* =================================================
+       MOSTRAR ERRO
+    ================================================= */
+
+    function showError(message) {
+
+      errorMessage.textContent =
+        message;
+
+      errorMessage.classList.add("show");
+
+    }
+
+
+    /* =================================================
+       ESCONDER ERRO
+    ================================================= */
+
+    function hideError() {
+
+      errorMessage.textContent =
+        "";
+
+      errorMessage.classList.remove("show");
+
+    }
+
+
+    /* =================================================
+       MOSTRAR SUCESSO
+    ================================================= */
+
+    function showSuccess(message) {
+
+      successMessage.textContent =
+        message;
+
+      successMessage.classList.add("show");
+
+    }
+
+
+    /* =================================================
+       ESCONDER SUCESSO
+    ================================================= */
+
+    function hideSuccess() {
+
+      successMessage.textContent =
+        "";
+
+      successMessage.classList.remove("show");
+
+    }
+
+
+    /* =================================================
+       VERIFICAR RESULTADO DO LOGIN GOOGLE
+       
+       O Google retorna para esta página depois
+       do redirecionamento.
+    ================================================= */
+
+    try {
+
+      const redirectResult =
+        await getRedirectResult(auth);
+
+
+      if (redirectResult) {
+
+        showSuccess(
+          "Login com Google realizado! Redirecionando..."
+        );
+
+
+        setTimeout(() => {
+
+          window.location.href =
+            "index.html";
+
+        }, 500);
+
+      }
+
+    } catch (error) {
+
+      console.error(
+        "Erro no retorno do Google:",
+        error
+      );
+
+
+      let message =
+        "Não foi possível concluir o login com o Google.";
+
+
+      switch (error.code) {
+
+        case "auth/unauthorized-domain":
+
+          message =
+            "Este domínio não está autorizado no Firebase Authentication.";
+
+          break;
+
+
+        case "auth/account-exists-with-different-credential":
+
+          message =
+            "Já existe uma conta com este e-mail usando outro método de login.";
+
+          break;
+
+
+        case "auth/api-key-not-valid":
+
+          message =
+            "A configuração do Firebase está incorreta. Verifique a API Key.";
+
+          break;
+
+
+        case "auth/network-request-failed":
+
+          message =
+            "Erro de conexão. Verifique sua internet.";
+
+          break;
+
+
+        default:
+
+          message =
+            "Não foi possível concluir o login com o Google.";
+
+          break;
+
+      }
+
+
+      showError(message);
+
+      googleButton.disabled =
+        false;
+
+      loginButton.disabled =
+        false;
+
+      googleButton.textContent =
+        "🔵 Entrar com Google";
+
+    }
+
+
+    /* =================================================
+       LOGIN COM E-MAIL E SENHA
+    ================================================= */
+
+    loginForm.addEventListener(
+      "submit",
+      async (event) => {
+
+        event.preventDefault();
+
+        hideError();
+        hideSuccess();
+
+        loginButton.disabled =
+          true;
+
+        googleButton.disabled =
+          true;
+
+        loginButton.textContent =
+          "Entrando...";
+
+
+        try {
+
+          await signInWithEmailAndPassword(
+            auth,
+            emailInput.value.trim(),
+            passwordInput.value
+          );
+
+
+          showSuccess(
+            "Login realizado com sucesso! Redirecionando..."
+          );
+
+
+          setTimeout(() => {
+
+            window.location.href =
+              "index.html";
+
+          }, 500);
+
+
+        } catch (error) {
+
+          console.error(
+            "Erro no login:",
+            error
+          );
+
+
+          let message =
+            "Não foi possível realizar o login.";
+
+
+          switch (error.code) {
+
+            case "auth/invalid-credential":
+
+              message =
+                "E-mail ou senha incorretos.";
+
+              break;
+
+
+            case "auth/user-not-found":
+
+              message =
+                "Usuário não encontrado.";
+
+              break;
+
+
+            case "auth/wrong-password":
+
+              message =
+                "Senha incorreta.";
+
+              break;
+
+
+            case "auth/invalid-email":
+
+              message =
+                "Digite um e-mail válido.";
+
+              break;
+
+
+            case "auth/user-disabled":
+
+              message =
+                "Esta conta foi desativada.";
+
+              break;
+
+
+            case "auth/too-many-requests":
+
+              message =
+                "Muitas tentativas. Aguarde alguns minutos e tente novamente.";
+
+              break;
+
+
+            case "auth/network-request-failed":
+
+              message =
+                "Erro de conexão. Verifique sua internet.";
+
+              break;
+
+
+            case "auth/api-key-not-valid":
+
+              message =
+                "A configuração do Firebase está incorreta. Verifique a API Key.";
+
+              break;
+
+
+            default:
+
+              message =
+                "Não foi possível realizar o login.";
+
+              break;
+
+          }
+
+
+          showError(message);
+
+
+          loginButton.disabled =
+            false;
+
+          googleButton.disabled =
+            false;
+
+          loginButton.textContent =
+            "Entrar";
+
+        }
+
+      }
+    );
+
+
+    /* =================================================
+       LOGIN COM GOOGLE
+       
+       ALTERADO:
+       signInWithPopup()
+       ↓
+       signInWithRedirect()
+
+       Isso evita o problema de popup/OAuth
+       no ambiente local.
+    ================================================= */
+
+    googleButton.addEventListener(
+      "click",
+      async () => {
+
+        hideError();
+        hideSuccess();
+
+        googleButton.disabled =
+          true;
+
+        loginButton.disabled =
+          true;
+
+        googleButton.textContent =
+          "Abrindo Google...";
+
+
+        try {
+
+          const provider =
+            new GoogleAuthProvider();
+
+
+          /*
+            Solicita explicitamente o e-mail
+            da conta Google.
+          */
+
+          provider.addScope(
+            "email"
+          );
+
+
+          /*
+            Redireciona para o Google.
+            
+            Depois do login, o Google retorna
+            automaticamente para esta página.
+          */
+
+          await signInWithRedirect(
+            auth,
+            provider
+          );
+
+
+        } catch (error) {
+
+          console.error(
+            "Erro ao iniciar login com Google:",
+            error
+          );
+
+
+          let message =
+            "Não foi possível entrar com o Google.";
+
+
+          switch (error.code) {
+
+            case "auth/unauthorized-domain":
+
+              message =
+                "Este domínio não está autorizado no Firebase Authentication.";
+
+              break;
+
+
+            case "auth/api-key-not-valid":
+
+              message =
+                "A configuração do Firebase está incorreta. Verifique a API Key.";
+
+              break;
+
+
+            case "auth/network-request-failed":
+
+              message =
+                "Erro de conexão. Verifique sua internet.";
+
+              break;
+
+
+            default:
+
+              message =
+                "Não foi possível entrar com o Google.";
+
+              break;
+
+          }
+
+
+          showError(message);
+
+
+          googleButton.disabled =
+            false;
+
+          loginButton.disabled =
+            false;
+
+          googleButton.textContent =
+            "🔵 Entrar com Google";
+
+        }
+
+      }
+    );
+
+  </script>
+
+
+</body>
+
+</html>
