@@ -7,7 +7,28 @@
 
   <title>Lancheira | PDV</title>
 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=JetBrains+Mono:wght@400;500;700&family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
   <link rel="stylesheet" href="css/style.css">
+
+  <!-- ==================================================
+       GUARDA DE AUTENTICAÇÃO (ANTI-FLASH)
+
+       Esconde a página imediatamente. Só volta a
+       aparecer depois que o Firebase confirmar que
+       existe um usuário logado (ver script no fim
+       do <body>). Fica ANTES do CSS externo de
+       propósito, pra já esconder mesmo se o
+       stylesheet demorar a carregar.
+  =================================================== -->
+
+  <style>
+    body {
+      visibility: hidden;
+    }
+  </style>
 </head>
 
 <body>
@@ -76,6 +97,21 @@
         </span>
 
       </div>
+
+
+      <!-- BOTÃO SAIR -->
+
+      <button
+        class="history-button"
+        id="logoutButton"
+        type="button"
+        aria-label="Sair"
+        onclick="window.logout()">
+
+        🚪
+        <span>Sair</span>
+
+      </button>
 
     </div>
 
@@ -682,12 +718,6 @@
           class="sales-history">
 
 
-          <!--
-            O JavaScript preencherá
-            automaticamente.
-          -->
-
-
           <div class="history-loading">
 
             <div class="history-loading-icon">
@@ -753,8 +783,6 @@
       aria-labelledby="modalProductName">
 
 
-      <!-- FECHAR -->
-
       <button
         class="modal-close"
         id="closeProductModal"
@@ -766,8 +794,6 @@
 
 
 
-      <!-- IMAGEM / EMOJI -->
-
       <div
         class="modal-product-image"
         id="modalProductImage">
@@ -777,8 +803,6 @@
       </div>
 
 
-
-      <!-- INFORMAÇÕES -->
 
       <div class="modal-content">
 
@@ -799,8 +823,6 @@
 
 
 
-        <!-- PREÇO E CÓDIGO -->
-
         <div class="modal-meta">
 
           <strong
@@ -817,8 +839,6 @@
         </div>
 
 
-
-        <!-- QUANTIDADE -->
 
         <div class="quantity-control">
 
@@ -848,8 +868,6 @@
         </div>
 
 
-
-        <!-- ADICIONAR -->
 
         <button
           class="primary-button"
@@ -883,8 +901,6 @@
       aria-modal="true">
 
 
-      <!-- FECHAR -->
-
       <button
         class="modal-close"
         id="closeCheckoutModal"
@@ -907,8 +923,6 @@
 
 
 
-      <!-- TOTAL -->
-
       <div class="checkout-total">
 
         <span>
@@ -922,8 +936,6 @@
       </div>
 
 
-
-      <!-- CLIENTE -->
 
       <label
         class="field-label"
@@ -942,8 +954,6 @@
         autocomplete="off">
 
 
-
-      <!-- PAGAMENTO -->
 
       <span class="field-label">
 
@@ -1015,8 +1025,6 @@
 
 
 
-      <!-- CONFIRMAR VENDA -->
-
       <button
         class="checkout-button"
         id="confirmSaleButton"
@@ -1048,8 +1056,6 @@
       aria-labelledby="saleDetailsTitle">
 
 
-      <!-- FECHAR -->
-
       <button
         class="modal-close"
         id="closeSaleDetailsModal"
@@ -1060,8 +1066,6 @@
       </button>
 
 
-
-      <!-- CABEÇALHO -->
 
       <div class="sale-details-header">
 
@@ -1082,8 +1086,6 @@
       </div>
 
 
-
-      <!-- INFORMAÇÕES -->
 
       <div class="sale-details-info">
 
@@ -1147,8 +1149,6 @@
 
 
 
-      <!-- ITENS -->
-
       <div class="sale-details-items">
 
         <div class="sale-details-section-title">
@@ -1169,8 +1169,6 @@
       </div>
 
 
-
-      <!-- RESUMO -->
 
       <div class="sale-details-summary">
 
@@ -1249,13 +1247,22 @@
     } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
 
+    // ADIÇÃO: Firebase Authentication
+
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+
+
     // ================================================
     // CONFIGURAÇÃO DO FIREBASE
     // ================================================
 
     const firebaseConfig = {
 
-      apiKey: "AIzaSyCDBhEvK6KxiSAFbK6X",
+      apiKey: "AIzaSyCDBhEvK6KxiSAFbQKxHWPdyfSe553M17s",
       authDomain: "sistema-pdv-usjt.firebaseapp.com",
       projectId: "sistema-pdv-usjt",
       storageBucket: "sistema-pdv-usjt.firebasestorage.app",
@@ -1286,6 +1293,64 @@
     // ================================================
 
     window.db = db;
+
+
+    // ================================================
+    // PROTEÇÃO DO PDV
+    //
+    // Enquanto o Firebase não responder se existe
+    // usuário logado, a página fica com
+    // "visibility: hidden" (ver <style> no <head>).
+    // Isso evita o "flash" do conteúdo protegido
+    // antes do redirecionamento.
+    // ================================================
+
+    const auth =
+      getAuth(app);
+
+
+    // Disponibiliza um logout global simples.
+    // Pode ser chamado de qualquer botão com
+    // onclick="window.logout()".
+
+    window.logout = () => {
+
+      signOut(auth).then(() => {
+
+        window.location.href =
+          "login.html";
+
+      });
+
+    };
+
+
+    onAuthStateChanged(
+      auth,
+      (user) => {
+
+        if (!user) {
+
+          window.location.href =
+            "login.html";
+
+          return;
+
+        }
+
+        console.log(
+          "Usuário autenticado:",
+          user.email
+        );
+
+        // Só revela a página depois de
+        // confirmar que o usuário está logado.
+
+        document.body.style.visibility =
+          "visible";
+
+      }
+    );
 
   </script>
 
