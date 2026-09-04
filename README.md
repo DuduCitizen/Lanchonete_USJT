@@ -34,7 +34,6 @@ Lanchonete
 
 ## Integrantes
 
-- Nome 1
-- Nome 2
-- Nome 3
-- Nome 4
+- Lucas Eduardo Silva da Cunha
+- Gabriel
+- Maxwell
