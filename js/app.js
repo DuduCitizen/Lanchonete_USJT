@@ -3,7 +3,8 @@ import {
   getDocs,
   doc,
   serverTimestamp,
-  runTransaction
+  runTransaction,
+  setDoc
 } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
 
@@ -1466,15 +1467,22 @@ document
 
 
 // ======================================================
-// SALVAR VENDA E DAR BAIXA NO ESTOQUE
+// SALVAR VENDA, DAR BAIXA NO ESTOQUE E ATUALIZAR CRM
 //
 // ATENÇÃO:
-// A lógica desta função foi preservada.
-// A transação continua fazendo:
+// A lógica original desta função foi preservada.
+// A transação agora faz:
 // 1. leitura dos produtos
-// 2. validação do estoque
-// 3. baixa do estoque
-// 4. criação da venda
+// 2. leitura do cliente (CRM), se telefone informado
+// 3. validação do estoque
+// 4. baixa do estoque
+// 5. criação da venda
+// 6. criação/atualização do cliente (CRM)
+//
+// O Firestore exige que TODAS as leituras aconteçam
+// antes de QUALQUER escrita dentro de uma transação,
+// por isso a leitura do cliente entra junto com a
+// leitura dos produtos, no início da transação.
 // ======================================================
 
 async function finalizeSale() {
@@ -1504,6 +1512,30 @@ async function finalizeSale() {
       .value
       .trim() ||
     "Cliente não identificado";
+
+
+  // ====================================================
+  // TELEFONE DO CLIENTE (chave do CRM)
+  //
+  // Mantém só dígitos, para usar como ID do documento
+  // na coleção "clientes". Se vier vazio, a venda segue
+  // sem vínculo de CRM (venda avulsa).
+  // ====================================================
+
+  const customerPhoneRaw =
+    document
+      .getElementById(
+        "customerPhone"
+      )
+      .value
+      .trim();
+
+
+  const customerPhone =
+    customerPhoneRaw.replace(
+      /\D/g,
+      ""
+    );
 
 
   // ====================================================
@@ -1600,6 +1632,24 @@ async function finalizeSale() {
 
 
     // ==================================================
+    // REFERÊNCIA DO CLIENTE (CRM)
+    //
+    // O telefone normalizado (só dígitos) é usado como
+    // ID do documento em "clientes". Assim, o mesmo
+    // cliente é sempre encontrado em compras futuras.
+    // ==================================================
+
+    const clienteRef =
+      customerPhone
+        ? doc(
+            window.db,
+            "clientes",
+            customerPhone
+          )
+        : null;
+
+
+    // ==================================================
     // TRANSAÇÃO
     // ==================================================
 
@@ -1660,6 +1710,23 @@ async function finalizeSale() {
           });
 
         }
+
+
+        // ----------------------------------------------
+        // LER CLIENTE (CRM), SE TELEFONE FOI INFORMADO
+        //
+        // Precisa acontecer aqui, antes de qualquer
+        // escrita, porque o Firestore não permite
+        // misturar leituras depois de escritas dentro
+        // da mesma transação.
+        // ----------------------------------------------
+
+        const clienteSnapshot =
+          clienteRef
+            ? await transaction.get(
+                clienteRef
+              )
+            : null;
 
 
         // ----------------------------------------------
@@ -1826,6 +1893,10 @@ async function finalizeSale() {
             customerName:
               customerName,
 
+            customerPhone:
+              customerPhone ||
+              null,
+
             payment:
               payment,
 
@@ -1855,6 +1926,92 @@ async function finalizeSale() {
           "Venda preparada para gravação:",
           saleRef.id
         );
+
+
+        // ----------------------------------------------
+        // QUINTO: ATUALIZAR CRM DO CLIENTE
+        //
+        // Se o telefone foi informado, cria ou atualiza
+        // o documento do cliente em "clientes",
+        // acumulando total gasto, quantidade de compras
+        // e a data da última compra.
+        // ----------------------------------------------
+
+        if (clienteRef) {
+
+          if (
+            clienteSnapshot.exists()
+          ) {
+
+            const clienteData =
+              clienteSnapshot.data();
+
+
+            transaction.update(
+              clienteRef,
+              {
+
+                nome:
+                  customerName,
+
+                telefone:
+                  customerPhone,
+
+                totalGasto:
+                  (
+                    Number(
+                      clienteData.totalGasto
+                    ) || 0
+                  ) + total,
+
+                quantidadeCompras:
+                  (
+                    Number(
+                      clienteData.quantidadeCompras
+                    ) || 0
+                  ) + 1,
+
+                ultimaCompra:
+                  serverTimestamp()
+
+              }
+            );
+
+          } else {
+
+            transaction.set(
+              clienteRef,
+              {
+
+                nome:
+                  customerName,
+
+                telefone:
+                  customerPhone,
+
+                totalGasto:
+                  total,
+
+                quantidadeCompras: 1,
+
+                primeiraCompra:
+                  serverTimestamp(),
+
+                ultimaCompra:
+                  serverTimestamp()
+
+              }
+            );
+
+          }
+
+
+          console.log(
+            "Cliente atualizado no CRM:",
+            customerPhone
+          );
+
+        }
 
       }
     );
@@ -1900,6 +2057,11 @@ async function finalizeSale() {
 
     document.getElementById(
       "customerName"
+    ).value = "";
+
+
+    document.getElementById(
+      "customerPhone"
     ).value = "";
 
 
@@ -2062,6 +2224,10 @@ async function loadSales() {
                 data.customerName ||
                 "Cliente não identificado"
               ),
+
+            customerPhone:
+              data.customerPhone ||
+              null,
 
             payment:
               String(
