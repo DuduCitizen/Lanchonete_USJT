@@ -4,7 +4,8 @@ import {
   doc,
   serverTimestamp,
   runTransaction,
-  setDoc
+  setDoc,
+  increment
 } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
 
@@ -1713,20 +1714,18 @@ async function finalizeSale() {
 
 
         // ----------------------------------------------
-        // LER CLIENTE (CRM), SE TELEFONE FOI INFORMADO
+        // (SEM LEITURA DO CLIENTE)
         //
-        // Precisa acontecer aqui, antes de qualquer
-        // escrita, porque o Firestore não permite
-        // misturar leituras depois de escritas dentro
-        // da mesma transação.
+        // O documento em "clientes" só pode ser LIDO por
+        // administrador (regra de segurança do CRM). Por
+        // isso não fazemos transaction.get(clienteRef) aqui
+        // — em vez de ler o total atual e somar na mão, a
+        // gravação abaixo usa increment(), que soma no
+        // servidor sem precisar ler o valor antes. Isso
+        // funciona tanto para criar quanto para atualizar
+        // o documento, mesmo que o cliente não tenha
+        // permissão de leitura sobre ele.
         // ----------------------------------------------
-
-        const clienteSnapshot =
-          clienteRef
-            ? await transaction.get(
-                clienteRef
-              )
-            : null;
 
 
         // ----------------------------------------------
@@ -1931,79 +1930,39 @@ async function finalizeSale() {
         // ----------------------------------------------
         // QUINTO: ATUALIZAR CRM DO CLIENTE
         //
-        // Se o telefone foi informado, cria ou atualiza
-        // o documento do cliente em "clientes",
-        // acumulando total gasto, quantidade de compras
-        // e a data da última compra.
+        // Usa setDoc com merge: true + increment(), então
+        // funciona igual para "criar pela primeira vez" e
+        // "atualizar quem já existe" — sem precisar ler o
+        // documento antes (o que exigiria permissão de
+        // leitura que o cliente não tem).
         // ----------------------------------------------
 
         if (clienteRef) {
 
-          if (
-            clienteSnapshot.exists()
-          ) {
+          transaction.set(
+            clienteRef,
+            {
 
-            const clienteData =
-              clienteSnapshot.data();
+              nome:
+                customerName,
 
+              telefone:
+                customerPhone,
 
-            transaction.update(
-              clienteRef,
-              {
+              totalGasto:
+                increment(total),
 
-                nome:
-                  customerName,
+              quantidadeCompras:
+                increment(1),
 
-                telefone:
-                  customerPhone,
+              ultimaCompra:
+                serverTimestamp()
 
-                totalGasto:
-                  (
-                    Number(
-                      clienteData.totalGasto
-                    ) || 0
-                  ) + total,
-
-                quantidadeCompras:
-                  (
-                    Number(
-                      clienteData.quantidadeCompras
-                    ) || 0
-                  ) + 1,
-
-                ultimaCompra:
-                  serverTimestamp()
-
-              }
-            );
-
-          } else {
-
-            transaction.set(
-              clienteRef,
-              {
-
-                nome:
-                  customerName,
-
-                telefone:
-                  customerPhone,
-
-                totalGasto:
-                  total,
-
-                quantidadeCompras: 1,
-
-                primeiraCompra:
-                  serverTimestamp(),
-
-                ultimaCompra:
-                  serverTimestamp()
-
-              }
-            );
-
-          }
+            },
+            {
+              merge: true
+            }
+          );
 
 
           console.log(
