@@ -71,10 +71,17 @@
       </button>
 
 
-      <!-- BOTÃO HISTÓRICO -->
+      <!-- ==================================================
+           BOTÃO HISTÓRICO (SÓ ADMINISTRADOR)
+
+           O papel "cliente" é o cliente final da lanchonete:
+           ele pede, paga e não tem acesso ao histórico de
+           vendas. Escondido por padrão; revelado pelo script
+           de autenticação só se role === "administrador".
+      =================================================== -->
 
       <button
-        class="history-button"
+        class="history-button hidden"
         id="openHistoryButton"
         type="button">
 
@@ -84,16 +91,38 @@
       </button>
 
 
+      <!-- ==================================================
+           BOTÃO GERENCIAR PRODUTOS (SÓ ADMINISTRADOR)
+
+           Escondido por padrão. Só é revelado pelo script
+           de autenticação depois de confirmar, no Firestore
+           (coleção "usuarios"), que o usuário logado tem
+           role === "administrador".
+      =================================================== -->
+
+      <button
+        class="history-button hidden"
+        id="manageProductsButton"
+        type="button">
+
+        ⚙️
+        <span>Gerenciar Produtos</span>
+
+      </button>
+
+
       <!-- USUÁRIO -->
 
       <div class="user-badge">
 
-        <span class="avatar">
-          OP
+        <span
+          class="avatar"
+          id="userAvatar">
+          CL
         </span>
 
-        <span>
-          Operador
+        <span id="userRoleLabel">
+          Cliente
         </span>
 
       </div>
@@ -456,7 +485,7 @@
     =================================================== -->
 
     <section
-      class="history-section"
+      class="history-section hidden"
       id="historySection">
 
 
@@ -1269,7 +1298,9 @@
 
 
     import {
-      getFirestore
+      getFirestore,
+      doc,
+      getDoc
     } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
 
@@ -1351,9 +1382,161 @@
     };
 
 
+    // ================================================
+    // BUSCAR PERFIL DO USUÁRIO (RBAC)
+    //
+    // Lê o documento "usuarios/{uid}" no Firestore.
+    // Se não existir, ou se o campo "role" não for
+    // "administrador", o usuário é tratado como
+    // "cliente" (padrão seguro: nunca vira admin
+    // sem um documento explícito dizendo isso).
+    // ================================================
+
+    async function loadUserRole(user) {
+
+      let role =
+        "cliente";
+
+
+      try {
+
+        const userRef =
+          doc(
+            db,
+            "usuarios",
+            user.uid
+          );
+
+
+        const userSnapshot =
+          await getDoc(
+            userRef
+          );
+
+
+        if (
+          userSnapshot.exists() &&
+          userSnapshot.data().role ===
+          "administrador"
+        ) {
+
+          role =
+            "administrador";
+
+        }
+
+      } catch (error) {
+
+        console.error(
+          "Erro ao buscar perfil do usuário:",
+          error
+        );
+
+        // Em caso de erro, mantém "cliente"
+        // (falha de forma segura).
+
+      }
+
+
+      // Disponibiliza para o app.js e para
+      // qualquer outro script da página.
+
+      window.userRole =
+        role;
+
+      window.currentUser =
+        user;
+
+
+      console.log(
+        "Perfil do usuário:",
+        role
+      );
+
+
+      atualizarInterfacePorPerfil(
+        role
+      );
+
+    }
+
+
+    // ================================================
+    // ATUALIZAR INTERFACE CONFORME O PERFIL
+    // ================================================
+
+    function atualizarInterfacePorPerfil(role) {
+
+      const isAdmin =
+        role === "administrador";
+
+
+      const avatar =
+        document.getElementById(
+          "userAvatar"
+        );
+
+      const roleLabel =
+        document.getElementById(
+          "userRoleLabel"
+        );
+
+      const manageProductsButton =
+        document.getElementById(
+          "manageProductsButton"
+        );
+
+      const openHistoryButton =
+        document.getElementById(
+          "openHistoryButton"
+        );
+
+
+      if (avatar) {
+
+        avatar.textContent =
+          isAdmin
+            ? "AD"
+            : "CL";
+
+      }
+
+
+      if (roleLabel) {
+
+        roleLabel.textContent =
+          isAdmin
+            ? "Administrador"
+            : "Cliente";
+
+      }
+
+
+      if (manageProductsButton) {
+
+        manageProductsButton.classList.toggle(
+          "hidden",
+          !isAdmin
+        );
+
+      }
+
+
+      if (openHistoryButton) {
+
+        openHistoryButton.classList.toggle(
+          "hidden",
+          !isAdmin
+        );
+
+      }
+
+    }
+
+
     onAuthStateChanged(
       auth,
-      (user) => {
+      async (user) => {
 
         if (!user) {
 
@@ -1369,8 +1552,20 @@
           user.email
         );
 
+
+        // Busca o perfil (role) antes de revelar
+        // a página, para já abrir com a interface
+        // correta (sem "flash" de botão de admin
+        // aparecendo e sumindo).
+
+        await loadUserRole(
+          user
+        );
+
+
         // Só revela a página depois de
-        // confirmar que o usuário está logado.
+        // confirmar que o usuário está logado
+        // e o perfil foi carregado.
 
         document.body.style.visibility =
           "visible";
