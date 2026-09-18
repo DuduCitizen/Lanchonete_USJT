@@ -194,6 +194,37 @@ const deleteProductButton =
 
 
 // ======================================================
+// ELEMENTOS DOS RELATÓRIOS (ADMIN)
+// ======================================================
+
+const reportsButton =
+  document.getElementById("reportsButton");
+
+const reportsModal =
+  document.getElementById("reportsModal");
+
+const closeReportsModal =
+  document.getElementById("closeReportsModal");
+
+const dailyRevenueList =
+  document.getElementById("dailyRevenueList");
+
+const lowStockList =
+  document.getElementById("lowStockList");
+
+
+// ======================================================
+// LIMITE DE ESTOQUE BAIXO
+//
+// Produto disponível com stock igual ou menor que este
+// valor entra na lista de "Estoque baixo" do relatório.
+// stock === 0 é destacado como "crítico" (sem estoque).
+// ======================================================
+
+const LOW_STOCK_THRESHOLD = 5;
+
+
+// ======================================================
 // FORMATAÇÃO DE PREÇO
 // ======================================================
 
@@ -4042,6 +4073,352 @@ if (productForm) {
 
 
 // ======================================================
+// ======================================================
+// RELATÓRIOS (ADMIN) — FATURAMENTO + ESTOQUE BAIXO
+// ======================================================
+// ======================================================
+//
+// Reaproveita os arrays "sales" e "products" já
+// carregados pelo restante do app (loadSales() e
+// loadProducts()) — não inventa nenhuma leitura nova
+// no Firestore além do que as Security Rules já
+// liberam para administrador.
+// ======================================================
+
+
+// ======================================================
+// AGRUPAR VENDAS POR DIA
+// ======================================================
+
+function calcularFaturamentoPorDia() {
+
+  const porDia = {};
+
+
+  sales.forEach(
+    sale => {
+
+      const data =
+        getSaleDate(
+          sale.createdAt
+        );
+
+
+      if (!data) {
+        return;
+      }
+
+
+      const ano =
+        data.getFullYear()
+          .toString()
+          .padStart(4, "0");
+
+
+      const mes =
+        String(
+          data.getMonth() + 1
+        ).padStart(2, "0");
+
+
+      const dia =
+        String(
+          data.getDate()
+        ).padStart(2, "0");
+
+
+      const chave =
+        `${ano}-${mes}-${dia}`;
+
+
+      if (!porDia[chave]) {
+
+        porDia[chave] = {
+
+          faturamento: 0,
+
+          quantidade: 0
+
+        };
+
+      }
+
+
+      porDia[chave].faturamento +=
+        Number(sale.total) || 0;
+
+
+      porDia[chave].quantidade +=
+        1;
+
+    }
+  );
+
+
+  // ==================================================
+  // ORDENAR DO DIA MAIS RECENTE PARA O MAIS ANTIGO
+  // E LIMITAR AOS ÚLTIMOS 14 DIAS COM MOVIMENTO
+  // ==================================================
+
+  return Object.entries(porDia)
+    .sort(
+      (a, b) =>
+        b[0].localeCompare(a[0])
+    )
+    .slice(0, 14);
+
+}
+
+
+// ======================================================
+// RENDERIZAR FATURAMENTO POR DIA
+// ======================================================
+
+function renderDailyRevenue() {
+
+  if (!dailyRevenueList) {
+    return;
+  }
+
+
+  const dias =
+    calcularFaturamentoPorDia();
+
+
+  if (!dias.length) {
+
+    dailyRevenueList.innerHTML = `
+
+      <div class="reports-empty">
+        Nenhuma venda registrada ainda.
+      </div>
+
+    `;
+
+    return;
+
+  }
+
+
+  const maiorFaturamento =
+    Math.max(
+      ...dias.map(
+        ([, dados]) =>
+          dados.faturamento
+      )
+    );
+
+
+  dailyRevenueList.innerHTML =
+    dias
+      .map(
+        ([chave, dados]) => {
+
+          const [
+            ano,
+            mes,
+            dia
+          ] =
+            chave.split("-");
+
+
+          const dataExibicao =
+            `${dia}/${mes}/${ano}`;
+
+
+          const percentual =
+            maiorFaturamento > 0
+              ? Math.round(
+                  (
+                    dados.faturamento /
+                    maiorFaturamento
+                  ) * 100
+                )
+              : 0;
+
+
+          return `
+
+            <div class="daily-revenue-row">
+
+              <span class="daily-revenue-date">
+                ${dataExibicao}
+              </span>
+
+              <div class="daily-revenue-bar-track">
+
+                <div
+                  class="daily-revenue-bar-fill"
+                  style="width: ${percentual}%">
+                </div>
+
+              </div>
+
+              <span class="daily-revenue-value">
+                ${brl(dados.faturamento)}
+              </span>
+
+            </div>
+
+          `;
+
+        }
+      )
+      .join("");
+
+}
+
+
+// ======================================================
+// RENDERIZAR ESTOQUE BAIXO
+// ======================================================
+
+function renderLowStock() {
+
+  if (!lowStockList) {
+    return;
+  }
+
+
+  const produtosComEstoqueBaixo =
+    products
+      .filter(
+        product =>
+          product.available &&
+          product.stock <=
+          LOW_STOCK_THRESHOLD
+      )
+      .sort(
+        (a, b) =>
+          a.stock - b.stock
+      );
+
+
+  if (!produtosComEstoqueBaixo.length) {
+
+    lowStockList.innerHTML = `
+
+      <div class="reports-empty">
+        Nenhum produto com estoque baixo. 🎉
+      </div>
+
+    `;
+
+    return;
+
+  }
+
+
+  lowStockList.innerHTML =
+    produtosComEstoqueBaixo
+      .map(
+        product => {
+
+          const critico =
+            product.stock === 0;
+
+
+          return `
+
+            <div class="low-stock-row">
+
+              <div class="low-stock-emoji">
+                ${product.emoji}
+              </div>
+
+              <div class="low-stock-info">
+
+                <strong>
+                  ${escapeHtml(product.name)}
+                </strong>
+
+                <small>
+                  ${escapeHtml(product.category)}
+                </small>
+
+              </div>
+
+              <span class="low-stock-badge ${
+                critico
+                  ? "critico"
+                  : "baixo"
+              }">
+                ${
+                  critico
+                    ? "Sem estoque"
+                    : `${product.stock} un.`
+                }
+              </span>
+
+            </div>
+
+          `;
+
+        }
+      )
+      .join("");
+
+}
+
+
+// ======================================================
+// ABRIR MODAL DE RELATÓRIOS
+// ======================================================
+
+async function openReports() {
+
+  await loadProducts();
+
+  await loadSales();
+
+
+  renderDailyRevenue();
+
+  renderLowStock();
+
+
+  reportsModal.classList.remove(
+    "hidden"
+  );
+
+}
+
+
+// ======================================================
+// BOTÃO "RELATÓRIOS"
+// ======================================================
+
+if (reportsButton) {
+
+  reportsButton.addEventListener(
+    "click",
+    openReports
+  );
+
+}
+
+
+// ======================================================
+// FECHAR MODAL DE RELATÓRIOS
+// ======================================================
+
+if (closeReportsModal) {
+
+  closeReportsModal.addEventListener(
+    "click",
+    () => {
+
+      closeModal(
+        reportsModal
+      );
+
+    }
+  );
+
+}
+
+
+// ======================================================
 // FECHAR MODAL DE DETALHES CLICANDO FORA
 // ======================================================
 
@@ -4106,6 +4483,11 @@ document.addEventListener(
 
     closeModal(
       productFormModal
+    );
+
+
+    closeModal(
+      reportsModal
     );
 
   }
