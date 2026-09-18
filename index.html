@@ -1275,6 +1275,325 @@
 
 
   <!-- ==================================================
+       MODAL DE GESTÃO DE PRODUTOS (SÓ ADMINISTRADOR)
+
+       Lista todos os produtos cadastrados, com ações
+       para editar, ativar/desativar e excluir. O botão
+       que abre esse modal (manageProductsButton) só
+       fica visível para role === "administrador", e as
+       Firestore Security Rules bloqueiam qualquer
+       escrita completa em "produtos" para quem não é
+       admin — então essa tela é reforço de UX, não a
+       única camada de proteção.
+  =================================================== -->
+
+  <div
+    class="modal-backdrop hidden"
+    id="productManageModal">
+
+
+    <div
+      class="modal admin-modal"
+      role="dialog"
+      aria-modal="true">
+
+
+      <button
+        class="modal-close"
+        id="closeProductManageModal"
+        aria-label="Fechar">
+
+        ×
+
+      </button>
+
+
+
+      <div class="admin-modal-header">
+
+        <div>
+
+          <span class="section-kicker">
+            GESTÃO
+          </span>
+
+          <h2>
+            Produtos cadastrados
+          </h2>
+
+        </div>
+
+
+        <button
+          class="primary-button"
+          id="addProductButton"
+          type="button">
+
+          + Novo produto
+
+        </button>
+
+      </div>
+
+
+
+      <div
+        id="adminProductList"
+        class="admin-product-list">
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+
+  <!-- ==================================================
+       MODAL DE FORMULÁRIO DE PRODUTO (CRIAR/EDITAR)
+  =================================================== -->
+
+  <div
+    class="modal-backdrop hidden"
+    id="productFormModal">
+
+
+    <div
+      class="modal admin-modal"
+      role="dialog"
+      aria-modal="true">
+
+
+      <button
+        class="modal-close"
+        id="closeProductFormModal"
+        aria-label="Fechar">
+
+        ×
+
+      </button>
+
+
+
+      <span class="section-kicker">
+        GESTÃO
+      </span>
+
+
+      <h2 id="productFormTitle">
+        Novo produto
+      </h2>
+
+
+      <form id="productForm">
+
+
+        <!-- ID do produto (vazio = criação) -->
+
+        <input
+          type="hidden"
+          id="productFormId">
+
+
+        <div class="form-grid">
+
+
+          <div class="full">
+
+            <label
+              class="field-label"
+              for="productFormName">
+
+              Nome do produto
+
+            </label>
+
+
+            <input
+              class="text-input"
+              id="productFormName"
+              type="text"
+              placeholder="Ex: X-Salada"
+              required>
+
+          </div>
+
+
+          <div>
+
+            <label
+              class="field-label"
+              for="productFormCategory">
+
+              Categoria
+
+            </label>
+
+
+            <select
+              class="text-input"
+              id="productFormCategory">
+
+              <option value="Lanches">
+                Lanches
+              </option>
+
+              <option value="Combos">
+                Combos
+              </option>
+
+              <option value="Porções">
+                Porções
+              </option>
+
+              <option value="Bebidas">
+                Bebidas
+              </option>
+
+              <option value="Sobremesas">
+                Sobremesas
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <div>
+
+            <label
+              class="field-label"
+              for="productFormEmoji">
+
+              Emoji / ícone
+
+            </label>
+
+
+            <input
+              class="text-input"
+              id="productFormEmoji"
+              type="text"
+              placeholder="🍔"
+              maxlength="4">
+
+          </div>
+
+
+          <div>
+
+            <label
+              class="field-label"
+              for="productFormPrice">
+
+              Preço (R$)
+
+            </label>
+
+
+            <input
+              class="text-input"
+              id="productFormPrice"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="0,00"
+              required>
+
+          </div>
+
+
+          <div>
+
+            <label
+              class="field-label"
+              for="productFormStock">
+
+              Estoque inicial
+
+            </label>
+
+
+            <input
+              class="text-input"
+              id="productFormStock"
+              type="number"
+              min="0"
+              step="1"
+              placeholder="0"
+              required>
+
+          </div>
+
+
+          <div class="full">
+
+            <label
+              class="field-label"
+              for="productFormDescription">
+
+              Descrição
+
+            </label>
+
+
+            <textarea
+              class="textarea-input"
+              id="productFormDescription"
+              placeholder="Descrição curta do produto"></textarea>
+
+          </div>
+
+
+          <div class="full checkbox-field">
+
+            <input
+              type="checkbox"
+              id="productFormAvailable"
+              checked>
+
+            <label for="productFormAvailable">
+              Produto disponível para venda
+            </label>
+
+          </div>
+
+        </div>
+
+
+
+        <div class="admin-form-actions">
+
+          <button
+            class="detail-button hidden"
+            id="deleteProductButton"
+            type="button">
+
+            🗑️ Excluir produto
+
+          </button>
+
+
+          <button
+            class="checkout-button"
+            id="productFormSubmitButton"
+            type="submit">
+
+            Cadastrar produto
+
+          </button>
+
+        </div>
+
+      </form>
+
+    </div>
+
+  </div>
+
+
+
+  <!-- ==================================================
        TOAST
   =================================================== -->
 
