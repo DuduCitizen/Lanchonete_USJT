@@ -1458,6 +1458,140 @@ h1, h2, h3, h4 {
 
 
 /* ==========================================================================
+   RELATÓRIOS (ADMIN) — FATURAMENTO + ESTOQUE BAIXO
+========================================================================== */
+
+.reports-modal h2 {
+  margin: 6px 0 4px;
+  font-size: 25px;
+}
+
+.reports-section {
+  margin-top: 26px;
+}
+
+.reports-section-title {
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px dashed var(--line);
+}
+
+.reports-empty {
+  padding: 30px 16px;
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+/* Faturamento por dia --------------------------------------------------- */
+
+.daily-revenue-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 260px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.daily-revenue-row {
+  display: grid;
+  grid-template-columns: 78px 1fr auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.daily-revenue-date {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.daily-revenue-bar-track {
+  height: 14px;
+  background: var(--paper-shade);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.daily-revenue-bar-fill {
+  height: 100%;
+  min-width: 3px;
+  background: linear-gradient(90deg, var(--flame), var(--flame-dark));
+  border-radius: 999px;
+}
+
+.daily-revenue-value {
+  font-family: var(--font-mono);
+  font-weight: 800;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* Estoque baixo ----------------------------------------------------------- */
+
+.low-stock-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.low-stock-row {
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px dashed var(--line);
+}
+
+.low-stock-row:last-child { border-bottom: 0; }
+
+.low-stock-emoji {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  background: var(--paper-shade);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font-size: 18px;
+}
+
+.low-stock-info strong {
+  display: block;
+  font-size: 13px;
+}
+
+.low-stock-info small {
+  color: var(--ink-soft);
+  font-size: 11px;
+}
+
+.low-stock-badge {
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.low-stock-badge.baixo {
+  background: var(--flame-soft);
+  color: var(--flame-dark);
+}
+
+.low-stock-badge.critico {
+  background: var(--stop-soft);
+  color: var(--stop);
+}
+
+
+/* ==========================================================================
    TOAST
 ========================================================================== */
 
