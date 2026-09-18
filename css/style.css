@@ -1261,6 +1261,203 @@ h1, h2, h3, h4 {
 
 
 /* ==========================================================================
+   GESTÃO DE PRODUTOS (ADMIN) — CRUD
+========================================================================== */
+
+.admin-modal {
+  width: min(720px, 100%);
+  padding: 34px;
+}
+
+.admin-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+  padding-right: 30px;
+}
+
+.admin-modal-header h2 {
+  margin: 6px 0 0;
+  font-size: 25px;
+}
+
+.admin-modal-header .primary-button {
+  white-space: nowrap;
+}
+
+.admin-product-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 55vh;
+  overflow-y: auto;
+}
+
+.admin-product-row {
+  display: grid;
+  grid-template-columns: 46px 1fr auto auto;
+  gap: 14px;
+  align-items: center;
+  padding: 13px 0;
+  border-bottom: 1px dashed var(--line);
+}
+
+.admin-product-row:last-child { border-bottom: 0; }
+
+.admin-product-emoji {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  background: var(--paper-shade);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font-size: 22px;
+}
+
+.admin-product-info { min-width: 0; }
+
+.admin-product-info strong {
+  display: block;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-product-info small {
+  display: block;
+  margin-top: 2px;
+  color: var(--ink-soft);
+  font-size: 11px;
+}
+
+.admin-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: fit-content;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  white-space: nowrap;
+}
+
+.admin-status-badge::before { content: "●"; font-size: 7px; }
+
+.admin-status-badge.available {
+  background: var(--ready-soft);
+  color: var(--ready);
+}
+
+.admin-status-badge.unavailable {
+  background: var(--stop-soft);
+  color: var(--stop);
+}
+
+.admin-product-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.admin-icon-button {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  box-shadow: var(--stamp-sm);
+  transition: transform .12s ease;
+}
+
+.admin-icon-button:hover { transform: translate(-1px, -1px); }
+
+.admin-icon-button.danger {
+  background: var(--stop-soft);
+  border-color: var(--stop);
+  color: var(--stop);
+}
+
+.admin-empty {
+  padding: 50px 20px;
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+/* Formulário de produto -------------------------------------------------- */
+
+.admin-modal h2#productFormTitle {
+  margin: 6px 0 20px;
+  font-size: 26px;
+  text-transform: none;
+  font-family: var(--font-body);
+  font-weight: 800;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 16px;
+}
+
+.form-grid .full { grid-column: 1 / -1; }
+
+.textarea-input {
+  width: 100%;
+  min-height: 76px;
+  border: 2px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  outline: none;
+  background: var(--paper);
+  font-family: var(--font-body);
+  resize: vertical;
+}
+
+.textarea-input:focus { border-color: var(--flame); }
+
+.checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 4px;
+}
+
+.checkbox-field input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--flame);
+}
+
+.checkbox-field label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.admin-form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.admin-form-actions .checkout-button {
+  width: auto;
+  flex: 1;
+}
+
+
+/* ==========================================================================
    TOAST
 ========================================================================== */
 
@@ -1315,6 +1512,23 @@ h1, h2, h3, h4 {
 @media (max-width: 850px) {
   .history-stats { grid-template-columns: repeat(2, 1fr); }
   .sale-details-modal { padding: 26px; }
+}
+
+@media (max-width: 720px) {
+  .admin-modal { padding: 24px 18px; }
+
+  .admin-product-row {
+    grid-template-columns: 40px 1fr;
+    row-gap: 8px;
+  }
+
+  .admin-status-badge { grid-column: 2; }
+  .admin-product-actions { grid-column: 1 / -1; justify-content: flex-end; }
+
+  .form-grid { grid-template-columns: 1fr; }
+
+  .admin-form-actions { flex-direction: column-reverse; align-items: stretch; }
+  .admin-form-actions .checkout-button { width: 100%; }
 }
 
 @media (max-width: 760px) {
