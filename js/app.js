@@ -5,7 +5,10 @@ import {
   serverTimestamp,
   runTransaction,
   setDoc,
-  increment
+  increment,
+  addDoc,
+  updateDoc,
+  deleteDoc
 } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
 
@@ -126,6 +129,68 @@ const saleDetailsModal =
 
 const closeSaleDetailsModal =
   document.getElementById("closeSaleDetailsModal");
+
+
+// ======================================================
+// ELEMENTOS DA GESTÃO DE PRODUTOS (ADMIN)
+// ======================================================
+
+const manageProductsButton =
+  document.getElementById("manageProductsButton");
+
+const productManageModal =
+  document.getElementById("productManageModal");
+
+const closeProductManageModal =
+  document.getElementById("closeProductManageModal");
+
+const adminProductList =
+  document.getElementById("adminProductList");
+
+const addProductButton =
+  document.getElementById("addProductButton");
+
+const productFormModal =
+  document.getElementById("productFormModal");
+
+const closeProductFormModal =
+  document.getElementById("closeProductFormModal");
+
+const productForm =
+  document.getElementById("productForm");
+
+const productFormTitle =
+  document.getElementById("productFormTitle");
+
+const productFormId =
+  document.getElementById("productFormId");
+
+const productFormName =
+  document.getElementById("productFormName");
+
+const productFormCategory =
+  document.getElementById("productFormCategory");
+
+const productFormEmoji =
+  document.getElementById("productFormEmoji");
+
+const productFormPrice =
+  document.getElementById("productFormPrice");
+
+const productFormStock =
+  document.getElementById("productFormStock");
+
+const productFormDescription =
+  document.getElementById("productFormDescription");
+
+const productFormAvailable =
+  document.getElementById("productFormAvailable");
+
+const productFormSubmitButton =
+  document.getElementById("productFormSubmitButton");
+
+const deleteProductButton =
+  document.getElementById("deleteProductButton");
 
 
 // ======================================================
@@ -3280,6 +3345,703 @@ if (closeSaleDetailsModal) {
 
 
 // ======================================================
+// ======================================================
+// GESTÃO DE PRODUTOS (ADMIN) — CRUD
+// ======================================================
+// ======================================================
+//
+// Regras de segurança do Firestore:
+// - criar/excluir produto: só administrador
+// - editar produto (qualquer campo): só administrador
+// - editar produto (só o campo "stock", diminuindo):
+//   qualquer autenticado (é o que o checkout usa)
+//
+// Ou seja: tudo que acontece aqui embaixo só funciona
+// de fato se quem estiver logado for administrador —
+// o botão que abre essa tela já vem escondido pra quem
+// não é, mas a garantia real está nas Security Rules.
+// ======================================================
+
+
+// ======================================================
+// RENDERIZAR LISTA DE PRODUTOS (ADMIN)
+// ======================================================
+
+function renderAdminProductList() {
+
+  if (!adminProductList) {
+    return;
+  }
+
+
+  if (!products.length) {
+
+    adminProductList.innerHTML = `
+
+      <div class="admin-empty">
+        Nenhum produto cadastrado ainda. Clique em
+        "+ Novo produto" para começar.
+      </div>
+
+    `;
+
+    return;
+
+  }
+
+
+  adminProductList.innerHTML =
+    products
+      .map(
+        product => {
+
+          const statusClass =
+            product.available
+              ? "available"
+              : "unavailable";
+
+
+          const statusLabel =
+            product.available
+              ? (
+                  product.stock > 0
+                    ? "Disponível"
+                    : "Sem estoque"
+                )
+              : "Inativo";
+
+
+          return `
+
+            <div class="admin-product-row">
+
+              <div class="admin-product-emoji">
+                ${product.emoji}
+              </div>
+
+              <div class="admin-product-info">
+
+                <strong>
+                  ${escapeHtml(product.name)}
+                </strong>
+
+                <small>
+                  ${escapeHtml(product.category)} •
+                  ${brl(product.price)} •
+                  Estoque: ${product.stock}
+                </small>
+
+              </div>
+
+              <span class="admin-status-badge ${statusClass}">
+                ${statusLabel}
+              </span>
+
+              <div class="admin-product-actions">
+
+                <button
+                  class="admin-icon-button"
+                  type="button"
+                  data-admin-action="edit"
+                  data-id="${product.id}"
+                  aria-label="Editar produto">
+                  ✏️
+                </button>
+
+                <button
+                  class="admin-icon-button"
+                  type="button"
+                  data-admin-action="toggle"
+                  data-id="${product.id}"
+                  aria-label="Ativar ou desativar produto">
+                  ${product.available ? "🚫" : "✅"}
+                </button>
+
+                <button
+                  class="admin-icon-button danger"
+                  type="button"
+                  data-admin-action="delete"
+                  data-id="${product.id}"
+                  aria-label="Excluir produto">
+                  🗑️
+                </button>
+
+              </div>
+
+            </div>
+
+          `;
+
+        }
+      )
+      .join("");
+
+}
+
+
+// ======================================================
+// ABRIR MODAL DE GESTÃO DE PRODUTOS
+// ======================================================
+
+async function openProductManage() {
+
+  await loadProducts();
+
+  renderAdminProductList();
+
+  productManageModal.classList.remove(
+    "hidden"
+  );
+
+}
+
+
+// ======================================================
+// ABRIR FORMULÁRIO (CRIAR OU EDITAR)
+// ======================================================
+
+function openProductForm(productId) {
+
+  const product =
+    productId
+      ? products.find(
+          item =>
+            item.id === productId
+        )
+      : null;
+
+
+  productFormId.value =
+    product
+      ? product.id
+      : "";
+
+
+  productFormTitle.textContent =
+    product
+      ? "Editar produto"
+      : "Novo produto";
+
+
+  productFormName.value =
+    product
+      ? product.name
+      : "";
+
+
+  productFormCategory.value =
+    product
+      ? product.category
+      : "Lanches";
+
+
+  productFormEmoji.value =
+    product
+      ? product.emoji
+      : "🍔";
+
+
+  productFormPrice.value =
+    product
+      ? product.price
+      : "";
+
+
+  productFormStock.value =
+    product
+      ? product.stock
+      : "";
+
+
+  productFormDescription.value =
+    product
+      ? product.description
+      : "";
+
+
+  productFormAvailable.checked =
+    product
+      ? product.available
+      : true;
+
+
+  productFormSubmitButton.textContent =
+    product
+      ? "Salvar alterações"
+      : "Cadastrar produto";
+
+
+  deleteProductButton.classList.toggle(
+    "hidden",
+    !product
+  );
+
+
+  productFormModal.classList.remove(
+    "hidden"
+  );
+
+}
+
+
+// ======================================================
+// ATIVAR / DESATIVAR PRODUTO
+// ======================================================
+
+async function toggleProductAvailability(
+  productId
+) {
+
+  const product =
+    products.find(
+      item =>
+        item.id === productId
+    );
+
+
+  if (!product) {
+    return;
+  }
+
+
+  try {
+
+    await updateDoc(
+      doc(
+        window.db,
+        "produtos",
+        productId
+      ),
+      {
+        available:
+          !product.available
+      }
+    );
+
+
+    showToast(
+      `${product.name} agora está ${
+        !product.available
+          ? "disponível"
+          : "inativo"
+      }.`
+    );
+
+
+    await loadProducts();
+
+    renderAdminProductList();
+
+
+  } catch (error) {
+
+    console.error(
+      "Erro ao atualizar disponibilidade:",
+      error
+    );
+
+
+    showToast(
+      "Não foi possível atualizar o produto."
+    );
+
+  }
+
+}
+
+
+// ======================================================
+// EXCLUIR PRODUTO
+// ======================================================
+
+async function deleteProduct(
+  productId
+) {
+
+  const product =
+    products.find(
+      item =>
+        item.id === productId
+    );
+
+
+  if (!product) {
+    return;
+  }
+
+
+  const confirmado =
+    window.confirm(
+      `Excluir "${product.name}" definitivamente? Essa ação não pode ser desfeita.`
+    );
+
+
+  if (!confirmado) {
+    return;
+  }
+
+
+  try {
+
+    await deleteDoc(
+      doc(
+        window.db,
+        "produtos",
+        productId
+      )
+    );
+
+
+    showToast(
+      `${product.name} excluído.`
+    );
+
+
+    await loadProducts();
+
+    renderAdminProductList();
+
+
+  } catch (error) {
+
+    console.error(
+      "Erro ao excluir produto:",
+      error
+    );
+
+
+    showToast(
+      "Não foi possível excluir o produto."
+    );
+
+  }
+
+}
+
+
+// ======================================================
+// BOTÃO "GERENCIAR PRODUTOS" (ABRE A LISTAGEM)
+// ======================================================
+
+if (manageProductsButton) {
+
+  manageProductsButton.addEventListener(
+    "click",
+    openProductManage
+  );
+
+}
+
+
+// ======================================================
+// FECHAR MODAL DE GESTÃO
+// ======================================================
+
+if (closeProductManageModal) {
+
+  closeProductManageModal.addEventListener(
+    "click",
+    () => {
+
+      closeModal(
+        productManageModal
+      );
+
+    }
+  );
+
+}
+
+
+// ======================================================
+// BOTÃO "+ NOVO PRODUTO"
+// ======================================================
+
+if (addProductButton) {
+
+  addProductButton.addEventListener(
+    "click",
+    () => {
+
+      openProductForm(
+        null
+      );
+
+    }
+  );
+
+}
+
+
+// ======================================================
+// CLIQUES NA LISTA DE PRODUTOS (ADMIN)
+// ======================================================
+
+if (adminProductList) {
+
+  adminProductList.addEventListener(
+    "click",
+    event => {
+
+      const button =
+        event.target.closest(
+          "[data-admin-action]"
+        );
+
+
+      if (!button) {
+        return;
+      }
+
+
+      const id =
+        button.dataset.id;
+
+
+      const action =
+        button.dataset.adminAction;
+
+
+      if (action === "edit") {
+
+        openProductForm(
+          id
+        );
+
+      }
+
+
+      if (action === "toggle") {
+
+        toggleProductAvailability(
+          id
+        );
+
+      }
+
+
+      if (action === "delete") {
+
+        deleteProduct(
+          id
+        );
+
+      }
+
+    }
+  );
+
+}
+
+
+// ======================================================
+// FECHAR MODAL DO FORMULÁRIO
+// ======================================================
+
+if (closeProductFormModal) {
+
+  closeProductFormModal.addEventListener(
+    "click",
+    () => {
+
+      closeModal(
+        productFormModal
+      );
+
+    }
+  );
+
+}
+
+
+// ======================================================
+// EXCLUIR PRODUTO A PARTIR DO FORMULÁRIO
+// ======================================================
+
+if (deleteProductButton) {
+
+  deleteProductButton.addEventListener(
+    "click",
+    async () => {
+
+      const id =
+        productFormId.value;
+
+
+      if (!id) {
+        return;
+      }
+
+
+      await deleteProduct(
+        id
+      );
+
+
+      closeModal(
+        productFormModal
+      );
+
+    }
+  );
+
+}
+
+
+// ======================================================
+// ENVIAR FORMULÁRIO (CRIAR OU SALVAR EDIÇÃO)
+// ======================================================
+
+if (productForm) {
+
+  productForm.addEventListener(
+    "submit",
+    async event => {
+
+      event.preventDefault();
+
+
+      const id =
+        productFormId.value;
+
+
+      const name =
+        productFormName.value.trim();
+
+
+      if (!name) {
+
+        showToast(
+          "Informe o nome do produto."
+        );
+
+        return;
+
+      }
+
+
+      const productData = {
+
+        name:
+          name,
+
+        category:
+          productFormCategory.value,
+
+        emoji:
+          productFormEmoji.value.trim() ||
+          "🍔",
+
+        price:
+          Number(
+            productFormPrice.value
+          ) || 0,
+
+        stock:
+          Math.max(
+            0,
+            Number(
+              productFormStock.value
+            ) || 0
+          ),
+
+        description:
+          productFormDescription.value.trim() ||
+          "Sem descrição disponível.",
+
+        available:
+          productFormAvailable.checked
+
+      };
+
+
+      productFormSubmitButton.disabled =
+        true;
+
+
+      productFormSubmitButton.textContent =
+        "Salvando...";
+
+
+      try {
+
+        if (id) {
+
+          await updateDoc(
+            doc(
+              window.db,
+              "produtos",
+              id
+            ),
+            productData
+          );
+
+
+          showToast(
+            `${productData.name} atualizado.`
+          );
+
+        } else {
+
+          await addDoc(
+            collection(
+              window.db,
+              "produtos"
+            ),
+            productData
+          );
+
+
+          showToast(
+            `${productData.name} cadastrado.`
+          );
+
+        }
+
+
+        closeModal(
+          productFormModal
+        );
+
+
+        await loadProducts();
+
+        renderAdminProductList();
+
+
+      } catch (error) {
+
+        console.error(
+          "Erro ao salvar produto:",
+          error
+        );
+
+
+        showToast(
+          "Não foi possível salvar o produto."
+        );
+
+
+      } finally {
+
+        productFormSubmitButton.disabled =
+          false;
+
+
+        productFormSubmitButton.textContent =
+          id
+            ? "Salvar alterações"
+            : "Cadastrar produto";
+
+      }
+
+    }
+  );
+
+}
+
+
+// ======================================================
 // FECHAR MODAL DE DETALHES CLICANDO FORA
 // ======================================================
 
@@ -3334,6 +4096,16 @@ document.addEventListener(
 
     closeModal(
       saleDetailsModal
+    );
+
+
+    closeModal(
+      productManageModal
+    );
+
+
+    closeModal(
+      productFormModal
     );
 
   }
