@@ -464,6 +464,25 @@
 
     /* =================================================
        IMPORTS DO FIREBASE
+
+       ALTERADO:
+       signInWithRedirect / getRedirectResult
+       ↓
+       signInWithPopup
+
+       O fluxo de redirect depende de armazenamento
+       (sessionStorage/IndexedDB) sobrevivendo à ida e
+       volta para o domínio do Google. Em ambiente local
+       (localhost, ou pior, abrindo o arquivo direto com
+       file://) isso costuma falhar silenciosamente: o
+       usuário escolhe a conta, o Google redireciona de
+       volta, mas o Firebase não encontra o estado salvo
+       e getRedirectResult() retorna null — sem erro
+       nenhum, só a tela de login "reaparecendo" como se
+       nada tivesse acontecido. signInWithPopup evita
+       esse problema porque a autenticação toda acontece
+       numa janela separada, sem depender de estado
+       persistido entre navegações da página principal.
     ================================================= */
 
     import {
@@ -475,8 +494,7 @@
       getAuth,
       signInWithEmailAndPassword,
       GoogleAuthProvider,
-      signInWithRedirect,
-      getRedirectResult
+      signInWithPopup
     } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
 
 
@@ -594,105 +612,6 @@
         "";
 
       successMessage.classList.remove("show");
-
-    }
-
-
-    /* =================================================
-       VERIFICAR RESULTADO DO LOGIN GOOGLE
-       
-       O Google retorna para esta página depois
-       do redirecionamento.
-    ================================================= */
-
-    try {
-
-      const redirectResult =
-        await getRedirectResult(auth);
-
-
-      if (redirectResult) {
-
-        showSuccess(
-          "Login com Google realizado! Redirecionando..."
-        );
-
-
-        setTimeout(() => {
-
-          window.location.href =
-            "index.html";
-
-        }, 500);
-
-      }
-
-    } catch (error) {
-
-      console.error(
-        "Erro no retorno do Google:",
-        error
-      );
-
-
-      let message =
-        "Não foi possível concluir o login com o Google.";
-
-
-      switch (error.code) {
-
-        case "auth/unauthorized-domain":
-
-          message =
-            "Este domínio não está autorizado no Firebase Authentication.";
-
-          break;
-
-
-        case "auth/account-exists-with-different-credential":
-
-          message =
-            "Já existe uma conta com este e-mail usando outro método de login.";
-
-          break;
-
-
-        case "auth/api-key-not-valid":
-
-          message =
-            "A configuração do Firebase está incorreta. Verifique a API Key.";
-
-          break;
-
-
-        case "auth/network-request-failed":
-
-          message =
-            "Erro de conexão. Verifique sua internet.";
-
-          break;
-
-
-        default:
-
-          message =
-            "Não foi possível concluir o login com o Google.";
-
-          break;
-
-      }
-
-
-      showError(message);
-
-      googleButton.disabled =
-        false;
-
-      loginButton.disabled =
-        false;
-
-      googleButton.textContent =
-        "🔵 Entrar com Google";
 
     }
 
@@ -849,15 +768,7 @@
 
 
     /* =================================================
-       LOGIN COM GOOGLE
-       
-       ALTERADO:
-       signInWithPopup()
-       ↓
-       signInWithRedirect()
-
-       Isso evita o problema de popup/OAuth
-       no ambiente local.
+       LOGIN COM GOOGLE (POPUP)
     ================================================= */
 
     googleButton.addEventListener(
@@ -894,22 +805,44 @@
 
 
           /*
-            Redireciona para o Google.
-            
-            Depois do login, o Google retorna
-            automaticamente para esta página.
+            Abre o seletor de conta do Google numa
+            janela popup. A Promise só resolve quando
+            o usuário termina o login (ou fecha/cancela
+            a janela), então dá pra tratar sucesso e
+            erro no mesmo lugar, sem depender de
+            getRedirectResult() numa navegação futura.
           */
 
-          await signInWithRedirect(
-            auth,
-            provider
+          const result =
+            await signInWithPopup(
+              auth,
+              provider
+            );
+
+
+          console.log(
+            "Login com Google concluído:",
+            result.user.email
           );
+
+
+          showSuccess(
+            "Login com Google realizado! Redirecionando..."
+          );
+
+
+          setTimeout(() => {
+
+            window.location.href =
+              "index.html";
+
+          }, 500);
 
 
         } catch (error) {
 
           console.error(
-            "Erro ao iniciar login com Google:",
+            "Erro ao entrar com Google:",
             error
           );
 
@@ -920,10 +853,46 @@
 
           switch (error.code) {
 
+            case "auth/popup-closed-by-user":
+
+              message =
+                "A janela de login foi fechada antes de concluir.";
+
+              break;
+
+
+            case "auth/popup-blocked":
+
+              message =
+                "O navegador bloqueou a janela de login. Permita pop-ups para este site e tente novamente.";
+
+              break;
+
+
+            case "auth/cancelled-popup-request":
+
+              // Acontece quando o usuário clica
+              // duas vezes rápido — não é um erro
+              // real, então não mostra mensagem.
+
+              message =
+                null;
+
+              break;
+
+
             case "auth/unauthorized-domain":
 
               message =
-                "Este domínio não está autorizado no Firebase Authentication.";
+                "Este domínio não está autorizado no Firebase Authentication. Adicione-o em Authentication → Settings → Authorized domains.";
+
+              break;
+
+
+            case "auth/account-exists-with-different-credential":
+
+              message =
+                "Já existe uma conta com este e-mail usando outro método de login.";
 
               break;
 
@@ -954,7 +923,11 @@
           }
 
 
-          showError(message);
+          if (message) {
+
+            showError(message);
+
+          }
 
 
           googleButton.disabled =
