@@ -92,6 +92,24 @@
 
 
       <!-- ==================================================
+           BOTÃO RELATÓRIOS (SÓ ADMINISTRADOR)
+
+           Escondido por padrão, mesma lógica dos outros
+           botões de admin.
+      =================================================== -->
+
+      <button
+        class="history-button hidden"
+        id="reportsButton"
+        type="button">
+
+        📊
+        <span>Relatórios</span>
+
+      </button>
+
+
+      <!-- ==================================================
            BOTÃO GERENCIAR PRODUTOS (SÓ ADMINISTRADOR)
 
            Escondido por padrão. Só é revelado pelo script
@@ -1594,6 +1612,105 @@
 
 
   <!-- ==================================================
+       MODAL DE RELATÓRIOS (SÓ ADMINISTRADOR)
+
+       Dois blocos:
+       1. Faturamento por dia — soma o campo "total" das
+          vendas já carregadas (array "sales"), agrupado
+          por data, dos últimos dias com movimento.
+       2. Estoque baixo — produtos disponíveis com stock
+          igual ou abaixo do limite definido em
+          LOW_STOCK_THRESHOLD, no app.js.
+
+       Não faz nenhuma leitura nova além do que já é
+       protegido pelas Security Rules (vendas e produtos
+       só de leitura liberada como um todo pra admin).
+  =================================================== -->
+
+  <div
+    class="modal-backdrop hidden"
+    id="reportsModal">
+
+
+    <div
+      class="modal admin-modal reports-modal"
+      role="dialog"
+      aria-modal="true">
+
+
+      <button
+        class="modal-close"
+        id="closeReportsModal"
+        aria-label="Fechar">
+
+        ×
+
+      </button>
+
+
+
+      <span class="section-kicker">
+        GESTÃO
+      </span>
+
+
+      <h2>
+        Relatórios
+      </h2>
+
+
+
+      <!-- FATURAMENTO POR DIA -->
+
+      <div class="reports-section">
+
+        <div class="reports-section-title">
+
+          <span class="section-kicker">
+            Faturamento por dia
+          </span>
+
+        </div>
+
+
+        <div
+          id="dailyRevenueList"
+          class="daily-revenue-list">
+
+        </div>
+
+      </div>
+
+
+
+      <!-- ESTOQUE BAIXO -->
+
+      <div class="reports-section">
+
+        <div class="reports-section-title">
+
+          <span class="section-kicker">
+            Estoque baixo
+          </span>
+
+        </div>
+
+
+        <div
+          id="lowStockList"
+          class="low-stock-list">
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+
+  <!-- ==================================================
        TOAST
   =================================================== -->
 
@@ -1810,6 +1927,11 @@
           "openHistoryButton"
         );
 
+      const reportsButton =
+        document.getElementById(
+          "reportsButton"
+        );
+
 
       if (avatar) {
 
@@ -1844,6 +1966,16 @@
       if (openHistoryButton) {
 
         openHistoryButton.classList.toggle(
+          "hidden",
+          !isAdmin
+        );
+
+      }
+
+
+      if (reportsButton) {
+
+        reportsButton.classList.toggle(
           "hidden",
           !isAdmin
         );
