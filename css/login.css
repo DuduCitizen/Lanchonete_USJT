@@ -1,0 +1,335 @@
+/* ==========================================================================
+   BYTE BURGER · LOGIN
+   Mesma identidade do PDV: fundo escuro, verde neon, bordas tech/pixel.
+   Todos os ids e classes do login.html foram mantidos.
+========================================================================== */
+
+:root {
+  --bg: #050505;
+  --bg-soft: #0a0c0a;
+  --surface: #0d100d;
+  --text: #ffffff;
+  --muted: #a7ada7;
+  --gray: #5c615c;
+
+  --neon: #39ff14;
+  --neon-dark: #22c20a;
+  --lime: #b6ff00;
+
+  --line: rgba(57, 255, 20, .26);
+  --line-strong: rgba(57, 255, 20, .6);
+  --neon-soft: rgba(57, 255, 20, .1);
+
+  --danger: #ff4d4d;
+
+  --font-ui: "Orbitron", "Montserrat", sans-serif;
+  --font-body: "Montserrat", ui-sans-serif, system-ui, sans-serif;
+
+  --notch: polygon(
+    6px 0, calc(100% - 6px) 0, 100% 6px,
+    100% calc(100% - 6px), calc(100% - 6px) 100%,
+    6px 100%, 0 calc(100% - 6px), 0 6px
+  );
+
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  font-family: var(--font-body);
+  color: var(--text);
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(ellipse 60% 45% at 85% -5%, rgba(57, 255, 20, .16), transparent 60%),
+    radial-gradient(ellipse 50% 40% at 0% 100%, rgba(182, 255, 0, .07), transparent 60%),
+    linear-gradient(rgba(57, 255, 20, .035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(57, 255, 20, .035) 1px, transparent 1px);
+  background-size: auto, auto, 32px 32px, 32px 32px;
+}
+
+::selection { background: var(--neon); color: var(--bg); }
+
+button, input { font: inherit; color: inherit; }
+
+button:focus-visible, input:focus-visible {
+  outline: 2px solid var(--neon);
+  outline-offset: 2px;
+}
+
+.login-container { width: min(430px, 100%); }
+
+
+/* ======================================================
+   MARCA
+====================================================== */
+
+.brand { text-align: center; margin-bottom: 26px; }
+
+.brand-icon {
+  width: 68px;
+  height: 68px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 16px;
+  border: 2px solid var(--neon);
+  border-radius: 14px;
+  background: var(--bg);
+  box-shadow: 0 0 22px rgba(57, 255, 20, .4), inset 0 0 14px rgba(57, 255, 20, .15);
+  font-size: 32px;
+}
+
+.brand-icon svg { width: 42px; height: 42px; display: block; }
+
+.brand h1 {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-weight: 900;
+  font-size: 38px;
+  line-height: 1;
+  letter-spacing: .1em;
+  color: var(--text);
+}
+
+.brand h1 em { font-style: normal; color: var(--neon); }
+
+.brand p {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 10px 0 0;
+  color: var(--neon);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .45em;
+  text-transform: uppercase;
+}
+
+.brand p::before, .brand p::after {
+  content: "";
+  width: 22px;
+  height: 2px;
+  background: var(--neon);
+}
+
+
+/* ======================================================
+   CARD DE LOGIN
+====================================================== */
+
+.login-card {
+  position: relative;
+  padding: 32px 30px;
+  background: var(--surface);
+  border: 1.5px solid var(--line-strong);
+  border-radius: 4px;
+  box-shadow: 0 0 30px rgba(57, 255, 20, .22), 0 24px 60px rgba(0, 0, 0, .6);
+}
+
+/* cantos tech */
+.login-card::before, .login-card::after {
+  content: "";
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  pointer-events: none;
+}
+
+.login-card::before {
+  top: -1px;
+  left: -1px;
+  border-top: 3px solid var(--neon);
+  border-left: 3px solid var(--neon);
+}
+
+.login-card::after {
+  right: -1px;
+  bottom: -1px;
+  border-right: 3px solid var(--neon);
+  border-bottom: 3px solid var(--neon);
+}
+
+.login-card h2 {
+  margin: 0 0 6px;
+  font-family: "Bebas Neue", "Arial Narrow", sans-serif;
+  font-weight: 400;
+  font-size: 34px;
+  line-height: 1;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.login-description {
+  margin: 0 0 24px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+
+/* ======================================================
+   CAMPOS
+====================================================== */
+
+.field { margin-bottom: 16px; }
+
+.field label {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--muted);
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.field input {
+  width: 100%;
+  padding: 13px 14px;
+  border: 1.5px solid var(--line);
+  border-radius: 2px;
+  outline: none;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.field input::placeholder { color: var(--gray); }
+
+.field input:focus {
+  border-color: var(--neon);
+  box-shadow: 0 0 10px rgba(57, 255, 20, .3);
+}
+
+
+/* ======================================================
+   BOTÕES
+====================================================== */
+
+.login-button {
+  width: 100%;
+  padding: 14px;
+  border: 0;
+  background: var(--neon);
+  color: var(--bg);
+  font-family: var(--font-ui);
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  clip-path: var(--notch);
+  transition: background .15s ease, transform .15s ease, filter .15s ease;
+}
+
+.login-button:hover {
+  background: var(--lime);
+  filter: drop-shadow(0 0 6px rgba(182, 255, 0, .6));
+}
+
+.login-button:active { transform: translateY(1px); }
+
+.login-button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+  filter: none;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 22px 0;
+  color: var(--gray);
+  font-family: var(--font-ui);
+  font-size: 10px;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+}
+
+.divider::before, .divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+.google-button {
+  width: 100%;
+  padding: 13px;
+  border: 1.5px solid var(--neon);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--neon);
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background .15s ease, box-shadow .15s ease;
+}
+
+.google-button:hover {
+  background: var(--neon-soft);
+  box-shadow: 0 0 14px rgba(57, 255, 20, .3);
+}
+
+.google-button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+
+/* ======================================================
+   MENSAGENS
+====================================================== */
+
+.error-message, .success-message {
+  display: none;
+  margin-bottom: 16px;
+  padding: 11px 13px;
+  border-radius: 2px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.error-message {
+  background: rgba(255, 77, 77, .1);
+  color: var(--danger);
+  border: 1px solid rgba(255, 77, 77, .5);
+}
+
+.success-message {
+  background: var(--neon-soft);
+  color: var(--neon);
+  border: 1px solid var(--line-strong);
+}
+
+.error-message.show, .success-message.show { display: block; }
+
+
+/* ======================================================
+   RODAPÉ
+====================================================== */
+
+.footer {
+  margin-top: 20px;
+  text-align: center;
+  color: var(--gray);
+  font-family: var(--font-ui);
+  font-size: 9px;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+}
+
+.footer strong { color: var(--neon); font-weight: 700; }
