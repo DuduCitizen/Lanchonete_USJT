@@ -5,308 +5,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>Lancheira | Login</title>
+  <title>Byte Burger | Login</title>
 
-  <style>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Cg fill='%2339ff14'%3E%3Crect x='4' y='1' width='8' height='1'/%3E%3Crect x='3' y='2' width='10' height='1'/%3E%3Crect x='2' y='3' width='12' height='2'/%3E%3Crect x='1' y='6' width='14' height='1'/%3E%3Crect x='2' y='11' width='12' height='1'/%3E%3Crect x='3' y='12' width='10' height='2'/%3E%3C/g%3E%3Crect x='2' y='8' width='12' height='2' fill='%23b6ff00'/%3E%3C/svg%3E">
 
-    :root {
-      --bg: #f7f7f5;
-      --surface: #ffffff;
-      --text: #1e1e1e;
-      --muted: #747474;
-      --line: #e8e8e5;
-      --accent: #e85d04;
-      --accent-dark: #c94d00;
-      --soft-accent: #fff0e6;
-    }
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;500;600;700;800&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-
-      display: grid;
-      place-items: center;
-
-      padding: 20px;
-
-      font-family:
-        Inter,
-        ui-sans-serif,
-        system-ui,
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        sans-serif;
-
-      background:
-        radial-gradient(
-          circle at top right,
-          #fff0e6 0,
-          transparent 35%
-        ),
-        var(--bg);
-
-      color: var(--text);
-    }
-
-    button,
-    input {
-      font: inherit;
-    }
-
-    .login-container {
-      width: min(430px, 100%);
-    }
-
-    .brand {
-      text-align: center;
-      margin-bottom: 24px;
-    }
-
-    .brand-icon {
-      width: 64px;
-      height: 64px;
-
-      display: grid;
-      place-items: center;
-
-      margin: 0 auto 14px;
-
-      border-radius: 18px;
-
-      background: var(--soft-accent);
-
-      font-size: 32px;
-    }
-
-    .brand h1 {
-      margin: 0;
-      font-size: 27px;
-    }
-
-    .brand p {
-      margin: 6px 0 0;
-
-      color: var(--muted);
-
-      font-size: 13px;
-    }
-
-    .login-card {
-      padding: 30px;
-
-      background: var(--surface);
-
-      border: 1px solid var(--line);
-
-      border-radius: 20px;
-
-      box-shadow:
-        0 20px 60px rgba(30, 30, 30, .08);
-    }
-
-    .login-card h2 {
-      margin: 0 0 6px;
-
-      font-size: 23px;
-    }
-
-    .login-description {
-      margin: 0 0 24px;
-
-      color: var(--muted);
-
-      font-size: 13px;
-      line-height: 1.5;
-    }
-
-    .field {
-      margin-bottom: 16px;
-    }
-
-    .field label {
-      display: block;
-
-      margin-bottom: 7px;
-
-      font-size: 12px;
-      font-weight: 800;
-    }
-
-    .field input {
-      width: 100%;
-
-      padding: 13px 14px;
-
-      border: 1px solid var(--line);
-
-      border-radius: 10px;
-
-      outline: none;
-
-      font: inherit;
-
-      background: white;
-    }
-
-    .field input:focus {
-      border-color: var(--accent);
-    }
-
-    .login-button {
-      width: 100%;
-
-      padding: 13px;
-
-      border: 0;
-
-      border-radius: 10px;
-
-      background: var(--accent);
-
-      color: white;
-
-      font-weight: 800;
-
-      cursor: pointer;
-
-      transition:
-        background .18s ease,
-        transform .18s ease;
-    }
-
-    .login-button:hover {
-      background: var(--accent-dark);
-    }
-
-    .login-button:active {
-      transform: translateY(1px);
-    }
-
-    .login-button:disabled {
-      opacity: .6;
-      cursor: not-allowed;
-    }
-
-    .divider {
-      display: flex;
-      align-items: center;
-
-      gap: 12px;
-
-      margin: 22px 0;
-
-      color: #aaa;
-
-      font-size: 11px;
-    }
-
-    .divider::before,
-    .divider::after {
-      content: "";
-
-      flex: 1;
-
-      height: 1px;
-
-      background: var(--line);
-    }
-
-    .google-button {
-      width: 100%;
-
-      padding: 12px;
-
-      border: 1px solid var(--line);
-
-      border-radius: 10px;
-
-      background: white;
-
-      color: var(--text);
-
-      font-weight: 700;
-
-      cursor: pointer;
-
-      transition:
-        background .18s ease,
-        border-color .18s ease;
-    }
-
-    .google-button:hover {
-      background: #fafafa;
-      border-color: #d8d8d5;
-    }
-
-    .google-button:disabled {
-      opacity: .6;
-      cursor: not-allowed;
-    }
-
-    .error-message {
-      display: none;
-
-      margin-bottom: 16px;
-
-      padding: 11px 13px;
-
-      border-radius: 10px;
-
-      background: #fff0f0;
-
-      color: #b42318;
-
-      border: 1px solid #ffd6d6;
-
-      font-size: 12px;
-
-      line-height: 1.4;
-    }
-
-    .error-message.show {
-      display: block;
-    }
-
-    .success-message {
-      display: none;
-
-      margin-bottom: 16px;
-
-      padding: 11px 13px;
-
-      border-radius: 10px;
-
-      background: #effaf2;
-
-      color: #187a35;
-
-      border: 1px solid #ccebd3;
-
-      font-size: 12px;
-
-      line-height: 1.4;
-    }
-
-    .success-message.show {
-      display: block;
-    }
-
-    .footer {
-      margin-top: 18px;
-
-      text-align: center;
-
-      color: #999;
-
-      font-size: 11px;
-    }
-
-  </style>
+  <link rel="stylesheet" href="css/login.css">
 
 </head>
 
@@ -323,15 +30,15 @@
     <div class="brand">
 
       <div class="brand-icon">
-        🍔
+        <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges" aria-hidden="true"><g fill="#39ff14"><rect x="4" y="1" width="8" height="1"/><rect x="3" y="2" width="10" height="1"/><rect x="2" y="3" width="12" height="2"/><rect x="1" y="6" width="14" height="1"/><rect x="2" y="11" width="12" height="1"/><rect x="3" y="12" width="10" height="2"/></g><rect x="2" y="8" width="12" height="2" fill="#b6ff00"/><g fill="#050505"><rect x="6" y="2" width="1" height="1"/><rect x="9" y="2" width="1" height="1"/><rect x="7" y="3" width="1" height="1"/></g></svg>
       </div>
 
       <h1>
-        Lancheira
+        BYT<em>E</em>
       </h1>
 
       <p>
-        Sistema PDV • Lanchonete
+        Burger • PDV
       </p>
 
     </div>
@@ -449,7 +156,7 @@
     =========================================== -->
 
     <div class="footer">
-      Lancheira • Sistema de Ponto de Venda
+      Byte Burger • Sistema de Ponto de Venda
     </div>
 
 
@@ -465,24 +172,13 @@
     /* =================================================
        IMPORTS DO FIREBASE
 
-       ALTERADO:
-       signInWithRedirect / getRedirectResult
-       ↓
-       signInWithPopup
-
-       O fluxo de redirect depende de armazenamento
+       signInWithPopup (em vez de signInWithRedirect):
+       o fluxo de redirect depende de armazenamento
        (sessionStorage/IndexedDB) sobrevivendo à ida e
        volta para o domínio do Google. Em ambiente local
-       (localhost, ou pior, abrindo o arquivo direto com
-       file://) isso costuma falhar silenciosamente: o
-       usuário escolhe a conta, o Google redireciona de
-       volta, mas o Firebase não encontra o estado salvo
-       e getRedirectResult() retorna null — sem erro
-       nenhum, só a tela de login "reaparecendo" como se
-       nada tivesse acontecido. signInWithPopup evita
+       isso costuma falhar silenciosamente. O popup evita
        esse problema porque a autenticação toda acontece
-       numa janela separada, sem depender de estado
-       persistido entre navegações da página principal.
+       numa janela separada.
     ================================================= */
 
     import {
