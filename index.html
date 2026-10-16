@@ -5,11 +5,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>Lancheira | PDV</title>
+  <title>Byte Burger | PDV</title>
+
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Cg fill='%2339ff14'%3E%3Crect x='4' y='1' width='8' height='1'/%3E%3Crect x='3' y='2' width='10' height='1'/%3E%3Crect x='2' y='3' width='12' height='2'/%3E%3Crect x='1' y='6' width='14' height='1'/%3E%3Crect x='2' y='11' width='12' height='1'/%3E%3Crect x='3' y='12' width='10' height='2'/%3E%3C/g%3E%3Crect x='2' y='8' width='12' height='2' fill='%23b6ff00'/%3E%3C/svg%3E">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Anton&family=JetBrains+Mono:wght@400;500;700&family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;500;600;700;800&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="css/style.css">
 
@@ -42,12 +44,12 @@
     <div class="brand">
 
       <div class="brand-icon">
-        🍔
+        <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges" aria-hidden="true"><g fill="#39ff14"><rect x="4" y="1" width="8" height="1"/><rect x="3" y="2" width="10" height="1"/><rect x="2" y="3" width="12" height="2"/><rect x="1" y="6" width="14" height="1"/><rect x="2" y="11" width="12" height="1"/><rect x="3" y="12" width="10" height="2"/></g><rect x="2" y="8" width="12" height="2" fill="#b6ff00"/><g fill="#050505"><rect x="6" y="2" width="1" height="1"/><rect x="9" y="2" width="1" height="1"/><rect x="7" y="3" width="1" height="1"/></g></svg>
       </div>
 
       <div>
-        <h1>Lancheira</h1>
-        <span>PDV • Lanchonete</span>
+        <h1>BYT<em>E</em></h1>
+        <span>Burger • PDV</span>
       </div>
 
     </div>
@@ -91,12 +93,7 @@
       </button>
 
 
-      <!-- ==================================================
-           BOTÃO RELATÓRIOS (SÓ ADMINISTRADOR)
-
-           Escondido por padrão, mesma lógica dos outros
-           botões de admin.
-      =================================================== -->
+      <!-- BOTÃO RELATÓRIOS (SÓ ADMINISTRADOR) -->
 
       <button
         class="history-button hidden"
@@ -173,9 +170,7 @@
   <main class="page">
 
 
-    <!-- ==================================================
-         BANNER
-    =================================================== -->
+    <!-- BANNER -->
 
     <section class="hero">
 
@@ -186,7 +181,7 @@
         </span>
 
         <h2>
-          Escolha seu lanche.
+          Sabor de outro nível.
         </h2>
 
         <p>
@@ -205,14 +200,10 @@
 
 
 
-    <!-- ==================================================
-         BUSCA E CATEGORIAS
-    =================================================== -->
+    <!-- BUSCA E CATEGORIAS -->
 
     <section class="toolbar">
 
-
-      <!-- BUSCA -->
 
       <div class="search-box">
 
@@ -229,13 +220,9 @@
       </div>
 
 
-
-      <!-- CATEGORIAS -->
-
       <div
         class="categories"
         id="categoryButtons">
-
 
         <button
           class="category active"
@@ -245,7 +232,6 @@
 
         </button>
 
-
         <button
           class="category"
           data-category="Lanches">
@@ -253,7 +239,6 @@
           Lanches
 
         </button>
-
 
         <button
           class="category"
@@ -263,7 +248,6 @@
 
         </button>
 
-
         <button
           class="category"
           data-category="Porções">
@@ -272,7 +256,6 @@
 
         </button>
 
-
         <button
           class="category"
           data-category="Bebidas">
@@ -280,7 +263,6 @@
           Bebidas
 
         </button>
-
 
         <button
           class="category"
@@ -296,23 +278,16 @@
 
 
 
-    <!-- ==================================================
-         PRODUTOS + CARRINHO
-    =================================================== -->
+    <!-- PRODUTOS + CARRINHO -->
 
     <section
       class="content-layout"
       id="pdvSection">
 
 
-      <!-- ==================================================
-           LISTA DE PRODUTOS
-      =================================================== -->
+      <!-- LISTA DE PRODUTOS -->
 
       <div>
-
-
-        <!-- CABEÇALHO -->
 
         <div class="section-heading">
 
@@ -328,7 +303,6 @@
 
           </div>
 
-
           <span
             id="productResult"
             class="result-count">
@@ -338,18 +312,12 @@
         </div>
 
 
-
-        <!-- GRID DOS PRODUTOS -->
-
         <div
           id="productGrid"
           class="product-grid">
 
         </div>
 
-
-
-        <!-- ESTADO VAZIO -->
 
         <div
           id="emptyState"
@@ -373,16 +341,11 @@
 
 
 
-      <!-- ==================================================
-           CARRINHO
-      =================================================== -->
+      <!-- CARRINHO -->
 
       <aside
         class="cart-panel"
         id="cartPanel">
-
-
-        <!-- CABEÇALHO DO CARRINHO -->
 
         <div class="cart-header">
 
@@ -398,7 +361,6 @@
 
           </div>
 
-
           <button
             class="clear-button"
             id="clearCartButton">
@@ -409,9 +371,6 @@
 
         </div>
 
-
-
-        <!-- ITENS DO CARRINHO -->
 
         <div
           id="cartItems"
@@ -436,11 +395,7 @@
         </div>
 
 
-
-        <!-- RESUMO -->
-
         <div class="cart-summary">
-
 
           <div>
 
@@ -454,7 +409,6 @@
 
           </div>
 
-
           <div>
 
             <span>
@@ -467,7 +421,6 @@
 
           </div>
 
-
           <div class="total-row">
 
             <span>
@@ -479,7 +432,6 @@
             </strong>
 
           </div>
-
 
           <button
             class="checkout-button"
@@ -498,18 +450,11 @@
 
 
 
-    <!-- ==================================================
-         HISTÓRICO DE VENDAS
-    =================================================== -->
+    <!-- HISTÓRICO DE VENDAS -->
 
     <section
       class="history-section hidden"
       id="historySection">
-
-
-      <!-- ==================================================
-           CABEÇALHO DO HISTÓRICO
-      =================================================== -->
 
       <div class="history-heading">
 
@@ -529,7 +474,6 @@
 
         </div>
 
-
         <button
           class="history-back-button"
           id="backToPdvButton"
@@ -542,15 +486,9 @@
       </div>
 
 
-
-      <!-- ==================================================
-           RESUMO DO HISTÓRICO
-      =================================================== -->
+      <!-- RESUMO DO HISTÓRICO -->
 
       <div class="history-stats">
-
-
-        <!-- TOTAL DE VENDAS -->
 
         <div class="history-stat-card">
 
@@ -572,9 +510,6 @@
 
         </div>
 
-
-        <!-- FATURAMENTO -->
-
         <div class="history-stat-card">
 
           <div class="history-stat-icon">
@@ -594,9 +529,6 @@
           </div>
 
         </div>
-
-
-        <!-- TICKET MÉDIO -->
 
         <div class="history-stat-card">
 
@@ -621,15 +553,9 @@
       </div>
 
 
-
-      <!-- ==================================================
-           FILTROS
-      =================================================== -->
+      <!-- FILTROS -->
 
       <div class="history-filters">
-
-
-        <!-- BUSCA -->
 
         <div class="history-search">
 
@@ -645,10 +571,6 @@
 
         </div>
 
-
-
-        <!-- DATA -->
-
         <div class="history-date">
 
           <label for="historyDateFilter">
@@ -660,10 +582,6 @@
             type="date">
 
         </div>
-
-
-
-        <!-- PAGAMENTO -->
 
         <div class="history-payment">
 
@@ -698,10 +616,6 @@
 
         </div>
 
-
-
-        <!-- LIMPAR FILTROS -->
-
         <button
           class="clear-history-button"
           id="clearHistoryFilters"
@@ -714,15 +628,9 @@
       </div>
 
 
-
-      <!-- ==================================================
-           LISTA DE VENDAS
-      =================================================== -->
+      <!-- LISTA DE VENDAS -->
 
       <div class="history-card">
-
-
-        <!-- CABEÇALHO DA TABELA -->
 
         <div class="history-table-header">
 
@@ -757,13 +665,9 @@
         </div>
 
 
-
-        <!-- CONTEÚDO -->
-
         <div
           id="salesHistory"
           class="sales-history">
-
 
           <div class="history-loading">
 
@@ -783,9 +687,6 @@
 
         </div>
 
-
-
-        <!-- ESTADO VAZIO -->
 
         <div
           id="historyEmptyState"
@@ -807,7 +708,6 @@
 
       </div>
 
-
     </section>
 
   </main>
@@ -822,13 +722,11 @@
     class="modal-backdrop hidden"
     id="productModal">
 
-
     <div
       class="modal product-modal"
       role="dialog"
       aria-modal="true"
       aria-labelledby="modalProductName">
-
 
       <button
         class="modal-close"
@@ -839,8 +737,6 @@
 
       </button>
 
-
-
       <div
         class="modal-product-image"
         id="modalProductImage">
@@ -849,10 +745,7 @@
 
       </div>
 
-
-
       <div class="modal-content">
-
 
         <span
           class="modal-category"
@@ -860,15 +753,11 @@
 
         </span>
 
-
         <h2 id="modalProductName">
         </h2>
 
-
         <p id="modalProductDescription">
         </p>
-
-
 
         <div class="modal-meta">
 
@@ -877,7 +766,6 @@
 
           </strong>
 
-
           <span
             id="modalProductCode">
 
@@ -885,10 +773,7 @@
 
         </div>
 
-
-
         <div class="quantity-control">
-
 
           <button
             id="modalDecrease"
@@ -898,11 +783,9 @@
 
           </button>
 
-
           <span id="modalQuantity">
             1
           </span>
-
 
           <button
             id="modalIncrease"
@@ -913,8 +796,6 @@
           </button>
 
         </div>
-
-
 
         <button
           class="primary-button"
@@ -941,12 +822,10 @@
     class="modal-backdrop hidden"
     id="checkoutModal">
 
-
     <div
       class="modal checkout-modal"
       role="dialog"
       aria-modal="true">
-
 
       <button
         class="modal-close"
@@ -957,18 +836,13 @@
 
       </button>
 
-
-
       <span class="section-kicker">
         FECHAMENTO
       </span>
 
-
       <h2>
         Finalizar venda
       </h2>
-
-
 
       <div class="checkout-total">
 
@@ -982,8 +856,6 @@
 
       </div>
 
-
-
       <label
         class="field-label"
         for="customerName">
@@ -991,7 +863,6 @@
         Cliente
 
       </label>
-
 
       <input
         class="text-input"
@@ -1018,7 +889,6 @@
 
       </label>
 
-
       <input
         class="text-input"
         id="customerPhone"
@@ -1027,16 +897,13 @@
         autocomplete="off">
 
 
-
       <span class="field-label">
 
         Forma de pagamento
 
       </span>
 
-
       <div class="payment-options">
-
 
         <label>
 
@@ -1052,7 +919,6 @@
 
         </label>
 
-
         <label>
 
           <input
@@ -1066,7 +932,6 @@
 
         </label>
 
-
         <label>
 
           <input
@@ -1079,7 +944,6 @@
           </span>
 
         </label>
-
 
         <label>
 
@@ -1095,8 +959,6 @@
         </label>
 
       </div>
-
-
 
       <button
         class="checkout-button"
@@ -1121,13 +983,11 @@
     class="modal-backdrop hidden"
     id="saleDetailsModal">
 
-
     <div
       class="modal sale-details-modal"
       role="dialog"
       aria-modal="true"
       aria-labelledby="saleDetailsTitle">
-
 
       <button
         class="modal-close"
@@ -1137,8 +997,6 @@
         ×
 
       </button>
-
-
 
       <div class="sale-details-header">
 
@@ -1158,10 +1016,7 @@
 
       </div>
 
-
-
       <div class="sale-details-info">
-
 
         <div class="sale-info-item">
 
@@ -1175,7 +1030,6 @@
 
         </div>
 
-
         <div class="sale-info-item">
 
           <span>
@@ -1188,7 +1042,6 @@
 
         </div>
 
-
         <div class="sale-info-item">
 
           <span>
@@ -1200,7 +1053,6 @@
           </strong>
 
         </div>
-
 
         <div class="sale-info-item">
 
@@ -1220,8 +1072,6 @@
 
       </div>
 
-
-
       <div class="sale-details-items">
 
         <div class="sale-details-section-title">
@@ -1232,7 +1082,6 @@
 
         </div>
 
-
         <div
           id="saleDetailsItems"
           class="sale-items-list">
@@ -1241,10 +1090,7 @@
 
       </div>
 
-
-
       <div class="sale-details-summary">
-
 
         <div>
 
@@ -1258,7 +1104,6 @@
 
         </div>
 
-
         <div>
 
           <span>
@@ -1270,7 +1115,6 @@
           </strong>
 
         </div>
-
 
         <div class="sale-details-total">
 
@@ -1309,12 +1153,10 @@
     class="modal-backdrop hidden"
     id="productManageModal">
 
-
     <div
       class="modal admin-modal"
       role="dialog"
       aria-modal="true">
-
 
       <button
         class="modal-close"
@@ -1324,8 +1166,6 @@
         ×
 
       </button>
-
-
 
       <div class="admin-modal-header">
 
@@ -1341,7 +1181,6 @@
 
         </div>
 
-
         <button
           class="primary-button"
           id="addProductButton"
@@ -1352,8 +1191,6 @@
         </button>
 
       </div>
-
-
 
       <div
         id="adminProductList"
@@ -1375,12 +1212,10 @@
     class="modal-backdrop hidden"
     id="productFormModal">
 
-
     <div
       class="modal admin-modal"
       role="dialog"
       aria-modal="true">
-
 
       <button
         class="modal-close"
@@ -1391,20 +1226,15 @@
 
       </button>
 
-
-
       <span class="section-kicker">
         GESTÃO
       </span>
-
 
       <h2 id="productFormTitle">
         Novo produto
       </h2>
 
-
       <form id="productForm">
-
 
         <!-- ID do produto (vazio = criação) -->
 
@@ -1412,9 +1242,7 @@
           type="hidden"
           id="productFormId">
 
-
         <div class="form-grid">
-
 
           <div class="full">
 
@@ -1426,7 +1254,6 @@
 
             </label>
 
-
             <input
               class="text-input"
               id="productFormName"
@@ -1435,7 +1262,6 @@
               required>
 
           </div>
-
 
           <div>
 
@@ -1446,7 +1272,6 @@
               Categoria
 
             </label>
-
 
             <select
               class="text-input"
@@ -1476,7 +1301,6 @@
 
           </div>
 
-
           <div>
 
             <label
@@ -1487,7 +1311,6 @@
 
             </label>
 
-
             <input
               class="text-input"
               id="productFormEmoji"
@@ -1496,7 +1319,6 @@
               maxlength="4">
 
           </div>
-
 
           <div>
 
@@ -1507,7 +1329,6 @@
               Preço (R$)
 
             </label>
-
 
             <input
               class="text-input"
@@ -1520,7 +1341,6 @@
 
           </div>
 
-
           <div>
 
             <label
@@ -1530,7 +1350,6 @@
               Estoque inicial
 
             </label>
-
 
             <input
               class="text-input"
@@ -1543,7 +1362,6 @@
 
           </div>
 
-
           <div class="full">
 
             <label
@@ -1554,14 +1372,12 @@
 
             </label>
 
-
             <textarea
               class="textarea-input"
               id="productFormDescription"
               placeholder="Descrição curta do produto"></textarea>
 
           </div>
-
 
           <div class="full checkbox-field">
 
@@ -1578,8 +1394,6 @@
 
         </div>
 
-
-
         <div class="admin-form-actions">
 
           <button
@@ -1590,7 +1404,6 @@
             🗑️ Excluir produto
 
           </button>
-
 
           <button
             class="checkout-button"
@@ -1621,22 +1434,16 @@
        2. Estoque baixo — produtos disponíveis com stock
           igual ou abaixo do limite definido em
           LOW_STOCK_THRESHOLD, no app.js.
-
-       Não faz nenhuma leitura nova além do que já é
-       protegido pelas Security Rules (vendas e produtos
-       só de leitura liberada como um todo pra admin).
   =================================================== -->
 
   <div
     class="modal-backdrop hidden"
     id="reportsModal">
 
-
     <div
       class="modal admin-modal reports-modal"
       role="dialog"
       aria-modal="true">
-
 
       <button
         class="modal-close"
@@ -1647,18 +1454,13 @@
 
       </button>
 
-
-
       <span class="section-kicker">
         GESTÃO
       </span>
 
-
       <h2>
         Relatórios
       </h2>
-
-
 
       <!-- FATURAMENTO POR DIA -->
 
@@ -1672,7 +1474,6 @@
 
         </div>
 
-
         <div
           id="dailyRevenueList"
           class="daily-revenue-list">
@@ -1680,8 +1481,6 @@
         </div>
 
       </div>
-
-
 
       <!-- ESTOQUE BAIXO -->
 
@@ -1694,7 +1493,6 @@
           </span>
 
         </div>
-
 
         <div
           id="lowStockList"
@@ -1710,9 +1508,7 @@
 
 
 
-  <!-- ==================================================
-       TOAST
-  =================================================== -->
+  <!-- TOAST -->
 
   <div
     class="toast hidden"
@@ -2028,9 +1824,7 @@
 
 
 
-  <!-- ==================================================
-       APP.JS
-  =================================================== -->
+  <!-- APP.JS -->
 
   <script
     type="module"
