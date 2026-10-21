@@ -750,6 +750,31 @@ function addToCart(
   quantity = 1
 ) {
 
+  // ====================================================
+  // VISITANTE (SESSÃO ANÔNIMA) NÃO COMPRA
+  //
+  // window.userRole é definido pelo script de
+  // autenticação em index.html assim que a sessão
+  // (anônima ou real) é confirmada. "Comprar" aqui
+  // significa literalmente clicar em adicionar algo
+  // ao carrinho — é o ponto único por onde passam tanto
+  // o botão "+ Adicionar" do card quanto "Adicionar ao
+  // pedido" do modal de detalhes.
+  // ====================================================
+
+  if (
+    window.userRole ===
+    "visitante"
+  ) {
+
+    window.location.href =
+      "login.html";
+
+    return;
+
+  }
+
+
   const product =
     products.find(
       item =>
@@ -1570,16 +1595,13 @@ document
 // A lógica original desta função foi preservada.
 // A transação agora faz:
 // 1. leitura dos produtos
-// 2. leitura do cliente (CRM), se telefone informado
-// 3. validação do estoque
-// 4. baixa do estoque
-// 5. criação da venda
-// 6. criação/atualização do cliente (CRM)
+// 2. validação do estoque
+// 3. baixa do estoque
+// 4. criação da venda
+// 5. criação/atualização do cliente (CRM)
 //
 // O Firestore exige que TODAS as leituras aconteçam
-// antes de QUALQUER escrita dentro de uma transação,
-// por isso a leitura do cliente entra junto com a
-// leitura dos produtos, no início da transação.
+// antes de QUALQUER escrita dentro de uma transação.
 // ======================================================
 
 async function finalizeSale() {
@@ -3385,7 +3407,8 @@ if (closeSaleDetailsModal) {
 // - criar/excluir produto: só administrador
 // - editar produto (qualquer campo): só administrador
 // - editar produto (só o campo "stock", diminuindo):
-//   qualquer autenticado (é o que o checkout usa)
+//   qualquer autenticado de verdade, não-anônimo (é o
+//   que o checkout usa)
 //
 // Ou seja: tudo que acontece aqui embaixo só funciona
 // de fato se quem estiver logado for administrador —
@@ -4498,13 +4521,43 @@ document.addEventListener(
 // INICIALIZAÇÃO
 // ======================================================
 
-loadProducts();
+// renderCart() não depende de nenhuma leitura no
+// Firestore, então pode rodar assim que o script carrega.
 
 renderCart();
 
 
 // ======================================================
-// CARREGAR HISTÓRICO EM SEGUNDO PLANO
+// FUNÇÃO EXPOSTA PARA O SCRIPT DE AUTENTICAÇÃO
+//
+// loadProducts() e loadSales() fazem leitura no
+// Firestore, e as Security Rules dependem de existir
+// uma sessão (anônima ou de verdade) autenticada. Por
+// isso elas NÃO rodam mais assim que o app.js carrega —
+// index.html chama window.iniciarApp() só depois que o
+// Firebase confirma essa sessão, evitando um erro de
+// "permissão insuficiente" no instante antes da sessão
+// anônima terminar de ser criada.
+//
+// loadSales() só roda para administrador: para
+// visitante e cliente, a leitura de "vendas" é negada
+// pelas regras mesmo (histórico é admin-only), então
+// nem vale tentar — evita um toast de erro desnecessário
+// toda vez que a página carrega.
 // ======================================================
 
-loadSales();
+window.iniciarApp = () => {
+
+  loadProducts();
+
+
+  if (
+    window.userRole ===
+    "administrador"
+  ) {
+
+    loadSales();
+
+  }
+
+};
