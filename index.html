@@ -16,13 +16,16 @@
   <link rel="stylesheet" href="css/style.css">
 
   <!-- ==================================================
-       GUARDA DE AUTENTICAÇÃO (ANTI-FLASH)
+       GUARDA ANTI-FLASH
 
        Esconde a página imediatamente. Só volta a
-       aparecer depois que o Firebase confirmar que
-       existe um usuário logado (ver script no fim
-       do <body>). Fica ANTES do CSS externo de
-       propósito, pra já esconder mesmo se o
+       aparecer depois que o Firebase confirmar ALGUMA
+       sessão — anônima (visitante navegando) ou real
+       (cliente/admin logado) — ver script no fim do
+       <body>. O cardápio é público agora; isso aqui só
+       evita o "flash" de conteúdo antes da sessão
+       anônima terminar de ser criada. Fica ANTES do CSS
+       externo de propósito, pra já esconder mesmo se o
        stylesheet demorar a carregar.
   =================================================== -->
 
@@ -143,17 +146,24 @@
       </div>
 
 
-      <!-- BOTÃO SAIR -->
+      <!-- ==================================================
+           BOTÃO SAIR / ENTRAR
+
+           Dupla função: para quem está logado de verdade,
+           funciona como "Sair" (signOut). Para quem está
+           numa sessão anônima (visitante), vira "Entrar" e
+           leva pro login — o JS troca ícone, texto e ação
+           conforme o papel (ver configurarBotaoSairOuEntrar).
+      =================================================== -->
 
       <button
         class="history-button"
         id="logoutButton"
         type="button"
-        aria-label="Sair"
-        onclick="window.logout()">
+        aria-label="Sair ou entrar">
 
-        🚪
-        <span>Sair</span>
+        <span id="logoutIcon">🚪</span>
+        <span id="logoutLabel">Sair</span>
 
       </button>
 
@@ -1541,7 +1551,8 @@
     import {
       getAuth,
       onAuthStateChanged,
-      signOut
+      signOut,
+      signInAnonymously
     } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
 
 
@@ -1585,13 +1596,21 @@
 
 
     // ================================================
-    // PROTEÇÃO DO PDV
+    // ACESSO PÚBLICO AO CARDÁPIO + LOGIN ANÔNIMO
     //
-    // Enquanto o Firebase não responder se existe
-    // usuário logado, a página fica com
-    // "visibility: hidden" (ver <style> no <head>).
-    // Isso evita o "flash" do conteúdo protegido
-    // antes do redirecionamento.
+    // index.html NÃO exige login pra abrir — quem chega
+    // sem sessão nenhuma ganha automaticamente uma
+    // sessão ANÔNIMA do Firebase Auth (ver
+    // onAuthStateChanged mais abaixo), que só permite
+    // NAVEGAR pelo cardápio. Comprar, ver histórico,
+    // etc. continuam exigindo login de verdade — e isso
+    // é garantido nas Firestore Security Rules (função
+    // ehAnonimo()), não só aqui na tela.
+    //
+    // A página continua com "visibility: hidden" (ver
+    // <style> no <head>) até o Firebase confirmar
+    // QUALQUER sessão (anônima ou de verdade), evitando
+    // o "flash" de conteúdo antes disso.
     // ================================================
 
     const auth =
@@ -1600,14 +1619,18 @@
 
     // Disponibiliza um logout global simples.
     // Pode ser chamado de qualquer botão com
-    // onclick="window.logout()".
+    // onclick="window.logout()". Depois de sair,
+    // volta para o próprio index.html — não faz mais
+    // sentido forçar login.html, já que o cardápio é
+    // público; ao recarregar, uma nova sessão anônima
+    // é criada automaticamente.
 
     window.logout = () => {
 
       signOut(auth).then(() => {
 
         window.location.href =
-          "login.html";
+          "index.html";
 
       });
 
@@ -1702,6 +1725,9 @@
       const isAdmin =
         role === "administrador";
 
+      const isVisitante =
+        role === "visitante";
+
 
       const avatar =
         document.getElementById(
@@ -1734,7 +1760,11 @@
         avatar.textContent =
           isAdmin
             ? "AD"
-            : "CL";
+            : (
+                isVisitante
+                  ? "VI"
+                  : "CL"
+              );
 
       }
 
@@ -1744,7 +1774,11 @@
         roleLabel.textContent =
           isAdmin
             ? "Administrador"
-            : "Cliente";
+            : (
+                isVisitante
+                  ? "Visitante"
+                  : "Cliente"
+              );
 
       }
 
@@ -1778,6 +1812,79 @@
 
       }
 
+
+      configurarBotaoSairOuEntrar(
+        isVisitante
+      );
+
+    }
+
+
+    // ================================================
+    // BOTÃO SAIR / ENTRAR
+    //
+    // Visitante (sessão anônima) vê "Entrar" e vai pro
+    // login. Quem está logado de verdade (cliente ou
+    // admin) vê "Sair" e desloga normalmente.
+    // ================================================
+
+    function configurarBotaoSairOuEntrar(isVisitante) {
+
+      const button =
+        document.getElementById(
+          "logoutButton"
+        );
+
+      const icon =
+        document.getElementById(
+          "logoutIcon"
+        );
+
+      const label =
+        document.getElementById(
+          "logoutLabel"
+        );
+
+
+      if (!button) {
+        return;
+      }
+
+
+      if (icon) {
+
+        icon.textContent =
+          isVisitante
+            ? "🔑"
+            : "🚪";
+
+      }
+
+
+      if (label) {
+
+        label.textContent =
+          isVisitante
+            ? "Entrar"
+            : "Sair";
+
+      }
+
+
+      button.onclick =
+        isVisitante
+          ? () => {
+
+              window.location.href =
+                "login.html";
+
+            }
+          : () => {
+
+              window.logout();
+
+            };
+
     }
 
 
@@ -1785,14 +1892,92 @@
       auth,
       async (user) => {
 
+        // ================================================
+        // NINGUÉM LOGADO AINDA → CRIA SESSÃO ANÔNIMA
+        //
+        // Isso dispara signInAnonymously() e sai da
+        // função sem revelar nada ainda. O próprio
+        // signInAnonymously() faz o Firebase chamar este
+        // callback de novo, agora com user preenchido
+        // (user.isAnonymous === true), daí o fluxo
+        // continua no bloco abaixo.
+        // ================================================
+
         if (!user) {
 
-          window.location.href =
-            "login.html";
+          try {
+
+            await signInAnonymously(
+              auth
+            );
+
+          } catch (error) {
+
+            console.error(
+              "Erro ao criar sessão de visitante:",
+              error
+            );
+
+            console.error(
+              "Verifique se o provedor \"Anônimo\" está " +
+              "ativado em Authentication → Sign-in method " +
+              "no Firebase Console."
+            );
+
+          }
 
           return;
 
         }
+
+
+        // ================================================
+        // SESSÃO ANÔNIMA (VISITANTE)
+        //
+        // Pode navegar pelo cardápio, mas não compra —
+        // isso é reforçado nas Firestore Security Rules,
+        // não só aqui. Não faz sentido buscar perfil em
+        // "usuarios" pra quem nem logou de verdade.
+        // ================================================
+
+        if (user.isAnonymous) {
+
+          console.log(
+            "Visitante navegando (sessão anônima)."
+          );
+
+
+          window.userRole =
+            "visitante";
+
+          window.currentUser =
+            user;
+
+
+          atualizarInterfacePorPerfil(
+            "visitante"
+          );
+
+
+          document.body.style.visibility =
+            "visible";
+
+
+          if (window.iniciarApp) {
+
+            window.iniciarApp();
+
+          }
+
+
+          return;
+
+        }
+
+
+        // ================================================
+        // USUÁRIO LOGADO DE VERDADE (E-MAIL OU GOOGLE)
+        // ================================================
 
         console.log(
           "Usuário autenticado:",
@@ -1816,6 +2001,13 @@
 
         document.body.style.visibility =
           "visible";
+
+
+        if (window.iniciarApp) {
+
+          window.iniciarApp();
+
+        }
 
       }
     );
