@@ -1941,3 +1941,40 @@ select.text-input option,
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation-duration: .001ms !important; }
 }
+
+
+/* ==========================================================================
+   IMAGENS DE PRODUTO (arquivos locais em img/produtos/)
+   Quando o produto não tem imagem válida, o app.js volta para o emoji.
+========================================================================== */
+
+.product-image,
+.modal-product-image,
+.cart-item-image,
+.admin-product-emoji,
+.low-stock-emoji { overflow: hidden; }
+
+.product-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.modal-product-image .product-img {
+  min-height: inherit;
+}
+
+.field-hint {
+  display: block;
+  margin-top: 6px;
+  color: var(--gray);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.field-hint code {
+  color: var(--lime);
+  font-family: var(--font-ui);
+  font-size: 9px;
+}
