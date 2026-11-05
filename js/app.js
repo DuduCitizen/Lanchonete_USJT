@@ -245,6 +245,67 @@ const brl = value => {
 
 
 // ======================================================
+// IMAGENS DE PRODUTO
+//
+// O campo "image" do produto (Firestore) pode ser:
+//   - um emoji (ex.: "🍔")                 -> mostra o emoji
+//   - um arquivo (ex.: "x-burger.webp")    -> carrega de img/produtos/
+//   - um caminho (ex.: "img/produtos/x.png") ou URL completa
+//
+// Se o arquivo não existir, cai automaticamente no emoji padrão.
+// ======================================================
+
+const EMOJI_PADRAO = "🍔";
+
+const PASTA_IMAGENS_PRODUTOS = "img/produtos/";
+
+function isImagePath(value) {
+
+  return /\.(png|jpe?g|webp|gif|svg|avif)(\?.*)?$/i.test(
+    String(value || "").trim()
+  );
+
+}
+
+function resolveImageSrc(value) {
+
+  const v =
+    String(value || "").trim();
+
+  // URL completa, caminho absoluto ou já com pasta
+  if (
+    /^(https?:|data:|\/)/i.test(v) ||
+    v.includes("/")
+  ) {
+    return v;
+  }
+
+  // só o nome do arquivo -> assume a pasta padrão
+  return PASTA_IMAGENS_PRODUTOS + v;
+
+}
+
+function renderProductImage(value, alt = "") {
+
+  const v =
+    String(value || "").trim() ||
+    EMOJI_PADRAO;
+
+  if (!isImagePath(v)) {
+    return escapeHtml(v);
+  }
+
+  return `<img
+    class="product-img"
+    src="${escapeHtml(resolveImageSrc(v))}"
+    alt="${escapeHtml(alt)}"
+    loading="lazy"
+    onerror="this.replaceWith(document.createTextNode('${EMOJI_PADRAO}'))">`;
+
+}
+
+
+// ======================================================
 // FORMATAÇÃO DE DATA
 // ======================================================
 
@@ -593,7 +654,7 @@ function renderProducts() {
           <article class="product-card">
 
             <div class="product-image">
-              ${product.emoji}
+              ${renderProductImage(product.emoji, product.name)}
             </div>
 
             <div class="product-body">
@@ -929,7 +990,7 @@ function renderCart() {
             <div class="cart-item">
 
               <div class="cart-item-image">
-                ${item.emoji}
+                ${renderProductImage(item.emoji, item.name)}
               </div>
 
               <div class="cart-item-info">
@@ -1083,8 +1144,8 @@ function openProductModal(
 
   document.getElementById(
     "modalProductImage"
-  ).textContent =
-    selectedProduct.emoji;
+  ).innerHTML =
+    renderProductImage(selectedProduct.emoji, selectedProduct.name);
 
 
   document.getElementById(
@@ -3470,7 +3531,7 @@ function renderAdminProductList() {
             <div class="admin-product-row">
 
               <div class="admin-product-emoji">
-                ${product.emoji}
+                ${renderProductImage(product.emoji, product.name)}
               </div>
 
               <div class="admin-product-info">
@@ -3982,7 +4043,7 @@ if (productForm) {
         category:
           productFormCategory.value,
 
-        emoji:
+        image:
           productFormEmoji.value.trim() ||
           "🍔",
 
@@ -4346,7 +4407,7 @@ function renderLowStock() {
             <div class="low-stock-row">
 
               <div class="low-stock-emoji">
-                ${product.emoji}
+                ${renderProductImage(product.emoji, product.name)}
               </div>
 
               <div class="low-stock-info">
