@@ -1978,3 +1978,193 @@ select.text-input option,
   font-family: var(--font-ui);
   font-size: 9px;
 }
+
+
+/* ==========================================================================
+   MÓDULO FINANCEIRO (ADMIN) — DESPESAS + RESULTADO
+========================================================================== */
+
+.finance-modal { width: min(820px, 100%); }
+
+.finance-toolbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.finance-stats { margin-bottom: 6px; }
+
+.finance-stats .history-stat-card strong { font-size: 17px; }
+
+.finance-negative {
+  color: var(--danger) !important;
+  text-shadow: 0 0 12px rgba(255, 77, 77, .4);
+}
+
+.finance-positive {
+  color: var(--neon) !important;
+  text-shadow: 0 0 12px rgba(57, 255, 20, .4);
+}
+
+/* Despesas por categoria ------------------------------------------------ */
+
+.finance-category-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.finance-category-row {
+  display: grid;
+  grid-template-columns: 120px 1fr auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.finance-category-name {
+  font-family: var(--font-ui);
+  font-size: 10px;
+  color: var(--text-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Lista de despesas ------------------------------------------------------ */
+
+.expense-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.expense-row {
+  display: grid;
+  grid-template-columns: 78px 1fr auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px dashed var(--line);
+}
+
+.expense-row:last-child { border-bottom: 0; }
+
+.expense-date {
+  font-family: var(--font-ui);
+  font-size: 10px;
+  color: var(--text-soft);
+  white-space: nowrap;
+}
+
+.expense-info { min-width: 0; }
+
+.expense-info strong {
+  display: block;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.expense-info small { color: var(--text-soft); font-size: 11px; }
+
+.expense-amount {
+  font-family: var(--font-ui);
+  font-weight: 800;
+  font-size: 12px;
+  color: var(--danger);
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+
+  .finance-category-row { grid-template-columns: 1fr; gap: 6px; }
+
+  .expense-row {
+    grid-template-columns: 1fr auto;
+    row-gap: 6px;
+  }
+
+  .expense-info { grid-column: 1 / -1; order: 2; }
+  .expense-amount { text-align: right; }
+  .expense-row .admin-product-actions { grid-column: 1 / -1; justify-content: flex-end; order: 3; }
+
+}
+
+
+/* ==========================================================================
+   CALCULADORA DE CUSTO x LUCRO
+========================================================================== */
+
+.cost-calculator {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg-soft);
+}
+
+.cost-calc-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.cost-calc-item { display: flex; flex-direction: column; gap: 4px; }
+
+.cost-calc-item span {
+  color: var(--text-soft);
+  font-family: var(--font-ui);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.cost-calc-item strong {
+  color: var(--neon);
+  font-family: var(--font-ui);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.cost-calc-suggest {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.value-negative {
+  color: var(--danger) !important;
+  text-shadow: 0 0 12px rgba(255, 77, 77, .4);
+}
+
+.value-positive {
+  color: var(--neon) !important;
+  text-shadow: 0 0 12px rgba(57, 255, 20, .4);
+}
+
+@media (max-width: 720px) {
+  .cost-calc-grid { grid-template-columns: 1fr; }
+}
+
+
+/* Lucro no módulo financeiro ------------------------------------------- */
+
+.finance-stats + .finance-stats { margin-top: 12px; }
+
+.finance-note {
+  margin: 8px 0 0;
+  color: var(--text-soft);
+  font-size: 11px;
+  line-height: 1.5;
+}

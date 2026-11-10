@@ -249,15 +249,15 @@ const brl = value => {
 //
 // O campo "image" do produto (Firestore) pode ser:
 //   - um emoji (ex.: "🍔")                 -> mostra o emoji
-//   - um arquivo (ex.: "x-burger.webp")    -> carrega de img/produtos/
-//   - um caminho (ex.: "img/produtos/x.png") ou URL completa
+//   - um arquivo (ex.: "x-burger.webp")    -> carrega de img/
+//   - um caminho (ex.: "img/x.png") ou URL completa
 //
 // Se o arquivo não existir, cai automaticamente no emoji padrão.
 // ======================================================
 
 const EMOJI_PADRAO = "🍔";
 
-const PASTA_IMAGENS_PRODUTOS = "img/produtos/";
+const PASTA_IMAGENS_PRODUTOS = "img/";
 
 function isImagePath(value) {
 
@@ -536,6 +536,11 @@ async function loadProducts() {
 
             available:
               data.available === true,
+            cost:
+              data.cost === undefined ||
+              data.cost === null
+                ? null
+                : Number(data.cost) || 0,
 
             stock:
               Number(
@@ -2034,6 +2039,33 @@ async function finalizeSale() {
         // QUARTO: SALVAR VENDA
         // ----------------------------------------------
 
+        // ----------------------------------------------
+        // CUSTO ATUAL DE CADA PRODUTO
+        //
+        // Lido dentro da transação (do próprio documento
+        // do produto), para gravar na venda o custo que
+        // valia NO MOMENTO da compra. Produto sem custo
+        // cadastrado fica com null.
+        // ----------------------------------------------
+
+        const costById = {};
+
+
+        productSnapshots.forEach(
+          ({ item, snapshot }) => {
+
+            const productCost =
+              snapshot.data().cost;
+
+            costById[item.id] =
+              typeof productCost === "number"
+                ? productCost
+                : null;
+
+          }
+        );
+
+
         const saleItems =
           cart.map(
             item => ({
@@ -2043,6 +2075,9 @@ async function finalizeSale() {
 
               name:
                 item.name,
+
+              cost:
+                costById[item.id] ?? null,
 
               price:
                 Number(
@@ -3215,6 +3250,11 @@ function openSaleDetails(
     );
 
 
+  renderSaleProfit(
+    sale
+  );
+
+
   // ==================================================
   // ABRIR MODAL
   // ==================================================
@@ -3543,7 +3583,8 @@ function renderAdminProductList() {
                 <small>
                   ${escapeHtml(product.category)} •
                   ${brl(product.price)} •
-                  Estoque: ${product.stock}
+                  Estoque: ${product.stock} •
+                  ${formatMarginLabel(product)}
                 </small>
 
               </div>
@@ -3690,6 +3731,19 @@ function openProductForm(productId) {
     "hidden",
     !product
   );
+
+
+  productFormCost.value =
+    product && typeof product.cost === "number"
+      ? product.cost
+      : "";
+
+
+  productFormTargetMargin.value =
+    "";
+
+
+  updateCostCalculator();
 
 
   productFormModal.classList.remove(
@@ -4065,7 +4119,10 @@ if (productForm) {
           "Sem descrição disponível.",
 
         available:
-          productFormAvailable.checked
+          productFormAvailable.checked,
+
+        cost:
+          readCostInput()
 
       };
 
@@ -4622,3 +4679,1598 @@ window.iniciarApp = () => {
   }
 
 };
+
+
+
+// ======================================================
+// ======================================================
+// MÓDULO FINANCEIRO (ADMIN) — DESPESAS + RESULTADO
+// ======================================================
+// ======================================================
+//
+// Entradas = soma de "total" das vendas do período
+//            (array "sales", já usado pelo histórico).
+// Saídas   = soma de "amount" das despesas do período
+//            (coleção "despesas").
+// Saldo    = Entradas - Saídas.
+//
+// A data da despesa é guardada como texto "AAAA-MM-DD"
+// (sem horário), assim não sofre com fuso horário.
+//
+// Só administrador lê/escreve em "despesas" — a garantia
+// real está nas Security Rules do Firestore.
+// ======================================================
+
+let expenses = [];
+
+
+// ======================================================
+// ELEMENTOS DO FINANCEIRO
+// ======================================================
+
+const financeButton =
+  document.getElementById("financeButton");
+
+const financeModal =
+  document.getElementById("financeModal");
+
+const closeFinanceModal =
+  document.getElementById("closeFinanceModal");
+
+const financeMonthFilter =
+  document.getElementById("financeMonthFilter");
+
+const financeAllButton =
+  document.getElementById("financeAllButton");
+
+const financeIncome =
+  document.getElementById("financeIncome");
+
+const financeExpense =
+  document.getElementById("financeExpense");
+
+const financeBalance =
+  document.getElementById("financeBalance");
+
+const financeCategoryList =
+  document.getElementById("financeCategoryList");
+
+const expenseList =
+  document.getElementById("expenseList");
+
+const addExpenseButton =
+  document.getElementById("addExpenseButton");
+
+const expenseFormModal =
+  document.getElementById("expenseFormModal");
+
+const closeExpenseFormModal =
+  document.getElementById("closeExpenseFormModal");
+
+const expenseForm =
+  document.getElementById("expenseForm");
+
+const expenseFormTitle =
+  document.getElementById("expenseFormTitle");
+
+const expenseFormId =
+  document.getElementById("expenseFormId");
+
+const expenseFormDescription =
+  document.getElementById("expenseFormDescription");
+
+const expenseFormCategory =
+  document.getElementById("expenseFormCategory");
+
+const expenseFormAmount =
+  document.getElementById("expenseFormAmount");
+
+const expenseFormDate =
+  document.getElementById("expenseFormDate");
+
+const expenseFormSubmitButton =
+  document.getElementById("expenseFormSubmitButton");
+
+const deleteExpenseButton =
+  document.getElementById("deleteExpenseButton");
+
+
+// ======================================================
+// DATAS
+// ======================================================
+
+function todayISO() {
+
+  const now =
+    new Date();
+
+  const year =
+    now.getFullYear();
+
+  const month =
+    String(now.getMonth() + 1).padStart(2, "0");
+
+  const day =
+    String(now.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+
+}
+
+
+function formatExpenseDate(iso) {
+
+  const [year, month, day] =
+    String(iso || "").split("-");
+
+  return (year && month && day)
+    ? `${day}/${month}/${year}`
+    : "—";
+
+}
+
+
+function saleMonthKey(sale) {
+
+  const date =
+    getSaleDate(sale.createdAt);
+
+  if (!date) {
+    return "";
+  }
+
+  const month =
+    String(date.getMonth() + 1).padStart(2, "0");
+
+  return `${date.getFullYear()}-${month}`;
+
+}
+
+
+// ======================================================
+// CARREGAR DESPESAS DO FIRESTORE
+// ======================================================
+
+async function loadExpenses() {
+
+  try {
+
+    const snapshot =
+      await getDocs(
+        collection(
+          window.db,
+          "despesas"
+        )
+      );
+
+
+    expenses =
+      snapshot.docs.map(
+        documentSnapshot => {
+
+          const data =
+            documentSnapshot.data();
+
+          return {
+
+            id:
+              documentSnapshot.id,
+
+            description:
+              String(
+                data.description ||
+                "Despesa sem descrição"
+              ),
+
+            category:
+              String(
+                data.category ||
+                "Outros"
+              ),
+
+            amount:
+              Number(
+                data.amount
+              ) || 0,
+
+            date:
+              String(
+                data.date || ""
+              )
+
+          };
+
+        }
+      );
+
+
+    // Mais recentes primeiro
+    expenses.sort(
+      (a, b) =>
+        b.date.localeCompare(a.date)
+    );
+
+
+  } catch (error) {
+
+    console.error(
+      "Erro ao carregar despesas:",
+      error
+    );
+
+    showToast(
+      "Não foi possível carregar as despesas."
+    );
+
+  }
+
+}
+
+
+// ======================================================
+// RENDERIZAR RESUMO + LISTAS
+// ======================================================
+
+function renderFinance() {
+
+  const period =
+    financeMonthFilter
+      ? financeMonthFilter.value
+      : "";
+
+
+  const periodSales =
+    period
+      ? sales.filter(
+          sale =>
+            saleMonthKey(sale) === period
+        )
+      : sales;
+
+
+  const periodExpenses =
+    period
+      ? expenses.filter(
+          expense =>
+            expense.date.startsWith(period)
+        )
+      : expenses;
+
+
+  const income =
+    periodSales.reduce(
+      (sum, sale) =>
+        sum + (Number(sale.total) || 0),
+      0
+    );
+
+
+  const outcome =
+    periodExpenses.reduce(
+      (sum, expense) =>
+        sum + expense.amount,
+      0
+    );
+
+
+  const balance =
+    Math.round(
+      (income - outcome) * 100
+    ) / 100;
+
+
+  financeIncome.textContent =
+    brl(income);
+
+  financeExpense.textContent =
+    brl(outcome);
+
+  financeBalance.textContent =
+    brl(balance);
+
+
+  financeBalance.classList.toggle(
+    "finance-negative",
+    balance < 0
+  );
+
+  financeBalance.classList.toggle(
+    "finance-positive",
+    balance > 0
+  );
+
+
+  renderExpenseCategories(
+    periodExpenses,
+    outcome
+  );
+
+
+  renderExpenseList(
+    periodExpenses
+  );
+
+
+  renderProfitSummary(
+    periodSales,
+    periodExpenses
+  );
+
+}
+
+
+// ======================================================
+// DESPESAS POR CATEGORIA
+// ======================================================
+
+function renderExpenseCategories(
+  periodExpenses,
+  outcome
+) {
+
+  if (!financeCategoryList) {
+    return;
+  }
+
+
+  if (!periodExpenses.length) {
+
+    financeCategoryList.innerHTML = `
+
+      <div class="reports-empty">
+        Nenhuma despesa neste período.
+      </div>
+
+    `;
+
+    return;
+
+  }
+
+
+  const byCategory = {};
+
+
+  periodExpenses.forEach(
+    expense => {
+
+      byCategory[expense.category] =
+        (byCategory[expense.category] || 0) +
+        expense.amount;
+
+    }
+  );
+
+
+  const rows =
+    Object.entries(byCategory)
+      .sort(
+        (a, b) =>
+          b[1] - a[1]
+      );
+
+
+  financeCategoryList.innerHTML =
+    rows
+      .map(
+        ([category, value]) => {
+
+          const percent =
+            outcome > 0
+              ? Math.round(
+                  (value / outcome) * 100
+                )
+              : 0;
+
+
+          return `
+
+            <div class="finance-category-row">
+
+              <span class="finance-category-name">
+                ${escapeHtml(category)}
+              </span>
+
+              <div class="daily-revenue-bar-track">
+
+                <div
+                  class="daily-revenue-bar-fill"
+                  style="width: ${percent}%">
+                </div>
+
+              </div>
+
+              <span class="daily-revenue-value">
+                ${brl(value)}
+                (${percent}%)
+              </span>
+
+            </div>
+
+          `;
+
+        }
+      )
+      .join("");
+
+}
+
+
+// ======================================================
+// LISTA DE DESPESAS
+// ======================================================
+
+function renderExpenseList(
+  periodExpenses
+) {
+
+  if (!expenseList) {
+    return;
+  }
+
+
+  if (!periodExpenses.length) {
+
+    expenseList.innerHTML = `
+
+      <div class="reports-empty">
+        Nenhuma despesa lançada neste período.
+        Clique em "+ Nova despesa" para começar.
+      </div>
+
+    `;
+
+    return;
+
+  }
+
+
+  expenseList.innerHTML =
+    periodExpenses
+      .map(
+        expense => `
+
+          <div class="expense-row">
+
+            <span class="expense-date">
+              ${formatExpenseDate(expense.date)}
+            </span>
+
+            <div class="expense-info">
+
+              <strong>
+                ${escapeHtml(expense.description)}
+              </strong>
+
+              <small>
+                ${escapeHtml(expense.category)}
+              </small>
+
+            </div>
+
+            <span class="expense-amount">
+              − ${brl(expense.amount)}
+            </span>
+
+            <div class="admin-product-actions">
+
+              <button
+                class="admin-icon-button"
+                type="button"
+                data-expense-action="edit"
+                data-id="${expense.id}"
+                aria-label="Editar despesa">
+                ✏️
+              </button>
+
+              <button
+                class="admin-icon-button danger"
+                type="button"
+                data-expense-action="delete"
+                data-id="${expense.id}"
+                aria-label="Excluir despesa">
+                🗑️
+              </button>
+
+            </div>
+
+          </div>
+
+        `
+      )
+      .join("");
+
+}
+
+
+// ======================================================
+// ABRIR O FINANCEIRO
+// ======================================================
+
+async function openFinance() {
+
+  // Mês atual como padrão na primeira abertura
+  if (
+    financeMonthFilter &&
+    !financeMonthFilter.value
+  ) {
+
+    financeMonthFilter.value =
+      todayISO().slice(0, 7);
+
+  }
+
+
+  await Promise.all([
+    loadSales(),
+    loadExpenses()
+  ]);
+
+
+  renderFinance();
+
+
+  financeModal.classList.remove(
+    "hidden"
+  );
+
+}
+
+
+// ======================================================
+// FORMULÁRIO DE DESPESA (CRIAR OU EDITAR)
+// ======================================================
+
+function openExpenseForm(expenseId) {
+
+  const expense =
+    expenseId
+      ? expenses.find(
+          item =>
+            item.id === expenseId
+        )
+      : null;
+
+
+  expenseFormId.value =
+    expense
+      ? expense.id
+      : "";
+
+  expenseFormTitle.textContent =
+    expense
+      ? "Editar despesa"
+      : "Nova despesa";
+
+  expenseFormDescription.value =
+    expense
+      ? expense.description
+      : "";
+
+  expenseFormCategory.value =
+    expense
+      ? expense.category
+      : "Insumos";
+
+  expenseFormAmount.value =
+    expense
+      ? expense.amount
+      : "";
+
+  expenseFormDate.value =
+    expense
+      ? expense.date
+      : todayISO();
+
+  expenseFormSubmitButton.textContent =
+    expense
+      ? "Salvar alterações"
+      : "Lançar despesa";
+
+  deleteExpenseButton.classList.toggle(
+    "hidden",
+    !expense
+  );
+
+
+  expenseFormModal.classList.remove(
+    "hidden"
+  );
+
+}
+
+
+// ======================================================
+// EXCLUIR DESPESA
+// ======================================================
+
+async function deleteExpense(expenseId) {
+
+  const expense =
+    expenses.find(
+      item =>
+        item.id === expenseId
+    );
+
+
+  if (!expense) {
+    return;
+  }
+
+
+  const confirmado =
+    window.confirm(
+      `Excluir a despesa "${expense.description}" (${brl(expense.amount)})? Essa ação não pode ser desfeita.`
+    );
+
+
+  if (!confirmado) {
+    return;
+  }
+
+
+  try {
+
+    await deleteDoc(
+      doc(
+        window.db,
+        "despesas",
+        expenseId
+      )
+    );
+
+
+    showToast(
+      "Despesa excluída."
+    );
+
+
+    await loadExpenses();
+
+    renderFinance();
+
+
+  } catch (error) {
+
+    console.error(
+      "Erro ao excluir despesa:",
+      error
+    );
+
+    showToast(
+      "Não foi possível excluir a despesa."
+    );
+
+  }
+
+}
+
+
+// ======================================================
+// EVENTOS DO FINANCEIRO
+// ======================================================
+
+if (financeButton) {
+
+  financeButton.addEventListener(
+    "click",
+    openFinance
+  );
+
+}
+
+
+if (closeFinanceModal) {
+
+  closeFinanceModal.addEventListener(
+    "click",
+    () => {
+
+      closeModal(
+        financeModal
+      );
+
+    }
+  );
+
+}
+
+
+if (financeMonthFilter) {
+
+  financeMonthFilter.addEventListener(
+    "change",
+    renderFinance
+  );
+
+}
+
+
+if (financeAllButton) {
+
+  financeAllButton.addEventListener(
+    "click",
+    () => {
+
+      financeMonthFilter.value =
+        "";
+
+      renderFinance();
+
+    }
+  );
+
+}
+
+
+if (addExpenseButton) {
+
+  addExpenseButton.addEventListener(
+    "click",
+    () => {
+
+      openExpenseForm(
+        null
+      );
+
+    }
+  );
+
+}
+
+
+if (closeExpenseFormModal) {
+
+  closeExpenseFormModal.addEventListener(
+    "click",
+    () => {
+
+      closeModal(
+        expenseFormModal
+      );
+
+    }
+  );
+
+}
+
+
+if (expenseList) {
+
+  expenseList.addEventListener(
+    "click",
+    event => {
+
+      const button =
+        event.target.closest(
+          "[data-expense-action]"
+        );
+
+
+      if (!button) {
+        return;
+      }
+
+
+      if (
+        button.dataset.expenseAction ===
+        "edit"
+      ) {
+
+        openExpenseForm(
+          button.dataset.id
+        );
+
+      }
+
+
+      if (
+        button.dataset.expenseAction ===
+        "delete"
+      ) {
+
+        deleteExpense(
+          button.dataset.id
+        );
+
+      }
+
+    }
+  );
+
+}
+
+
+if (deleteExpenseButton) {
+
+  deleteExpenseButton.addEventListener(
+    "click",
+    async () => {
+
+      const id =
+        expenseFormId.value;
+
+
+      if (!id) {
+        return;
+      }
+
+
+      await deleteExpense(
+        id
+      );
+
+
+      closeModal(
+        expenseFormModal
+      );
+
+    }
+  );
+
+}
+
+
+// ======================================================
+// ENVIAR FORMULÁRIO (LANÇAR OU SALVAR EDIÇÃO)
+// ======================================================
+
+if (expenseForm) {
+
+  expenseForm.addEventListener(
+    "submit",
+    async event => {
+
+      event.preventDefault();
+
+
+      const id =
+        expenseFormId.value;
+
+
+      const description =
+        expenseFormDescription.value.trim();
+
+
+      const amount =
+        Math.round(
+          (
+            Number(
+              expenseFormAmount.value
+            ) || 0
+          ) * 100
+        ) / 100;
+
+
+      const date =
+        expenseFormDate.value;
+
+
+      if (!description) {
+
+        showToast(
+          "Informe a descrição da despesa."
+        );
+
+        return;
+
+      }
+
+
+      if (amount <= 0) {
+
+        showToast(
+          "Informe um valor maior que zero."
+        );
+
+        return;
+
+      }
+
+
+      if (!date) {
+
+        showToast(
+          "Informe a data da despesa."
+        );
+
+        return;
+
+      }
+
+
+      const expenseData = {
+
+        description:
+          description,
+
+        category:
+          expenseFormCategory.value,
+
+        amount:
+          amount,
+
+        date:
+          date,
+
+        updatedAt:
+          serverTimestamp()
+
+      };
+
+
+      expenseFormSubmitButton.disabled =
+        true;
+
+
+      expenseFormSubmitButton.textContent =
+        "Salvando...";
+
+
+      try {
+
+        if (id) {
+
+          await updateDoc(
+            doc(
+              window.db,
+              "despesas",
+              id
+            ),
+            expenseData
+          );
+
+
+          showToast(
+            "Despesa atualizada."
+          );
+
+        } else {
+
+          await addDoc(
+            collection(
+              window.db,
+              "despesas"
+            ),
+            {
+
+              ...expenseData,
+
+              createdAt:
+                serverTimestamp()
+
+            }
+          );
+
+
+          showToast(
+            "Despesa lançada."
+          );
+
+        }
+
+
+        closeModal(
+          expenseFormModal
+        );
+
+
+        await loadExpenses();
+
+        renderFinance();
+
+
+      } catch (error) {
+
+        console.error(
+          "Erro ao salvar despesa:",
+          error
+        );
+
+
+        showToast(
+          "Não foi possível salvar a despesa."
+        );
+
+
+      } finally {
+
+        expenseFormSubmitButton.disabled =
+          false;
+
+
+        expenseFormSubmitButton.textContent =
+          id
+            ? "Salvar alterações"
+            : "Lançar despesa";
+
+      }
+
+    }
+  );
+
+}
+
+
+// ======================================================
+// FECHAR MODAIS DO FINANCEIRO COM ESC
+// ======================================================
+
+document.addEventListener(
+  "keydown",
+  event => {
+
+    if (
+      event.key !==
+      "Escape"
+    ) {
+      return;
+    }
+
+
+    closeModal(
+      financeModal
+    );
+
+
+    closeModal(
+      expenseFormModal
+    );
+
+  }
+);
+
+
+
+// ======================================================
+// ======================================================
+// CALCULADORA DE CUSTO x LUCRO (ADMIN)
+// ======================================================
+// ======================================================
+//
+// - "cost" (custo unitário) fica no documento do produto.
+// - No checkout, o custo de cada item é copiado para a
+//   venda (items[].cost), então o lucro histórico não
+//   muda se o custo do produto for alterado depois.
+// - Vendas antigas, sem custo registrado, ficam fora dos
+//   cálculos de lucro (continuam normais no faturamento).
+//
+// Margem  = lucro / preço de venda
+// Markup  = lucro / custo
+// Preço sugerido para uma margem M:  custo / (1 - M)
+// ======================================================
+
+let suggestedPrice = null;
+
+
+const productFormCost =
+  document.getElementById("productFormCost");
+
+const productFormTargetMargin =
+  document.getElementById("productFormTargetMargin");
+
+const costCalcProfit =
+  document.getElementById("costCalcProfit");
+
+const costCalcMargin =
+  document.getElementById("costCalcMargin");
+
+const costCalcMarkup =
+  document.getElementById("costCalcMarkup");
+
+const costCalcSuggestion =
+  document.getElementById("costCalcSuggestion");
+
+const applySuggestedPriceButton =
+  document.getElementById("applySuggestedPriceButton");
+
+
+// ======================================================
+// UTILITÁRIOS
+// ======================================================
+
+function round2(value) {
+
+  return Math.round(
+    (Number(value) || 0) * 100
+  ) / 100;
+
+}
+
+
+function formatPercent(value) {
+
+  return `${
+    (
+      Math.round(value * 10) / 10
+    ).toLocaleString("pt-BR")
+  }%`;
+
+}
+
+
+function setValueSign(element, value) {
+
+  if (!element) {
+    return;
+  }
+
+  element.classList.toggle(
+    "value-negative",
+    value < 0
+  );
+
+  element.classList.toggle(
+    "value-positive",
+    value > 0
+  );
+
+}
+
+
+// Custo digitado no formulário: vazio = sem custo (null)
+
+function readCostInput() {
+
+  if (
+    !productFormCost ||
+    productFormCost.value === ""
+  ) {
+    return null;
+  }
+
+  return Math.max(
+    0,
+    round2(productFormCost.value)
+  );
+
+}
+
+
+// Texto de margem na lista de produtos do admin
+
+function formatMarginLabel(product) {
+
+  if (
+    typeof product.cost !== "number" ||
+    !(product.price > 0)
+  ) {
+    return "Sem custo";
+  }
+
+  const margin =
+    (
+      (product.price - product.cost) /
+      product.price
+    ) * 100;
+
+  return `Margem ${formatPercent(margin)}`;
+
+}
+
+
+// ======================================================
+// CALCULADORA DO FORMULÁRIO
+// ======================================================
+
+function updateCostCalculator() {
+
+  if (!costCalcProfit) {
+    return;
+  }
+
+
+  const price =
+    productFormPrice.value === ""
+      ? NaN
+      : Number(productFormPrice.value);
+
+  const cost =
+    productFormCost.value === ""
+      ? NaN
+      : Number(productFormCost.value);
+
+  const targetMargin =
+    productFormTargetMargin.value === ""
+      ? NaN
+      : Number(productFormTargetMargin.value);
+
+
+  let profitText = "—";
+  let marginText = "—";
+  let markupText = "—";
+  let profitValue = 0;
+
+
+  if (
+    Number.isFinite(price) &&
+    price > 0 &&
+    Number.isFinite(cost) &&
+    cost >= 0
+  ) {
+
+    const profit =
+      price - cost;
+
+    profitValue =
+      profit;
+
+    profitText =
+      brl(profit);
+
+    marginText =
+      formatPercent(
+        (profit / price) * 100
+      );
+
+    markupText =
+      cost > 0
+        ? formatPercent(
+            (profit / cost) * 100
+          )
+        : "—";
+
+  }
+
+
+  costCalcProfit.textContent =
+    profitText;
+
+  costCalcMargin.textContent =
+    marginText;
+
+  costCalcMarkup.textContent =
+    markupText;
+
+
+  setValueSign(costCalcProfit, profitValue);
+  setValueSign(costCalcMargin, profitValue);
+  setValueSign(costCalcMarkup, profitValue);
+
+
+  // ----------------------------------------------------
+  // PREÇO SUGERIDO PARA A MARGEM DESEJADA
+  // ----------------------------------------------------
+
+  suggestedPrice =
+    null;
+
+
+  if (
+    Number.isFinite(cost) &&
+    cost > 0 &&
+    Number.isFinite(targetMargin) &&
+    targetMargin > 0 &&
+    targetMargin < 100
+  ) {
+
+    suggestedPrice =
+      round2(
+        cost /
+        (1 - targetMargin / 100)
+      );
+
+  }
+
+
+  if (suggestedPrice !== null) {
+
+    costCalcSuggestion.textContent =
+      `Para ${formatPercent(targetMargin)} de margem, o preço sugerido é ${brl(suggestedPrice)}.`;
+
+    applySuggestedPriceButton.classList.remove(
+      "hidden"
+    );
+
+  } else {
+
+    costCalcSuggestion.textContent =
+      "Informe o custo e a margem desejada para ver o preço sugerido.";
+
+    applySuggestedPriceButton.classList.add(
+      "hidden"
+    );
+
+  }
+
+}
+
+
+[
+  productFormPrice,
+  productFormCost,
+  productFormTargetMargin
+].forEach(
+  field => {
+
+    if (field) {
+
+      field.addEventListener(
+        "input",
+        updateCostCalculator
+      );
+
+    }
+
+  }
+);
+
+
+if (applySuggestedPriceButton) {
+
+  applySuggestedPriceButton.addEventListener(
+    "click",
+    () => {
+
+      if (suggestedPrice === null) {
+        return;
+      }
+
+      productFormPrice.value =
+        suggestedPrice.toFixed(2);
+
+      updateCostCalculator();
+
+    }
+  );
+
+}
+
+
+// ======================================================
+// LUCRO DE UMA VENDA
+//
+// Só dá para calcular quando TODOS os itens têm custo
+// registrado (vendas feitas depois da calculadora).
+// ======================================================
+
+function getSaleProfit(sale) {
+
+  const items =
+    Array.isArray(sale.items)
+      ? sale.items
+      : [];
+
+
+  if (!items.length) {
+
+    return {
+      known: false,
+      cost: 0,
+      profit: 0
+    };
+
+  }
+
+
+  let cost = 0;
+
+
+  for (const item of items) {
+
+    if (typeof item.cost !== "number") {
+
+      return {
+        known: false,
+        cost: 0,
+        profit: 0
+      };
+
+    }
+
+    cost +=
+      item.cost *
+      (Number(item.quantity) || 0);
+
+  }
+
+
+  return {
+
+    known: true,
+
+    cost:
+      round2(cost),
+
+    profit:
+      round2(
+        (Number(sale.total) || 0) - cost
+      )
+
+  };
+
+}
+
+
+// ======================================================
+// LUCRO NO MODAL "DETALHES DA VENDA"
+// ======================================================
+
+function renderSaleProfit(sale) {
+
+  const costRow =
+    document.getElementById("saleDetailsCostRow");
+
+  const profitRow =
+    document.getElementById("saleDetailsProfitRow");
+
+  const costEl =
+    document.getElementById("saleDetailsCost");
+
+  const profitEl =
+    document.getElementById("saleDetailsProfit");
+
+
+  if (
+    !costRow ||
+    !profitRow ||
+    !costEl ||
+    !profitEl
+  ) {
+    return;
+  }
+
+
+  const info =
+    getSaleProfit(sale);
+
+
+  costRow.classList.toggle(
+    "hidden",
+    !info.known
+  );
+
+  profitRow.classList.toggle(
+    "hidden",
+    !info.known
+  );
+
+
+  if (!info.known) {
+    return;
+  }
+
+
+  costEl.textContent =
+    brl(info.cost);
+
+  profitEl.textContent =
+    brl(info.profit);
+
+
+  setValueSign(
+    profitEl,
+    info.profit
+  );
+
+}
+
+
+
+// ======================================================
+// LUCRO NO MÓDULO FINANCEIRO
+// ======================================================
+//
+// Custo dos produtos vendidos (CMV) = soma dos custos dos
+//   itens das vendas do período que têm custo registrado.
+// Lucro bruto   = vendas (com custo) - CMV.
+// Lucro líquido = lucro bruto - despesas do período,
+//   EXCETO a categoria "Insumos": a compra de insumos já
+//   está embutida no custo dos produtos, então contá-la de
+//   novo seria descontar o mesmo gasto duas vezes.
+//
+// O "Saldo" do módulo continua sendo o caixa simples
+// (entradas - todas as saídas).
+// ======================================================
+
+function renderProfitSummary(
+  periodSales,
+  periodExpenses
+) {
+
+  const costEl =
+    document.getElementById("financeCost");
+
+  const grossEl =
+    document.getElementById("financeGrossProfit");
+
+  const netEl =
+    document.getElementById("financeNetProfit");
+
+  const noteEl =
+    document.getElementById("financeProfitNote");
+
+
+  if (
+    !costEl ||
+    !grossEl ||
+    !netEl
+  ) {
+    return;
+  }
+
+
+  let totalCost = 0;
+  let grossProfit = 0;
+  let withoutCost = 0;
+
+
+  periodSales.forEach(
+    sale => {
+
+      const info =
+        getSaleProfit(sale);
+
+      if (!info.known) {
+
+        withoutCost++;
+
+        return;
+
+      }
+
+      totalCost +=
+        info.cost;
+
+      grossProfit +=
+        info.profit;
+
+    }
+  );
+
+
+  const operatingExpenses =
+    periodExpenses
+      .filter(
+        expense =>
+          expense.category !== "Insumos"
+      )
+      .reduce(
+        (sum, expense) =>
+          sum + expense.amount,
+        0
+      );
+
+
+  const netProfit =
+    round2(
+      grossProfit - operatingExpenses
+    );
+
+
+  costEl.textContent =
+    brl(totalCost);
+
+  grossEl.textContent =
+    brl(grossProfit);
+
+  netEl.textContent =
+    brl(netProfit);
+
+
+  setValueSign(grossEl, grossProfit);
+  setValueSign(netEl, netProfit);
+
+
+  if (noteEl) {
+
+    const notes = [];
+
+    if (withoutCost > 0) {
+
+      notes.push(
+        `${withoutCost} venda${withoutCost === 1 ? "" : "s"} do período sem custo registrado ficou${withoutCost === 1 ? "" : "ram"} fora do cálculo de lucro.`
+      );
+
+    }
+
+    notes.push(
+      'Lucro líquido = lucro bruto − despesas, sem contar "Insumos" (o custo dos produtos já cobre esse gasto).'
+    );
+
+    noteEl.textContent =
+      notes.join(" ");
+
+  }
+
+}

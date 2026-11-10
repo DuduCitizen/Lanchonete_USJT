@@ -108,6 +108,20 @@
 
       </button>
 
+      <!-- ==================================================
+           BOTÃO FINANCEIRO (SÓ ADMINISTRADOR)
+      =================================================== -->
+
+      <button
+        class="history-button hidden"
+        id="financeButton"
+        type="button">
+
+        💼
+        <span>Financeiro</span>
+
+      </button>
+
 
       <!-- ==================================================
            BOTÃO GERENCIAR PRODUTOS (SÓ ADMINISTRADOR)
@@ -1126,6 +1140,30 @@
 
         </div>
 
+        <div class="sale-profit-row hidden" id="saleDetailsCostRow">
+
+          <span>
+            Custo dos itens
+          </span>
+
+          <strong id="saleDetailsCost">
+            R$ 0,00
+          </strong>
+
+        </div>
+
+        <div class="sale-profit-row hidden" id="saleDetailsProfitRow">
+
+          <span>
+            Lucro
+          </span>
+
+          <strong id="saleDetailsProfit">
+            R$ 0,00
+          </strong>
+
+        </div>
+
         <div class="sale-details-total">
 
           <span>
@@ -1374,6 +1412,95 @@
 
           </div>
 
+          <div>
+
+            <label
+              class="field-label"
+              for="productFormCost">
+
+              Custo (R$)
+
+            </label>
+
+            <input
+              class="text-input"
+              id="productFormCost"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="0,00">
+
+          </div>
+
+          <div>
+
+            <label
+              class="field-label"
+              for="productFormTargetMargin">
+
+              Margem desejada (%) — opcional
+
+            </label>
+
+            <input
+              class="text-input"
+              id="productFormTargetMargin"
+              type="number"
+              min="0"
+              max="99"
+              step="0.1"
+              placeholder="Ex: 60">
+
+          </div>
+
+          <div class="full cost-calculator">
+
+            <span class="section-kicker">
+              Calculadora de lucro
+            </span>
+
+            <div class="cost-calc-grid">
+
+              <div class="cost-calc-item">
+                <span>Lucro por unidade</span>
+                <strong id="costCalcProfit">—</strong>
+              </div>
+
+              <div class="cost-calc-item">
+                <span>Margem</span>
+                <strong id="costCalcMargin">—</strong>
+              </div>
+
+              <div class="cost-calc-item">
+                <span>Markup</span>
+                <strong id="costCalcMarkup">—</strong>
+              </div>
+
+            </div>
+
+            <div class="cost-calc-suggest">
+
+              <span id="costCalcSuggestion">
+                Informe o custo e a margem desejada para ver o preço sugerido.
+              </span>
+
+              <button
+                class="detail-button hidden"
+                id="applySuggestedPriceButton"
+                type="button">
+
+                Usar preço sugerido
+
+              </button>
+
+            </div>
+
+            <small class="field-hint">
+              Margem = lucro ÷ preço de venda. Markup = lucro ÷ custo.
+            </small>
+
+          </div>
+
           <div class="full">
 
             <label
@@ -1513,6 +1640,413 @@
         </div>
 
       </div>
+
+    </div>
+
+  </div>
+
+
+
+  <!-- ==================================================
+       MODAL FINANCEIRO (SÓ ADMINISTRADOR)
+
+       Entradas = soma das vendas do período (coleção "vendas").
+       Saídas   = soma das despesas do período (coleção "despesas").
+       Saldo    = Entradas - Saídas.
+       Sem o mês preenchido, considera todo o período.
+  =================================================== -->
+
+  <div
+    class="modal-backdrop hidden"
+    id="financeModal">
+
+    <div
+      class="modal admin-modal finance-modal"
+      role="dialog"
+      aria-modal="true">
+
+      <button
+        class="modal-close"
+        id="closeFinanceModal"
+        aria-label="Fechar">
+
+        ×
+
+      </button>
+
+      <div class="admin-modal-header">
+
+        <div>
+
+          <span class="section-kicker">
+            GESTÃO
+          </span>
+
+          <h2>
+            Financeiro
+          </h2>
+
+        </div>
+
+        <button
+          class="primary-button"
+          id="addExpenseButton"
+          type="button">
+
+          + Nova despesa
+
+        </button>
+
+      </div>
+
+      <div class="finance-toolbar">
+
+        <div class="history-date">
+
+          <label for="financeMonthFilter">
+            Mês
+          </label>
+
+          <input
+            id="financeMonthFilter"
+            type="month">
+
+        </div>
+
+        <button
+          class="clear-history-button"
+          id="financeAllButton"
+          type="button">
+
+          Ver todo o período
+
+        </button>
+
+      </div>
+
+      <div class="history-stats finance-stats">
+
+        <div class="history-stat-card">
+
+          <div class="history-stat-icon">
+            💰
+          </div>
+
+          <div>
+
+            <span>
+              Entradas (vendas)
+            </span>
+
+            <strong id="financeIncome">
+              R$ 0,00
+            </strong>
+
+          </div>
+
+        </div>
+
+        <div class="history-stat-card">
+
+          <div class="history-stat-icon">
+            💸
+          </div>
+
+          <div>
+
+            <span>
+              Saídas (despesas)
+            </span>
+
+            <strong id="financeExpense">
+              R$ 0,00
+            </strong>
+
+          </div>
+
+        </div>
+
+        <div class="history-stat-card">
+
+          <div class="history-stat-icon">
+            🧮
+          </div>
+
+          <div>
+
+            <span>
+              Saldo
+            </span>
+
+            <strong id="financeBalance">
+              R$ 0,00
+            </strong>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <div class="history-stats finance-stats">
+
+        <div class="history-stat-card">
+
+          <div class="history-stat-icon">
+            📦
+          </div>
+
+          <div>
+
+            <span>
+              Custo dos produtos vendidos
+            </span>
+
+            <strong id="financeCost">
+              R$ 0,00
+            </strong>
+
+          </div>
+
+        </div>
+
+        <div class="history-stat-card">
+
+          <div class="history-stat-icon">
+            📈
+          </div>
+
+          <div>
+
+            <span>
+              Lucro bruto
+            </span>
+
+            <strong id="financeGrossProfit">
+              R$ 0,00
+            </strong>
+
+          </div>
+
+        </div>
+
+        <div class="history-stat-card">
+
+          <div class="history-stat-icon">
+            🏆
+          </div>
+
+          <div>
+
+            <span>
+              Lucro líquido
+            </span>
+
+            <strong id="financeNetProfit">
+              R$ 0,00
+            </strong>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <p
+        class="finance-note"
+        id="financeProfitNote">
+      </p>
+
+      <div class="reports-section">
+
+        <div class="reports-section-title">
+
+          <span class="section-kicker">
+            Despesas por categoria
+          </span>
+
+        </div>
+
+        <div
+          id="financeCategoryList"
+          class="finance-category-list">
+
+        </div>
+
+      </div>
+
+      <div class="reports-section">
+
+        <div class="reports-section-title">
+
+          <span class="section-kicker">
+            Despesas lançadas
+          </span>
+
+        </div>
+
+        <div
+          id="expenseList"
+          class="expense-list">
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+
+  <!-- ==================================================
+       MODAL DE FORMULÁRIO DE DESPESA (CRIAR/EDITAR)
+  =================================================== -->
+
+  <div
+    class="modal-backdrop hidden"
+    id="expenseFormModal">
+
+    <div
+      class="modal admin-modal"
+      role="dialog"
+      aria-modal="true">
+
+      <button
+        class="modal-close"
+        id="closeExpenseFormModal"
+        aria-label="Fechar">
+
+        ×
+
+      </button>
+
+      <span class="section-kicker">
+        FINANCEIRO
+      </span>
+
+      <h2 id="expenseFormTitle">
+        Nova despesa
+      </h2>
+
+      <form id="expenseForm">
+
+        <input
+          type="hidden"
+          id="expenseFormId">
+
+        <div class="form-grid">
+
+          <div class="full">
+
+            <label
+              class="field-label"
+              for="expenseFormDescription">
+
+              Descrição
+
+            </label>
+
+            <input
+              class="text-input"
+              id="expenseFormDescription"
+              type="text"
+              placeholder="Ex: Compra de carne e pão"
+              required>
+
+          </div>
+
+          <div>
+
+            <label
+              class="field-label"
+              for="expenseFormCategory">
+
+              Categoria
+
+            </label>
+
+            <select
+              class="text-input"
+              id="expenseFormCategory">
+
+              <option value="Insumos">Insumos</option>
+              <option value="Aluguel">Aluguel</option>
+              <option value="Salários">Salários</option>
+              <option value="Energia e água">Energia e água</option>
+              <option value="Marketing">Marketing</option>
+              <option value="Manutenção">Manutenção</option>
+              <option value="Impostos">Impostos</option>
+              <option value="Outros">Outros</option>
+
+            </select>
+
+          </div>
+
+          <div>
+
+            <label
+              class="field-label"
+              for="expenseFormAmount">
+
+              Valor (R$)
+
+            </label>
+
+            <input
+              class="text-input"
+              id="expenseFormAmount"
+              type="number"
+              min="0.01"
+              step="0.01"
+              placeholder="0,00"
+              required>
+
+          </div>
+
+          <div class="full">
+
+            <label
+              class="field-label"
+              for="expenseFormDate">
+
+              Data
+
+            </label>
+
+            <input
+              class="text-input"
+              id="expenseFormDate"
+              type="date"
+              required>
+
+          </div>
+
+        </div>
+
+        <div class="admin-form-actions">
+
+          <button
+            class="detail-button hidden"
+            id="deleteExpenseButton"
+            type="button">
+
+            🗑️ Excluir despesa
+
+          </button>
+
+          <button
+            class="checkout-button"
+            id="expenseFormSubmitButton"
+            type="submit">
+
+            Lançar despesa
+
+          </button>
+
+        </div>
+
+      </form>
 
     </div>
 
@@ -1808,6 +2342,22 @@
       if (reportsButton) {
 
         reportsButton.classList.toggle(
+          "hidden",
+          !isAdmin
+        );
+
+      }
+
+
+      const financeButtonEl =
+        document.getElementById(
+          "financeButton"
+        );
+
+
+      if (financeButtonEl) {
+
+        financeButtonEl.classList.toggle(
           "hidden",
           !isAdmin
         );
