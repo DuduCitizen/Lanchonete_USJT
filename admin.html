@@ -1,0 +1,1841 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#050505">
+  <meta name="robots" content="noindex, nofollow">
+
+  <title>Byte Burger | Painel</title>
+
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Cg fill='%2339ff14'%3E%3Crect x='4' y='1' width='8' height='1'/%3E%3Crect x='3' y='2' width='10' height='1'/%3E%3Crect x='2' y='3' width='12' height='2'/%3E%3Crect x='1' y='6' width='14' height='1'/%3E%3Crect x='2' y='11' width='12' height='1'/%3E%3Crect x='3' y='12' width='10' height='2'/%3E%3C/g%3E%3Crect x='2' y='8' width='12' height='2' fill='%23b6ff00'/%3E%3C/svg%3E">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;500;600;700;800&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/admin.css">
+
+  <!-- ==================================================
+       GUARDA ANTI-FLASH
+
+       A página fica escondida até o Firebase confirmar
+       que existe um usuário logado E que ele é
+       administrador (ver script de autenticação no fim
+       do <body>). Quem não for admin é redirecionado
+       antes de ver qualquer coisa.
+  =================================================== -->
+
+  <style>
+    body {
+      visibility: hidden;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ==================================================
+       BARRA SUPERIOR
+
+       Só identidade e sessão. Os módulos do painel ficam
+       na navegação lateral (computador) ou na barra
+       inferior (celular), não mais aqui.
+  =================================================== -->
+
+  <header class="topbar">
+
+    <div class="brand">
+
+      <div class="brand-icon">
+        <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges" aria-hidden="true"><g fill="#39ff14"><rect x="4" y="1" width="8" height="1"/><rect x="3" y="2" width="10" height="1"/><rect x="2" y="3" width="12" height="2"/><rect x="1" y="6" width="14" height="1"/><rect x="2" y="11" width="12" height="1"/><rect x="3" y="12" width="10" height="2"/></g><rect x="2" y="8" width="12" height="2" fill="#b6ff00"/><g fill="#050505"><rect x="6" y="2" width="1" height="1"/><rect x="9" y="2" width="1" height="1"/><rect x="7" y="3" width="1" height="1"/></g></svg>
+      </div>
+
+      <div>
+        <h1>BYT<em>E</em></h1>
+        <span>Burger • Painel</span>
+      </div>
+
+    </div>
+
+
+    <div class="top-actions">
+
+      <div class="user-badge">
+
+        <span
+          class="avatar"
+          id="userAvatar">
+          AD
+        </span>
+
+        <span id="userRoleLabel">
+          Administrador
+        </span>
+
+      </div>
+
+
+      <button
+        class="history-button"
+        id="logoutButton"
+        type="button"
+        aria-label="Sair">
+
+        <span aria-hidden="true">🚪</span>
+        <span class="btn-label">Sair</span>
+
+      </button>
+
+    </div>
+
+  </header>
+
+
+
+  <!-- ==================================================
+       ESTRUTURA DO PAINEL
+
+       Navegação (lateral / inferior) + área de conteúdo.
+       O app troca de módulo mostrando um <section> com
+       data-view-panel e escondendo os outros. Qualquer
+       elemento com data-view="nome" (botão da navegação
+       ou atalho da tela inicial) leva ao módulo "nome".
+  =================================================== -->
+
+  <div class="admin-shell">
+
+
+    <!-- NAVEGAÇÃO -->
+
+    <nav
+      class="admin-sidebar"
+      id="adminNav"
+      aria-label="Módulos do painel">
+
+      <button
+        class="admin-nav-item is-active"
+        type="button"
+        data-view="home"
+        aria-current="page">
+
+        <span class="admin-nav-icon" aria-hidden="true">🏠</span>
+        <span class="admin-nav-label">Início</span>
+
+      </button>
+
+      <button
+        class="admin-nav-item"
+        type="button"
+        data-view="sales">
+
+        <span class="admin-nav-icon" aria-hidden="true">📋</span>
+        <span class="admin-nav-label">Vendas</span>
+
+      </button>
+
+      <button
+        class="admin-nav-item"
+        type="button"
+        data-view="products">
+
+        <span class="admin-nav-icon" aria-hidden="true">🍔</span>
+        <span class="admin-nav-label">Produtos</span>
+
+      </button>
+
+      <button
+        class="admin-nav-item"
+        type="button"
+        data-view="reports">
+
+        <span class="admin-nav-icon" aria-hidden="true">📊</span>
+        <span class="admin-nav-label">Relatórios</span>
+
+      </button>
+
+      <button
+        class="admin-nav-item"
+        type="button"
+        data-view="finance">
+
+        <span class="admin-nav-icon" aria-hidden="true">💼</span>
+        <span class="admin-nav-label">Financeiro</span>
+
+      </button>
+
+    </nav>
+
+
+    <!-- CONTEÚDO -->
+
+    <main class="admin-main">
+
+
+      <!-- ==================================================
+           INÍCIO
+
+           Resumo rápido + atalhos. É aqui que o dashboard
+           com gráficos vai entrar depois.
+      =================================================== -->
+
+      <section
+        class="admin-view"
+        id="view-home"
+        data-view-panel="home">
+
+        <div class="view-header">
+
+          <div>
+
+            <h2>
+              Visão geral
+            </h2>
+
+            <p class="view-subtitle">
+              Como está a operação hoje.
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <div class="history-stats home-kpis">
+
+          <div class="history-stat-card">
+
+            <div class="history-stat-icon">
+              💰
+            </div>
+
+            <div>
+
+              <span>
+                Faturamento do mês
+              </span>
+
+              <strong id="homeMonthRevenue">
+                R$ 0,00
+              </strong>
+
+            </div>
+
+          </div>
+
+          <div class="history-stat-card">
+
+            <div class="history-stat-icon">
+              🧾
+            </div>
+
+            <div>
+
+              <span>
+                Vendas hoje
+              </span>
+
+              <strong id="homeTodaySales">
+                0
+              </strong>
+
+            </div>
+
+          </div>
+
+          <div class="history-stat-card">
+
+            <div class="history-stat-icon">
+              📦
+            </div>
+
+            <div>
+
+              <span>
+                Produtos com estoque baixo
+              </span>
+
+              <strong id="homeLowStock">
+                0
+              </strong>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <h3 class="group-title">
+          Ir para
+        </h3>
+
+        <div class="home-shortcuts">
+
+          <button
+            class="home-tile"
+            type="button"
+            data-view="sales">
+
+            <span class="home-tile-icon" aria-hidden="true">📋</span>
+
+            <span class="home-tile-text">
+              <strong>Vendas</strong>
+              <small>Consulte e filtre as vendas realizadas</small>
+            </span>
+
+          </button>
+
+          <button
+            class="home-tile"
+            type="button"
+            data-view="products">
+
+            <span class="home-tile-icon" aria-hidden="true">🍔</span>
+
+            <span class="home-tile-text">
+              <strong>Produtos</strong>
+              <small>Cadastre, edite e controle o estoque</small>
+            </span>
+
+          </button>
+
+          <button
+            class="home-tile"
+            type="button"
+            data-view="reports">
+
+            <span class="home-tile-icon" aria-hidden="true">📊</span>
+
+            <span class="home-tile-text">
+              <strong>Relatórios</strong>
+              <small>Faturamento por dia e estoque baixo</small>
+            </span>
+
+          </button>
+
+          <button
+            class="home-tile"
+            type="button"
+            data-view="finance">
+
+            <span class="home-tile-icon" aria-hidden="true">💼</span>
+
+            <span class="home-tile-text">
+              <strong>Financeiro</strong>
+              <small>Despesas, saldo e lucro do período</small>
+            </span>
+
+          </button>
+
+        </div>
+
+      </section>
+
+
+
+      <!-- ==================================================
+           VENDAS (HISTÓRICO)
+      =================================================== -->
+
+      <section
+        class="admin-view hidden"
+        id="view-sales"
+        data-view-panel="sales">
+
+        <div class="view-header">
+
+          <div>
+
+            <h2>
+              Vendas
+            </h2>
+
+            <p class="view-subtitle">
+              Consulte as vendas realizadas no sistema.
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <div class="history-stats">
+
+          <div class="history-stat-card">
+
+            <div class="history-stat-icon">
+              🧾
+            </div>
+
+            <div>
+
+              <span>
+                Total de vendas
+              </span>
+
+              <strong id="historyTotalSales">
+                0
+              </strong>
+
+            </div>
+
+          </div>
+
+          <div class="history-stat-card">
+
+            <div class="history-stat-icon">
+              💰
+            </div>
+
+            <div>
+
+              <span>
+                Faturamento
+              </span>
+
+              <strong id="historyRevenue">
+                R$ 0,00
+              </strong>
+
+            </div>
+
+          </div>
+
+          <div class="history-stat-card">
+
+            <div class="history-stat-icon">
+              📈
+            </div>
+
+            <div>
+
+              <span>
+                Ticket médio
+              </span>
+
+              <strong id="historyAverage">
+                R$ 0,00
+              </strong>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <div class="history-filters">
+
+          <div class="history-search">
+
+            <span aria-hidden="true">
+              ⌕
+            </span>
+
+            <input
+              id="historySearchInput"
+              type="search"
+              placeholder="Buscar cliente, produto ou ID da venda..."
+              autocomplete="off">
+
+          </div>
+
+          <div class="history-date">
+
+            <label for="historyDateFilter">
+              Data
+            </label>
+
+            <input
+              id="historyDateFilter"
+              type="date">
+
+          </div>
+
+          <div class="history-payment">
+
+            <label for="historyPaymentFilter">
+              Pagamento
+            </label>
+
+            <select
+              id="historyPaymentFilter">
+
+              <option value="Todos">
+                Todos
+              </option>
+
+              <option value="PIX">
+                PIX
+              </option>
+
+              <option value="Dinheiro">
+                Dinheiro
+              </option>
+
+              <option value="Débito">
+                Débito
+              </option>
+
+              <option value="Crédito">
+                Crédito
+              </option>
+
+            </select>
+
+          </div>
+
+          <button
+            class="clear-history-button"
+            id="clearHistoryFilters"
+            type="button">
+
+            Limpar filtros
+
+          </button>
+
+        </div>
+
+
+        <div class="history-card">
+
+          <div class="history-table-header">
+
+            <span>
+              Venda
+            </span>
+
+            <span>
+              Cliente
+            </span>
+
+            <span>
+              Itens
+            </span>
+
+            <span>
+              Pagamento
+            </span>
+
+            <span>
+              Total
+            </span>
+
+            <span>
+              Data
+            </span>
+
+            <span>
+              Ação
+            </span>
+
+          </div>
+
+
+          <div
+            id="salesHistory"
+            class="sales-history">
+
+            <div class="history-loading">
+
+              <div class="history-loading-icon">
+                ⏳
+              </div>
+
+              <strong>
+                Carregando vendas...
+              </strong>
+
+              <span>
+                Buscando informações no Firebase.
+              </span>
+
+            </div>
+
+          </div>
+
+
+          <div
+            id="historyEmptyState"
+            class="history-empty hidden">
+
+            <div>
+              📋
+            </div>
+
+            <h3>
+              Nenhuma venda encontrada
+            </h3>
+
+            <p>
+              Não existem vendas correspondentes aos filtros selecionados.
+            </p>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+
+      <!-- ==================================================
+           PRODUTOS (GESTÃO)
+
+           A lista fica na página; o formulário de cadastro
+           e edição continua sendo um modal (mais abaixo).
+      =================================================== -->
+
+      <section
+        class="admin-view hidden"
+        id="view-products"
+        data-view-panel="products">
+
+        <div class="view-header">
+
+          <div>
+
+            <h2>
+              Produtos
+            </h2>
+
+            <p class="view-subtitle">
+              Cadastre produtos, ajuste preço, custo e estoque.
+            </p>
+
+          </div>
+
+          <button
+            class="primary-button"
+            id="addProductButton"
+            type="button">
+
+            + Novo produto
+
+          </button>
+
+        </div>
+
+
+        <div class="panel">
+
+          <div
+            id="adminProductList"
+            class="admin-product-list">
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+
+      <!-- ==================================================
+           RELATÓRIOS
+
+           1. Faturamento por dia — soma o campo "total" das
+              vendas, agrupado por data.
+           2. Estoque baixo — produtos disponíveis com stock
+              igual ou abaixo do limite definido em
+              LOW_STOCK_THRESHOLD, no código do painel.
+      =================================================== -->
+
+      <section
+        class="admin-view hidden"
+        id="view-reports"
+        data-view-panel="reports">
+
+        <div class="view-header">
+
+          <div>
+
+            <h2>
+              Relatórios
+            </h2>
+
+            <p class="view-subtitle">
+              Faturamento recente e produtos que precisam de reposição.
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <div class="panel">
+
+          <h3 class="panel-title">
+            Faturamento por dia
+          </h3>
+
+          <div
+            id="dailyRevenueList"
+            class="daily-revenue-list">
+
+          </div>
+
+        </div>
+
+
+        <div class="panel">
+
+          <h3 class="panel-title">
+            Estoque baixo
+          </h3>
+
+          <div
+            id="lowStockList"
+            class="low-stock-list">
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+
+      <!-- ==================================================
+           FINANCEIRO
+
+           Entradas = soma das vendas do período (coleção "vendas").
+           Saídas   = soma das despesas do período (coleção "despesas").
+           Saldo    = Entradas - Saídas.
+           Sem o mês preenchido, considera todo o período.
+      =================================================== -->
+
+      <section
+        class="admin-view hidden"
+        id="view-finance"
+        data-view-panel="finance">
+
+        <div class="view-header">
+
+          <div>
+
+            <h2>
+              Financeiro
+            </h2>
+
+            <p class="view-subtitle">
+              Entradas, despesas e lucro do período.
+            </p>
+
+          </div>
+
+          <button
+            class="primary-button"
+            id="addExpenseButton"
+            type="button">
+
+            + Nova despesa
+
+          </button>
+
+        </div>
+
+
+        <div class="finance-toolbar">
+
+          <div class="history-date">
+
+            <label for="financeMonthFilter">
+              Mês
+            </label>
+
+            <input
+              id="financeMonthFilter"
+              type="month">
+
+          </div>
+
+          <button
+            class="clear-history-button"
+            id="financeAllButton"
+            type="button">
+
+            Ver todo o período
+
+          </button>
+
+        </div>
+
+
+        <div class="history-stats finance-stats">
+
+          <div class="history-stat-card">
+
+            <div class="history-stat-icon">
+              💰
+            </div>
+
+            <div>
+
+              <span>
+                Entradas (vendas)
+              </span>
+
+              <strong id="financeIncome">
+                R$ 0,00
+              </strong>
+
+            </div>
+
+          </div>
+
+          <div class="history-stat-card">
+
+            <div class="history-stat-icon">
+              💸
+            </div>
+
+            <div>
+
+              <span>
+                Saídas (despesas)
+              </span>
+
+              <strong id="financeExpense">
+                R$ 0,00
+              </strong>
+
+            </div>
+
+          </div>
+
+          <div class="history-stat-card">
+
+            <div class="history-stat-icon">
+              🧮
+            </div>
+
+            <div>
+
+              <span>
+                Saldo
+              </span>
+
+              <strong id="financeBalance">
+                R$ 0,00
+              </strong>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <div class="history-stats finance-stats">
+
+          <div class="history-stat-card">
+
+            <div class="history-stat-icon">
+              📦
+            </div>
+
+            <div>
+
+              <span>
+                Custo dos produtos vendidos
+              </span>
+
+              <strong id="financeCost">
+                R$ 0,00
+              </strong>
+
+            </div>
+
+          </div>
+
+          <div class="history-stat-card">
+
+            <div class="history-stat-icon">
+              📈
+            </div>
+
+            <div>
+
+              <span>
+                Lucro bruto
+              </span>
+
+              <strong id="financeGrossProfit">
+                R$ 0,00
+              </strong>
+
+            </div>
+
+          </div>
+
+          <div class="history-stat-card">
+
+            <div class="history-stat-icon">
+              🏆
+            </div>
+
+            <div>
+
+              <span>
+                Lucro líquido
+              </span>
+
+              <strong id="financeNetProfit">
+                R$ 0,00
+              </strong>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <p
+          class="finance-note"
+          id="financeProfitNote">
+        </p>
+
+
+        <div class="panel">
+
+          <h3 class="panel-title">
+            Despesas por categoria
+          </h3>
+
+          <div
+            id="financeCategoryList"
+            class="finance-category-list">
+
+          </div>
+
+        </div>
+
+
+        <div class="panel">
+
+          <h3 class="panel-title">
+            Despesas lançadas
+          </h3>
+
+          <div
+            id="expenseList"
+            class="expense-list">
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+    </main>
+
+  </div>
+
+
+
+  <!-- ==================================================
+       MODAL DE DETALHES DA VENDA
+  =================================================== -->
+
+  <div
+    class="modal-backdrop hidden"
+    id="saleDetailsModal">
+
+    <div
+      class="modal sale-details-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="saleDetailsTitle">
+
+      <button
+        class="modal-close"
+        id="closeSaleDetailsModal"
+        type="button"
+        aria-label="Fechar">
+
+        ×
+
+      </button>
+
+      <div class="sale-details-header">
+
+        <h2 id="saleDetailsTitle">
+          Venda
+        </h2>
+
+        <span
+          id="saleDetailsId"
+          class="sale-details-id">
+
+        </span>
+
+      </div>
+
+      <div class="sale-details-info">
+
+        <div class="sale-info-item">
+
+          <span>
+            Cliente
+          </span>
+
+          <strong id="saleDetailsCustomer">
+            -
+          </strong>
+
+        </div>
+
+        <div class="sale-info-item">
+
+          <span>
+            Pagamento
+          </span>
+
+          <strong id="saleDetailsPayment">
+            -
+          </strong>
+
+        </div>
+
+        <div class="sale-info-item">
+
+          <span>
+            Data
+          </span>
+
+          <strong id="saleDetailsDate">
+            -
+          </strong>
+
+        </div>
+
+        <div class="sale-info-item">
+
+          <span>
+            Status
+          </span>
+
+          <strong
+            id="saleDetailsStatus"
+            class="sale-status">
+
+            Finalizada
+
+          </strong>
+
+        </div>
+
+      </div>
+
+      <div class="sale-details-items">
+
+        <div class="sale-details-section-title">
+
+          <span>
+            Itens do pedido
+          </span>
+
+        </div>
+
+        <div
+          id="saleDetailsItems"
+          class="sale-items-list">
+
+        </div>
+
+      </div>
+
+      <div class="sale-details-summary">
+
+        <div>
+
+          <span>
+            Subtotal
+          </span>
+
+          <strong id="saleDetailsSubtotal">
+            R$ 0,00
+          </strong>
+
+        </div>
+
+        <div>
+
+          <span>
+            Desconto
+          </span>
+
+          <strong id="saleDetailsDiscount">
+            R$ 0,00
+          </strong>
+
+        </div>
+
+        <div class="sale-profit-row hidden" id="saleDetailsCostRow">
+
+          <span>
+            Custo dos itens
+          </span>
+
+          <strong id="saleDetailsCost">
+            R$ 0,00
+          </strong>
+
+        </div>
+
+        <div class="sale-profit-row hidden" id="saleDetailsProfitRow">
+
+          <span>
+            Lucro
+          </span>
+
+          <strong id="saleDetailsProfit">
+            R$ 0,00
+          </strong>
+
+        </div>
+
+        <div class="sale-details-total">
+
+          <span>
+            Total
+          </span>
+
+          <strong id="saleDetailsTotal">
+            R$ 0,00
+          </strong>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+
+  <!-- ==================================================
+       MODAL DE FORMULÁRIO DE PRODUTO (CRIAR/EDITAR)
+  =================================================== -->
+
+  <div
+    class="modal-backdrop hidden"
+    id="productFormModal">
+
+    <div
+      class="modal admin-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="productFormTitle">
+
+      <button
+        class="modal-close"
+        id="closeProductFormModal"
+        type="button"
+        aria-label="Fechar">
+
+        ×
+
+      </button>
+
+      <h2 id="productFormTitle">
+        Novo produto
+      </h2>
+
+      <form id="productForm">
+
+        <!-- ID do produto (vazio = criação) -->
+
+        <input
+          type="hidden"
+          id="productFormId">
+
+        <div class="form-grid">
+
+          <div class="full">
+
+            <label
+              class="field-label"
+              for="productFormName">
+
+              Nome do produto
+
+            </label>
+
+            <input
+              class="text-input"
+              id="productFormName"
+              type="text"
+              placeholder="Ex: X-Salada"
+              required>
+
+          </div>
+
+          <div>
+
+            <label
+              class="field-label"
+              for="productFormCategory">
+
+              Categoria
+
+            </label>
+
+            <select
+              class="text-input"
+              id="productFormCategory">
+
+              <option value="Lanches">
+                Lanches
+              </option>
+
+              <option value="Combos">
+                Combos
+              </option>
+
+              <option value="Porções">
+                Porções
+              </option>
+
+              <option value="Bebidas">
+                Bebidas
+              </option>
+
+              <option value="Sobremesas">
+                Sobremesas
+              </option>
+
+            </select>
+
+          </div>
+
+          <div>
+
+            <label
+              class="field-label"
+              for="productFormEmoji">
+
+              Imagem (arquivo ou emoji)
+
+            </label>
+
+            <input
+              class="text-input"
+              id="productFormEmoji"
+              type="text"
+              placeholder="x-burger.webp ou 🍔"
+              maxlength="120">
+
+            <small class="field-hint">Nome do arquivo em <code>img/</code> ou um emoji.</small>
+
+          </div>
+
+          <div>
+
+            <label
+              class="field-label"
+              for="productFormPrice">
+
+              Preço (R$)
+
+            </label>
+
+            <input
+              class="text-input"
+              id="productFormPrice"
+              type="number"
+              inputmode="decimal"
+              min="0"
+              step="0.01"
+              placeholder="0,00"
+              required>
+
+          </div>
+
+          <div>
+
+            <label
+              class="field-label"
+              for="productFormStock">
+
+              Estoque inicial
+
+            </label>
+
+            <input
+              class="text-input"
+              id="productFormStock"
+              type="number"
+              inputmode="numeric"
+              min="0"
+              step="1"
+              placeholder="0"
+              required>
+
+          </div>
+
+          <div>
+
+            <label
+              class="field-label"
+              for="productFormCost">
+
+              Custo (R$)
+
+            </label>
+
+            <input
+              class="text-input"
+              id="productFormCost"
+              type="number"
+              inputmode="decimal"
+              min="0"
+              step="0.01"
+              placeholder="0,00">
+
+          </div>
+
+          <div>
+
+            <label
+              class="field-label"
+              for="productFormTargetMargin">
+
+              Margem desejada (%) — opcional
+
+            </label>
+
+            <input
+              class="text-input"
+              id="productFormTargetMargin"
+              type="number"
+              inputmode="decimal"
+              min="0"
+              max="99"
+              step="0.1"
+              placeholder="Ex: 60">
+
+          </div>
+
+          <div class="full cost-calculator">
+
+            <h3 class="calc-title">
+              Calculadora de lucro
+            </h3>
+
+            <div class="cost-calc-grid">
+
+              <div class="cost-calc-item">
+                <span>Lucro por unidade</span>
+                <strong id="costCalcProfit">—</strong>
+              </div>
+
+              <div class="cost-calc-item">
+                <span>Margem</span>
+                <strong id="costCalcMargin">—</strong>
+              </div>
+
+              <div class="cost-calc-item">
+                <span>Markup</span>
+                <strong id="costCalcMarkup">—</strong>
+              </div>
+
+            </div>
+
+            <div class="cost-calc-suggest">
+
+              <span id="costCalcSuggestion">
+                Informe o custo e a margem desejada para ver o preço sugerido.
+              </span>
+
+              <button
+                class="detail-button hidden"
+                id="applySuggestedPriceButton"
+                type="button">
+
+                Usar preço sugerido
+
+              </button>
+
+            </div>
+
+            <small class="field-hint">
+              Margem = lucro ÷ preço de venda. Markup = lucro ÷ custo.
+            </small>
+
+          </div>
+
+          <div class="full">
+
+            <label
+              class="field-label"
+              for="productFormDescription">
+
+              Descrição
+
+            </label>
+
+            <textarea
+              class="textarea-input"
+              id="productFormDescription"
+              placeholder="Descrição curta do produto"></textarea>
+
+          </div>
+
+          <div class="full checkbox-field">
+
+            <input
+              type="checkbox"
+              id="productFormAvailable"
+              checked>
+
+            <label for="productFormAvailable">
+              Produto disponível para venda
+            </label>
+
+          </div>
+
+        </div>
+
+        <div class="admin-form-actions">
+
+          <button
+            class="detail-button hidden"
+            id="deleteProductButton"
+            type="button">
+
+            🗑️ Excluir produto
+
+          </button>
+
+          <button
+            class="checkout-button"
+            id="productFormSubmitButton"
+            type="submit">
+
+            Cadastrar produto
+
+          </button>
+
+        </div>
+
+      </form>
+
+    </div>
+
+  </div>
+
+
+
+  <!-- ==================================================
+       MODAL DE FORMULÁRIO DE DESPESA (CRIAR/EDITAR)
+  =================================================== -->
+
+  <div
+    class="modal-backdrop hidden"
+    id="expenseFormModal">
+
+    <div
+      class="modal admin-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="expenseFormTitle">
+
+      <button
+        class="modal-close"
+        id="closeExpenseFormModal"
+        type="button"
+        aria-label="Fechar">
+
+        ×
+
+      </button>
+
+      <h2 id="expenseFormTitle">
+        Nova despesa
+      </h2>
+
+      <form id="expenseForm">
+
+        <input
+          type="hidden"
+          id="expenseFormId">
+
+        <div class="form-grid">
+
+          <div class="full">
+
+            <label
+              class="field-label"
+              for="expenseFormDescription">
+
+              Descrição
+
+            </label>
+
+            <input
+              class="text-input"
+              id="expenseFormDescription"
+              type="text"
+              placeholder="Ex: Compra de carne e pão"
+              required>
+
+          </div>
+
+          <div>
+
+            <label
+              class="field-label"
+              for="expenseFormCategory">
+
+              Categoria
+
+            </label>
+
+            <select
+              class="text-input"
+              id="expenseFormCategory">
+
+              <option value="Insumos">Insumos</option>
+              <option value="Aluguel">Aluguel</option>
+              <option value="Salários">Salários</option>
+              <option value="Energia e água">Energia e água</option>
+              <option value="Marketing">Marketing</option>
+              <option value="Manutenção">Manutenção</option>
+              <option value="Impostos">Impostos</option>
+              <option value="Outros">Outros</option>
+
+            </select>
+
+          </div>
+
+          <div>
+
+            <label
+              class="field-label"
+              for="expenseFormAmount">
+
+              Valor (R$)
+
+            </label>
+
+            <input
+              class="text-input"
+              id="expenseFormAmount"
+              type="number"
+              inputmode="decimal"
+              min="0.01"
+              step="0.01"
+              placeholder="0,00"
+              required>
+
+          </div>
+
+          <div class="full">
+
+            <label
+              class="field-label"
+              for="expenseFormDate">
+
+              Data
+
+            </label>
+
+            <input
+              class="text-input"
+              id="expenseFormDate"
+              type="date"
+              required>
+
+          </div>
+
+        </div>
+
+        <div class="admin-form-actions">
+
+          <button
+            class="detail-button hidden"
+            id="deleteExpenseButton"
+            type="button">
+
+            🗑️ Excluir despesa
+
+          </button>
+
+          <button
+            class="checkout-button"
+            id="expenseFormSubmitButton"
+            type="submit">
+
+            Lançar despesa
+
+          </button>
+
+        </div>
+
+      </form>
+
+    </div>
+
+  </div>
+
+
+
+  <!-- TOAST -->
+
+  <div
+    class="toast hidden"
+    id="toast"
+    role="status"
+    aria-live="polite">
+
+  </div>
+
+
+
+  <!-- ==================================================
+       FIREBASE + CONTROLE DE ACESSO
+
+       Diferente do index.html, esta página NÃO cria sessão
+       anônima: sem login de verdade, vai para o login.
+       Só administrador entra (role === "administrador" em
+       usuarios/{uid}); qualquer outro papel volta para o
+       cardápio. A garantia real continua nas Security Rules
+       — isto aqui evita mostrar a tela a quem não deve.
+
+       Contrato com js/admin.js:
+         - window.db, window.userRole e window.currentUser
+           ficam definidos antes de iniciarAdmin() rodar;
+         - o admin.js define window.iniciarAdmin();
+         - se o admin.js carregar DEPOIS da autenticação
+           terminar, window.adminPronto já estará true e ele
+           mesmo chama iniciarAdmin().
+  =================================================== -->
+
+  <script type="module">
+
+    import {
+      initializeApp
+    } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+
+
+    import {
+      getFirestore,
+      doc,
+      getDoc
+    } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+
+
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+
+
+    // ================================================
+    // CONFIGURAÇÃO DO FIREBASE
+    // ================================================
+
+    const firebaseConfig = {
+
+      apiKey: "AIzaSyCDBhEvK6KxiSAFbQKxHWPdyfSe553M17s",
+      authDomain: "sistema-pdv-usjt.firebaseapp.com",
+      projectId: "sistema-pdv-usjt",
+      storageBucket: "sistema-pdv-usjt.firebasestorage.app",
+      messagingSenderId: "803225322517",
+      appId: "1:803225322517:web:89b28e01bbd0d5f484ba1c"
+
+    };
+
+
+    // ================================================
+    // INICIALIZAR FIREBASE
+    // ================================================
+
+    const app =
+      initializeApp(firebaseConfig);
+
+    const db =
+      getFirestore(app);
+
+    const auth =
+      getAuth(app);
+
+
+    // Disponibiliza o Firestore para o admin.js
+
+    window.db =
+      db;
+
+
+    // ================================================
+    // SAIR
+    // ================================================
+
+    window.logout = () => {
+
+      signOut(auth).then(() => {
+
+        window.location.href =
+          "index.html";
+
+      });
+
+    };
+
+
+    const logoutButton =
+      document.getElementById(
+        "logoutButton"
+      );
+
+
+    if (logoutButton) {
+
+      logoutButton.addEventListener(
+        "click",
+        () => {
+
+          window.logout();
+
+        }
+      );
+
+    }
+
+
+    // ================================================
+    // VERIFICAR SE O USUÁRIO É ADMINISTRADOR
+    //
+    // Lê "usuarios/{uid}". Qualquer falha (documento
+    // inexistente, sem permissão, erro de rede) conta
+    // como NÃO administrador — falha de forma segura.
+    // ================================================
+
+    async function isAdministrator(user) {
+
+      try {
+
+        const snapshot =
+          await getDoc(
+            doc(
+              db,
+              "usuarios",
+              user.uid
+            )
+          );
+
+        return (
+          snapshot.exists() &&
+          snapshot.data().role ===
+          "administrador"
+        );
+
+      } catch (error) {
+
+        console.error(
+          "Erro ao verificar o perfil do usuário:",
+          error
+        );
+
+        return false;
+
+      }
+
+    }
+
+
+    // ================================================
+    // PORTEIRO DA PÁGINA
+    // ================================================
+
+    onAuthStateChanged(
+      auth,
+      async (user) => {
+
+        // Sem login, ou só sessão de visitante
+
+        if (
+          !user ||
+          user.isAnonymous
+        ) {
+
+          window.location.href =
+            "login.html";
+
+          return;
+
+        }
+
+
+        // Logado, mas não administrador
+
+        const admin =
+          await isAdministrator(
+            user
+          );
+
+
+        if (!admin) {
+
+          window.location.href =
+            "index.html";
+
+          return;
+
+        }
+
+
+        // Administrador confirmado
+
+        window.userRole =
+          "administrador";
+
+        window.currentUser =
+          user;
+
+        window.adminPronto =
+          true;
+
+
+        console.log(
+          "Administrador autenticado:",
+          user.email
+        );
+
+
+        document.body.style.visibility =
+          "visible";
+
+
+        if (window.iniciarAdmin) {
+
+          window.iniciarAdmin();
+
+        }
+
+      }
+    );
+
+  </script>
+
+
+
+  <!-- ADMIN.JS -->
+
+  <script
+    type="module"
+    src="js/admin.js">
+  </script>
+
+
+</body>
+
+</html>

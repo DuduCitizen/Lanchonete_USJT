@@ -1,40 +1,42 @@
+// ======================================================
+// APP.JS — PÁGINA DO CLIENTE
+//
+// Cardápio, carrinho e finalização da venda. Tudo que é
+// do administrador (histórico, produtos, relatórios,
+// financeiro, calculadora) agora vive em js/admin.js,
+// servido pela página admin.html.
+//
+// Funções compartilhadas (formatação, imagens, toast)
+// ficam em js/utils.js.
+// ======================================================
+
 import {
   collection,
-  getDocs,
   doc,
   serverTimestamp,
   runTransaction,
-  setDoc,
-  increment,
-  addDoc,
-  updateDoc,
-  deleteDoc
+  increment
 } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
-
-// ======================================================
-// PRODUTOS
-// ======================================================
-
-let products = [];
+import {
+  brl,
+  escapeHtml,
+  renderProductImage,
+  showToast,
+  closeModal,
+  fetchProducts
+} from "./utils.js";
 
 
 // ======================================================
 // ESTADO DA APLICAÇÃO
 // ======================================================
 
+let products = [];
 let cart = [];
 let activeCategory = "Todos";
 let selectedProduct = null;
 let modalQuantity = 1;
-
-
-// ======================================================
-// HISTÓRICO DE VENDAS
-// ======================================================
-
-let sales = [];
-let selectedSale = null;
 
 
 // ======================================================
@@ -71,398 +73,11 @@ const totalEl =
 const checkoutButton =
   document.getElementById("checkoutButton");
 
-const toast =
-  document.getElementById("toast");
-
 const productModal =
   document.getElementById("productModal");
 
 const checkoutModal =
   document.getElementById("checkoutModal");
-
-
-// ======================================================
-// ELEMENTOS DO HISTÓRICO
-// ======================================================
-
-const historySection =
-  document.getElementById("historySection");
-
-const pdvSection =
-  document.getElementById("pdvSection");
-
-const openHistoryButton =
-  document.getElementById("openHistoryButton");
-
-const backToPdvButton =
-  document.getElementById("backToPdvButton");
-
-const historySearchInput =
-  document.getElementById("historySearchInput");
-
-const historyDateFilter =
-  document.getElementById("historyDateFilter");
-
-const historyPaymentFilter =
-  document.getElementById("historyPaymentFilter");
-
-const clearHistoryFilters =
-  document.getElementById("clearHistoryFilters");
-
-const salesHistory =
-  document.getElementById("salesHistory");
-
-const historyEmptyState =
-  document.getElementById("historyEmptyState");
-
-const historyTotalSales =
-  document.getElementById("historyTotalSales");
-
-const historyRevenue =
-  document.getElementById("historyRevenue");
-
-const historyAverage =
-  document.getElementById("historyAverage");
-
-const saleDetailsModal =
-  document.getElementById("saleDetailsModal");
-
-const closeSaleDetailsModal =
-  document.getElementById("closeSaleDetailsModal");
-
-
-// ======================================================
-// ELEMENTOS DA GESTÃO DE PRODUTOS (ADMIN)
-// ======================================================
-
-const manageProductsButton =
-  document.getElementById("manageProductsButton");
-
-const productManageModal =
-  document.getElementById("productManageModal");
-
-const closeProductManageModal =
-  document.getElementById("closeProductManageModal");
-
-const adminProductList =
-  document.getElementById("adminProductList");
-
-const addProductButton =
-  document.getElementById("addProductButton");
-
-const productFormModal =
-  document.getElementById("productFormModal");
-
-const closeProductFormModal =
-  document.getElementById("closeProductFormModal");
-
-const productForm =
-  document.getElementById("productForm");
-
-const productFormTitle =
-  document.getElementById("productFormTitle");
-
-const productFormId =
-  document.getElementById("productFormId");
-
-const productFormName =
-  document.getElementById("productFormName");
-
-const productFormCategory =
-  document.getElementById("productFormCategory");
-
-const productFormEmoji =
-  document.getElementById("productFormEmoji");
-
-const productFormPrice =
-  document.getElementById("productFormPrice");
-
-const productFormStock =
-  document.getElementById("productFormStock");
-
-const productFormDescription =
-  document.getElementById("productFormDescription");
-
-const productFormAvailable =
-  document.getElementById("productFormAvailable");
-
-const productFormSubmitButton =
-  document.getElementById("productFormSubmitButton");
-
-const deleteProductButton =
-  document.getElementById("deleteProductButton");
-
-
-// ======================================================
-// ELEMENTOS DOS RELATÓRIOS (ADMIN)
-// ======================================================
-
-const reportsButton =
-  document.getElementById("reportsButton");
-
-const reportsModal =
-  document.getElementById("reportsModal");
-
-const closeReportsModal =
-  document.getElementById("closeReportsModal");
-
-const dailyRevenueList =
-  document.getElementById("dailyRevenueList");
-
-const lowStockList =
-  document.getElementById("lowStockList");
-
-
-// ======================================================
-// LIMITE DE ESTOQUE BAIXO
-//
-// Produto disponível com stock igual ou menor que este
-// valor entra na lista de "Estoque baixo" do relatório.
-// stock === 0 é destacado como "crítico" (sem estoque).
-// ======================================================
-
-const LOW_STOCK_THRESHOLD = 5;
-
-
-// ======================================================
-// FORMATAÇÃO DE PREÇO
-// ======================================================
-
-const brl = value => {
-
-  const price =
-    Number(value) || 0;
-
-  return price.toLocaleString(
-    "pt-BR",
-    {
-      style: "currency",
-      currency: "BRL"
-    }
-  );
-
-};
-
-
-// ======================================================
-// IMAGENS DE PRODUTO
-//
-// O campo "image" do produto (Firestore) pode ser:
-//   - um emoji (ex.: "🍔")                 -> mostra o emoji
-//   - um arquivo (ex.: "x-burger.webp")    -> carrega de img/
-//   - um caminho (ex.: "img/x.png") ou URL completa
-//
-// Se o arquivo não existir, cai automaticamente no emoji padrão.
-// ======================================================
-
-const EMOJI_PADRAO = "🍔";
-
-const PASTA_IMAGENS_PRODUTOS = "img/";
-
-function isImagePath(value) {
-
-  return /\.(png|jpe?g|webp|gif|svg|avif)(\?.*)?$/i.test(
-    String(value || "").trim()
-  );
-
-}
-
-function resolveImageSrc(value) {
-
-  const v =
-    String(value || "").trim();
-
-  // URL completa, caminho absoluto ou já com pasta
-  if (
-    /^(https?:|data:|\/)/i.test(v) ||
-    v.includes("/")
-  ) {
-    return v;
-  }
-
-  // só o nome do arquivo -> assume a pasta padrão
-  return PASTA_IMAGENS_PRODUTOS + v;
-
-}
-
-function renderProductImage(value, alt = "") {
-
-  const v =
-    String(value || "").trim() ||
-    EMOJI_PADRAO;
-
-  if (!isImagePath(v)) {
-    return escapeHtml(v);
-  }
-
-  return `<img
-    class="product-img"
-    src="${escapeHtml(resolveImageSrc(v))}"
-    alt="${escapeHtml(alt)}"
-    loading="lazy"
-    onerror="this.replaceWith(document.createTextNode('${EMOJI_PADRAO}'))">`;
-
-}
-
-
-// ======================================================
-// FORMATAÇÃO DE DATA
-// ======================================================
-
-function formatSaleDate(timestamp) {
-
-  if (!timestamp) {
-    return "Data não disponível";
-  }
-
-
-  try {
-
-    let date;
-
-
-    // Firestore Timestamp
-    if (
-      typeof timestamp.toDate === "function"
-    ) {
-
-      date =
-        timestamp.toDate();
-
-    }
-
-    // Date normal
-    else if (
-      timestamp instanceof Date
-    ) {
-
-      date =
-        timestamp;
-
-    }
-
-    // Timestamp em segundos
-    else if (
-      timestamp.seconds !== undefined
-    ) {
-
-      date =
-        new Date(
-          timestamp.seconds * 1000
-        );
-
-    }
-
-    else {
-
-      date =
-        new Date(timestamp);
-
-    }
-
-
-    if (
-      Number.isNaN(
-        date.getTime()
-      )
-    ) {
-
-      return "Data inválida";
-
-    }
-
-
-    return date.toLocaleString(
-      "pt-BR",
-      {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit"
-      }
-    );
-
-  } catch (error) {
-
-    console.error(
-      "Erro ao formatar data:",
-      error
-    );
-
-    return "Data inválida";
-
-  }
-
-}
-
-
-// ======================================================
-// CONVERTER DATA PARA FILTRO
-// ======================================================
-
-function getSaleDate(timestamp) {
-
-  if (!timestamp) {
-    return null;
-  }
-
-
-  try {
-
-    if (
-      typeof timestamp.toDate === "function"
-    ) {
-
-      return timestamp.toDate();
-
-    }
-
-
-    if (
-      timestamp.seconds !== undefined
-    ) {
-
-      return new Date(
-        timestamp.seconds * 1000
-      );
-
-    }
-
-
-    if (
-      timestamp instanceof Date
-    ) {
-
-      return timestamp;
-
-    }
-
-
-    const date =
-      new Date(timestamp);
-
-
-    if (
-      Number.isNaN(
-        date.getTime()
-      )
-    ) {
-
-      return null;
-
-    }
-
-
-    return date;
-
-  } catch {
-
-    return null;
-
-  }
-
-}
 
 
 // ======================================================
@@ -473,94 +88,10 @@ async function loadProducts() {
 
   try {
 
-    console.log(
-      "Carregando produtos do Firebase..."
-    );
-
-
-    const productsCollection =
-      collection(
-        window.db,
-        "produtos"
-      );
-
-
-    const snapshot =
-      await getDocs(
-        productsCollection
-      );
-
-
     products =
-      snapshot.docs.map(
-        documentSnapshot => {
-
-          const data =
-            documentSnapshot.data();
-
-
-          return {
-
-            id:
-              documentSnapshot.id,
-
-            name:
-              String(
-                data.name ||
-                "Produto sem nome"
-              ),
-
-            category:
-              String(
-                data.category ||
-                "Outros"
-              ),
-
-            price:
-              Number(
-                data.price
-              ) || 0,
-
-            description:
-              String(
-                data.description ||
-                "Sem descrição disponível."
-              ),
-
-            emoji:
-              String(
-                data.image ||
-                data.emoji ||
-                "🍔"
-              ),
-
-            available:
-              data.available === true,
-            cost:
-              data.cost === undefined ||
-              data.cost === null
-                ? null
-                : Number(data.cost) || 0,
-
-            stock:
-              Number(
-                data.stock
-              ) || 0
-
-          };
-
-        }
-      );
-
-
-    console.log(
-      "Produtos vindos do Firebase:",
-      products
-    );
-
+      await fetchProducts();
 
     renderProducts();
-
 
   } catch (error) {
 
@@ -568,7 +99,6 @@ async function loadProducts() {
       "Erro ao carregar produtos:",
       error
     );
-
 
     showToast(
       "Erro ao carregar os produtos."
@@ -595,49 +125,26 @@ function renderProducts() {
     products.filter(
       product => {
 
-        if (
-          product.available !== true
-        ) {
+        // O cliente só vê produto disponível e com estoque
+        if (product.available !== true) {
           return false;
         }
 
-
-        if (
-          product.stock <= 0
-        ) {
+        if (product.stock <= 0) {
           return false;
         }
-
-
-        const category =
-          String(
-            product.category || ""
-          );
 
 
         const matchesCategory =
           activeCategory === "Todos" ||
-          category === activeCategory;
-
-
-        const name =
-          String(
-            product.name || ""
-          );
-
-
-        const description =
-          String(
-            product.description || ""
-          );
+          String(product.category || "") === activeCategory;
 
 
         const matchesSearch =
-          name
+          String(product.name || "")
             .toLowerCase()
             .includes(search) ||
-
-          description
+          String(product.description || "")
             .toLowerCase()
             .includes(search);
 
@@ -665,17 +172,17 @@ function renderProducts() {
             <div class="product-body">
 
               <span class="product-category">
-                ${String(
-                  product.category
-                ).toUpperCase()}
+                ${escapeHtml(
+                  String(product.category).toUpperCase()
+                )}
               </span>
 
               <h4>
-                ${product.name}
+                ${escapeHtml(product.name)}
               </h4>
 
               <p>
-                ${product.description}
+                ${escapeHtml(product.description)}
               </p>
 
               <div class="product-footer">
@@ -749,9 +256,7 @@ function canAddProduct(
   }
 
 
-  if (
-    product.available !== true
-  ) {
+  if (product.available !== true) {
 
     showToast(
       `${product.name} está indisponível.`
@@ -762,9 +267,7 @@ function canAddProduct(
   }
 
 
-  if (
-    product.stock <= 0
-  ) {
+  if (product.stock <= 0) {
 
     showToast(
       `${product.name} está sem estoque.`
@@ -828,10 +331,7 @@ function addToCart(
   // pedido" do modal de detalhes.
   // ====================================================
 
-  if (
-    window.userRole ===
-    "visitante"
-  ) {
+  if (window.userRole === "visitante") {
 
     window.location.href =
       "login.html";
@@ -937,9 +437,7 @@ function updateQuantity(
     delta;
 
 
-  if (
-    item.quantity <= 0
-  ) {
+  if (item.quantity <= 0) {
 
     cart =
       cart.filter(
@@ -956,14 +454,29 @@ function updateQuantity(
 
 
 // ======================================================
+// TOTAL DO CARRINHO
+// ======================================================
+
+function getCartTotal() {
+
+  return cart.reduce(
+    (sum, item) =>
+      sum +
+      (Number(item.price) || 0) *
+      item.quantity,
+    0
+  );
+
+}
+
+
+// ======================================================
 // RENDERIZAR CARRINHO
 // ======================================================
 
 function renderCart() {
 
-  if (
-    cart.length === 0
-  ) {
+  if (cart.length === 0) {
 
     cartItems.innerHTML = `
 
@@ -1001,7 +514,7 @@ function renderCart() {
               <div class="cart-item-info">
 
                 <strong>
-                  ${item.name}
+                  ${escapeHtml(item.name)}
                 </strong>
 
                 <small>
@@ -1049,24 +562,13 @@ function renderCart() {
 
 
   const subtotal =
-    cart.reduce(
-      (sum, item) =>
-        sum +
-        (
-          Number(item.price) || 0
-        ) *
-        item.quantity,
-      0
-    );
-
+    getCartTotal();
 
   const discount = 0;
-
 
   const total =
     subtotal -
     discount;
-
 
   const quantity =
     cart.reduce(
@@ -1079,18 +581,14 @@ function renderCart() {
   subtotalEl.textContent =
     brl(subtotal);
 
-
   discountEl.textContent =
     brl(discount);
-
 
   totalEl.textContent =
     brl(total);
 
-
   cartCount.textContent =
     quantity;
-
 
   checkoutButton.disabled =
     cart.length === 0;
@@ -1102,9 +600,7 @@ function renderCart() {
 // MODAL DO PRODUTO
 // ======================================================
 
-function openProductModal(
-  productId
-) {
+function openProductModal(productId) {
 
   selectedProduct =
     products.find(
@@ -1118,9 +614,7 @@ function openProductModal(
   }
 
 
-  if (
-    selectedProduct.available !== true
-  ) {
+  if (selectedProduct.available !== true) {
 
     showToast(
       `${selectedProduct.name} está indisponível.`
@@ -1131,9 +625,7 @@ function openProductModal(
   }
 
 
-  if (
-    selectedProduct.stock <= 0
-  ) {
+  if (selectedProduct.stock <= 0) {
 
     showToast(
       `${selectedProduct.name} está sem estoque.`
@@ -1150,7 +642,10 @@ function openProductModal(
   document.getElementById(
     "modalProductImage"
   ).innerHTML =
-    renderProductImage(selectedProduct.emoji, selectedProduct.name);
+    renderProductImage(
+      selectedProduct.emoji,
+      selectedProduct.name
+    );
 
 
   document.getElementById(
@@ -1177,9 +672,7 @@ function openProductModal(
   document.getElementById(
     "modalProductPrice"
   ).textContent =
-    brl(
-      selectedProduct.price
-    );
+    brl(selectedProduct.price);
 
 
   document.getElementById(
@@ -1202,65 +695,11 @@ function openProductModal(
 
 
 // ======================================================
-// FECHAR MODAL
-// ======================================================
-
-function closeModal(modal) {
-
-  if (!modal) {
-    return;
-  }
-
-  modal.classList.add(
-    "hidden"
-  );
-
-}
-
-
-// ======================================================
-// TOAST
-// ======================================================
-
-function showToast(message) {
-
-  toast.textContent =
-    message;
-
-
-  toast.classList.remove(
-    "hidden"
-  );
-
-
-  clearTimeout(
-    showToast.timer
-  );
-
-
-  showToast.timer =
-    setTimeout(
-      () => {
-
-        toast.classList.add(
-          "hidden"
-        );
-
-      },
-      3000
-    );
-
-}
-
-
-// ======================================================
 // CATEGORIAS
 // ======================================================
 
 document
-  .getElementById(
-    "categoryButtons"
-  )
+  .getElementById("categoryButtons")
   .addEventListener(
     "click",
     event => {
@@ -1281,9 +720,7 @@ document
 
 
       document
-        .querySelectorAll(
-          ".category"
-        )
+        .querySelectorAll(".category")
         .forEach(
           item => {
 
@@ -1335,20 +772,14 @@ productGrid.addEventListener(
       button.dataset.id;
 
 
-    if (
-      button.dataset.action ===
-      "details"
-    ) {
+    if (button.dataset.action === "details") {
 
       openProductModal(id);
 
     }
 
 
-    if (
-      button.dataset.action ===
-      "add"
-    ) {
+    if (button.dataset.action === "add") {
 
       addToCart(id);
 
@@ -1378,8 +809,7 @@ cartItems.addEventListener(
 
 
     const delta =
-      button.dataset.cartAction ===
-      "increase"
+      button.dataset.cartAction === "increase"
         ? 1
         : -1;
 
@@ -1398,25 +828,19 @@ cartItems.addEventListener(
 // ======================================================
 
 document
-  .getElementById(
-    "clearCartButton"
-  )
+  .getElementById("clearCartButton")
   .addEventListener(
     "click",
     () => {
 
-      if (
-        !cart.length
-      ) {
+      if (!cart.length) {
         return;
       }
 
 
       cart = [];
 
-
       renderCart();
-
 
       showToast(
         "Carrinho limpo."
@@ -1431,17 +855,13 @@ document
 // ======================================================
 
 document
-  .getElementById(
-    "openCartButton"
-  )
+  .getElementById("openCartButton")
   .addEventListener(
     "click",
     () => {
 
       document
-        .getElementById(
-          "cartPanel"
-        )
+        .getElementById("cartPanel")
         .scrollIntoView({
           behavior: "smooth",
           block: "start"
@@ -1456,9 +876,7 @@ document
 // ======================================================
 
 document
-  .getElementById(
-    "closeProductModal"
-  )
+  .getElementById("closeProductModal")
   .addEventListener(
     "click",
     () => {
@@ -1472,13 +890,11 @@ document
 
 
 // ======================================================
-// DIMINUIR QUANTIDADE NO MODAL
+// QUANTIDADE NO MODAL
 // ======================================================
 
 document
-  .getElementById(
-    "modalDecrease"
-  )
+  .getElementById("modalDecrease")
   .addEventListener(
     "click",
     () => {
@@ -1499,14 +915,8 @@ document
   );
 
 
-// ======================================================
-// AUMENTAR QUANTIDADE NO MODAL
-// ======================================================
-
 document
-  .getElementById(
-    "modalIncrease"
-  )
+  .getElementById("modalIncrease")
   .addEventListener(
     "click",
     () => {
@@ -1536,10 +946,7 @@ document
         1;
 
 
-      if (
-        newTotal >
-        selectedProduct.stock
-      ) {
+      if (newTotal > selectedProduct.stock) {
 
         showToast(
           `Estoque máximo: ${selectedProduct.stock}.`
@@ -1567,9 +974,7 @@ document
 // ======================================================
 
 document
-  .getElementById(
-    "modalAddButton"
-  )
+  .getElementById("modalAddButton")
   .addEventListener(
     "click",
     () => {
@@ -1594,36 +999,22 @@ document
 
 
 // ======================================================
-// ABRIR CHECKOUT
+// ABRIR / FECHAR CHECKOUT
 // ======================================================
 
 checkoutButton.addEventListener(
   "click",
   () => {
 
-    if (
-      !cart.length
-    ) {
+    if (!cart.length) {
       return;
     }
-
-
-    const total =
-      cart.reduce(
-        (sum, item) =>
-          sum +
-          (
-            Number(item.price) || 0
-          ) *
-          item.quantity,
-        0
-      );
 
 
     document.getElementById(
       "checkoutTotal"
     ).textContent =
-      brl(total);
+      brl(getCartTotal());
 
 
     checkoutModal.classList.remove(
@@ -1634,14 +1025,8 @@ checkoutButton.addEventListener(
 );
 
 
-// ======================================================
-// FECHAR CHECKOUT
-// ======================================================
-
 document
-  .getElementById(
-    "closeCheckoutModal"
-  )
+  .getElementById("closeCheckoutModal")
   .addEventListener(
     "click",
     () => {
@@ -1658,12 +1043,11 @@ document
 // SALVAR VENDA, DAR BAIXA NO ESTOQUE E ATUALIZAR CRM
 //
 // ATENÇÃO:
-// A lógica original desta função foi preservada.
-// A transação agora faz:
+// A lógica desta função foi preservada. A transação faz:
 // 1. leitura dos produtos
 // 2. validação do estoque
 // 3. baixa do estoque
-// 4. criação da venda
+// 4. criação da venda (com o custo de cada item)
 // 5. criação/atualização do cliente (CRM)
 //
 // O Firestore exige que TODAS as leituras aconteçam
@@ -1672,9 +1056,7 @@ document
 
 async function finalizeSale() {
 
-  if (
-    !cart.length
-  ) {
+  if (!cart.length) {
 
     showToast(
       "O carrinho está vazio."
@@ -1691,9 +1073,7 @@ async function finalizeSale() {
 
   const customerName =
     document
-      .getElementById(
-        "customerName"
-      )
+      .getElementById("customerName")
       .value
       .trim() ||
     "Cliente não identificado";
@@ -1707,20 +1087,12 @@ async function finalizeSale() {
   // sem vínculo de CRM (venda avulsa).
   // ====================================================
 
-  const customerPhoneRaw =
-    document
-      .getElementById(
-        "customerPhone"
-      )
-      .value
-      .trim();
-
-
   const customerPhone =
-    customerPhoneRaw.replace(
-      /\D/g,
-      ""
-    );
+    document
+      .getElementById("customerPhone")
+      .value
+      .trim()
+      .replace(/\D/g, "");
 
 
   // ====================================================
@@ -1753,15 +1125,7 @@ async function finalizeSale() {
   // ====================================================
 
   const total =
-    cart.reduce(
-      (sum, item) =>
-        sum +
-        (
-          Number(item.price) || 0
-        ) *
-        item.quantity,
-      0
-    );
+    getCartTotal();
 
 
   // ====================================================
@@ -1777,7 +1141,6 @@ async function finalizeSale() {
   confirmButton.disabled =
     true;
 
-
   confirmButton.textContent =
     "Processando venda...";
 
@@ -1789,30 +1152,16 @@ async function finalizeSale() {
     );
 
 
-    console.log(
-      "Itens:",
-      cart
-    );
-
-
-    // ==================================================
-    // REFERÊNCIA DA COLEÇÃO DE VENDAS
-    // ==================================================
-
-    const saleCollection =
-      collection(
-        window.db,
-        "vendas"
-      );
-
-
     // ==================================================
     // ID DA VENDA
     // ==================================================
 
     const saleRef =
       doc(
-        saleCollection
+        collection(
+          window.db,
+          "vendas"
+        )
       );
 
 
@@ -1842,11 +1191,6 @@ async function finalizeSale() {
       window.db,
       async transaction => {
 
-        console.log(
-          "Iniciando transação..."
-        );
-
-
         // ----------------------------------------------
         // REFERÊNCIAS DOS PRODUTOS
         // ----------------------------------------------
@@ -1875,10 +1219,7 @@ async function finalizeSale() {
         const productSnapshots = [];
 
 
-        for (
-          const productData
-          of productReferences
-        ) {
+        for (const productData of productReferences) {
 
           const snapshot =
             await transaction.get(
@@ -1905,10 +1246,7 @@ async function finalizeSale() {
         // isso não fazemos transaction.get(clienteRef) aqui
         // — em vez de ler o total atual e somar na mão, a
         // gravação abaixo usa increment(), que soma no
-        // servidor sem precisar ler o valor antes. Isso
-        // funciona tanto para criar quanto para atualizar
-        // o documento, mesmo que o cliente não tenha
-        // permissão de leitura sobre ele.
+        // servidor sem precisar ler o valor antes.
         // ----------------------------------------------
 
 
@@ -1916,10 +1254,7 @@ async function finalizeSale() {
         // SEGUNDO: VALIDAR ESTOQUE
         // ----------------------------------------------
 
-        for (
-          const productData
-          of productSnapshots
-        ) {
+        for (const productData of productSnapshots) {
 
           const {
             item,
@@ -1927,9 +1262,7 @@ async function finalizeSale() {
           } = productData;
 
 
-          if (
-            !snapshot.exists()
-          ) {
+          if (!snapshot.exists()) {
 
             throw new Error(
               `O produto ${item.name} não existe mais no Firebase.`
@@ -1943,27 +1276,10 @@ async function finalizeSale() {
 
 
           const currentStock =
-            Number(
-              data.stock
-            ) || 0;
+            Number(data.stock) || 0;
 
 
-          const currentAvailable =
-            data.available === true;
-
-
-          console.log(
-            `Produto ${item.id}: estoque atual = ${currentStock}`
-          );
-
-
-          // --------------------------------------------
-          // VERIFICAR AVAILABLE
-          // --------------------------------------------
-
-          if (
-            !currentAvailable
-          ) {
+          if (data.available !== true) {
 
             throw new Error(
               `${item.name} está indisponível.`
@@ -1972,14 +1288,7 @@ async function finalizeSale() {
           }
 
 
-          // --------------------------------------------
-          // VERIFICAR ESTOQUE
-          // --------------------------------------------
-
-          if (
-            currentStock <
-            item.quantity
-          ) {
+          if (currentStock < item.quantity) {
 
             throw new Error(
               `Estoque insuficiente para ${item.name}. Disponível: ${currentStock}.`
@@ -1994,10 +1303,7 @@ async function finalizeSale() {
         // TERCEIRO: DAR BAIXA NO ESTOQUE
         // ----------------------------------------------
 
-        for (
-          const productData
-          of productSnapshots
-        ) {
+        for (const productData of productSnapshots) {
 
           const {
             item,
@@ -2005,30 +1311,16 @@ async function finalizeSale() {
           } = productData;
 
 
-          const data =
-            snapshot.data();
-
-
           const currentStock =
-            Number(
-              data.stock
-            ) || 0;
-
-
-          const newStock =
-            currentStock -
-            item.quantity;
-
-
-          console.log(
-            `Atualizando ${item.name}: ${currentStock} → ${newStock}`
-          );
+            Number(snapshot.data().stock) || 0;
 
 
           transaction.update(
             productData.reference,
             {
-              stock: newStock
+              stock:
+                currentStock -
+                item.quantity
             }
           );
 
@@ -2037,15 +1329,11 @@ async function finalizeSale() {
 
         // ----------------------------------------------
         // QUARTO: SALVAR VENDA
-        // ----------------------------------------------
-
-        // ----------------------------------------------
-        // CUSTO ATUAL DE CADA PRODUTO
         //
-        // Lido dentro da transação (do próprio documento
-        // do produto), para gravar na venda o custo que
-        // valia NO MOMENTO da compra. Produto sem custo
-        // cadastrado fica com null.
+        // O custo de cada item é lido aqui dentro, do
+        // próprio documento do produto, para gravar na
+        // venda o custo que valia NO MOMENTO da compra.
+        // Produto sem custo cadastrado fica com null.
         // ----------------------------------------------
 
         const costById = {};
@@ -2080,19 +1368,13 @@ async function finalizeSale() {
                 costById[item.id] ?? null,
 
               price:
-                Number(
-                  item.price
-                ) || 0,
+                Number(item.price) || 0,
 
               quantity:
                 item.quantity,
 
               subtotal:
-                (
-                  Number(
-                    item.price
-                  ) || 0
-                ) *
+                (Number(item.price) || 0) *
                 item.quantity
 
             })
@@ -2135,16 +1417,10 @@ async function finalizeSale() {
         );
 
 
-        console.log(
-          "Venda preparada para gravação:",
-          saleRef.id
-        );
-
-
         // ----------------------------------------------
         // QUINTO: ATUALIZAR CRM DO CLIENTE
         //
-        // Usa setDoc com merge: true + increment(), então
+        // Usa set com merge: true + increment(), então
         // funciona igual para "criar pela primeira vez" e
         // "atualizar quem já existe" — sem precisar ler o
         // documento antes (o que exigiria permissão de
@@ -2178,60 +1454,33 @@ async function finalizeSale() {
             }
           );
 
-
-          console.log(
-            "Cliente atualizado no CRM:",
-            customerPhone
-          );
-
         }
 
       }
     );
 
 
-    // ==================================================
-    // TRANSAÇÃO CONCLUÍDA
-    // ==================================================
-
     console.log(
-      "Venda gravada com sucesso!"
-    );
-
-
-    console.log(
-      "ID da venda:",
+      "Venda gravada com sucesso! ID:",
       saleRef.id
     );
 
 
     // ==================================================
-    // LIMPAR CARRINHO
+    // LIMPAR CARRINHO E CAMPOS
     // ==================================================
 
     cart = [];
 
-
     renderCart();
-
-
-    // ==================================================
-    // FECHAR MODAL
-    // ==================================================
 
     closeModal(
       checkoutModal
     );
 
-
-    // ==================================================
-    // LIMPAR CLIENTE
-    // ==================================================
-
     document.getElementById(
       "customerName"
     ).value = "";
-
 
     document.getElementById(
       "customerPhone"
@@ -2239,22 +1488,11 @@ async function finalizeSale() {
 
 
     // ==================================================
-    // RECARREGAR PRODUTOS
+    // RECARREGAR PRODUTOS (estoque atualizado)
     // ==================================================
 
     await loadProducts();
 
-
-    // ==================================================
-    // ATUALIZAR HISTÓRICO
-    // ==================================================
-
-    await loadSales();
-
-
-    // ==================================================
-    // MENSAGEM
-    // ==================================================
 
     showToast(
       `Venda finalizada! Total: ${brl(total)}`
@@ -2268,16 +1506,9 @@ async function finalizeSale() {
       error
     );
 
-
     console.error(
       "Código do erro:",
       error.code
-    );
-
-
-    console.error(
-      "Mensagem do erro:",
-      error.message
     );
 
 
@@ -2291,7 +1522,6 @@ async function finalizeSale() {
     confirmButton.disabled =
       false;
 
-
     confirmButton.textContent =
       "Confirmar venda";
 
@@ -2300,2290 +1530,12 @@ async function finalizeSale() {
 }
 
 
-// ======================================================
-// CONFIRMAR VENDA
-// ======================================================
-
 document
-  .getElementById(
-    "confirmSaleButton"
-  )
+  .getElementById("confirmSaleButton")
   .addEventListener(
     "click",
     finalizeSale
   );
-
-
-// ======================================================
-// ======================================================
-// HISTÓRICO DE VENDAS
-// ======================================================
-// ======================================================
-
-
-// ======================================================
-// CARREGAR VENDAS DO FIRESTORE
-// ======================================================
-
-async function loadSales() {
-
-  if (!window.db) {
-
-    console.error(
-      "Firebase ainda não foi inicializado."
-    );
-
-    return;
-
-  }
-
-
-  try {
-
-    console.log(
-      "Carregando histórico de vendas..."
-    );
-
-
-    salesHistory.innerHTML = `
-
-      <div class="history-loading">
-
-        <div class="history-loading-icon">
-          ⏳
-        </div>
-
-        <strong>
-          Carregando vendas...
-        </strong>
-
-        <span>
-          Buscando informações no Firebase.
-        </span>
-
-      </div>
-
-    `;
-
-
-    const salesCollection =
-      collection(
-        window.db,
-        "vendas"
-      );
-
-
-    const snapshot =
-      await getDocs(
-        salesCollection
-      );
-
-
-    sales =
-      snapshot.docs.map(
-        documentSnapshot => {
-
-          const data =
-            documentSnapshot.data();
-
-
-          return {
-
-            id:
-              documentSnapshot.id,
-
-            customerName:
-              String(
-                data.customerName ||
-                "Cliente não identificado"
-              ),
-
-            customerPhone:
-              data.customerPhone ||
-              null,
-
-            payment:
-              String(
-                data.payment ||
-                "Não informado"
-              ),
-
-            subtotal:
-              Number(
-                data.subtotal
-              ) || 0,
-
-            discount:
-              Number(
-                data.discount
-              ) || 0,
-
-            total:
-              Number(
-                data.total
-              ) || 0,
-
-            items:
-              Array.isArray(
-                data.items
-              )
-                ? data.items
-                : [],
-
-            createdAt:
-              data.createdAt || null,
-
-            status:
-              String(
-                data.status ||
-                "finalizada"
-              )
-
-          };
-
-        }
-      );
-
-
-    // ==================================================
-    // ORDENAR DA MAIS RECENTE PARA A MAIS ANTIGA
-    // ==================================================
-
-    sales.sort(
-      (a, b) => {
-
-        const dateA =
-          getSaleDate(
-            a.createdAt
-          );
-
-        const dateB =
-          getSaleDate(
-            b.createdAt
-          );
-
-
-        if (!dateA && !dateB) {
-          return 0;
-        }
-
-
-        if (!dateA) {
-          return 1;
-        }
-
-
-        if (!dateB) {
-          return -1;
-        }
-
-
-        return (
-          dateB.getTime() -
-          dateA.getTime()
-        );
-
-      }
-    );
-
-
-    console.log(
-      "Vendas vindas do Firebase:",
-      sales
-    );
-
-
-    renderSalesHistory();
-
-
-  } catch (error) {
-
-    console.error(
-      "Erro ao carregar histórico:",
-      error
-    );
-
-
-    salesHistory.innerHTML = `
-
-      <div class="history-loading">
-
-        <div class="history-loading-icon">
-          ⚠️
-        </div>
-
-        <strong>
-          Erro ao carregar vendas
-        </strong>
-
-        <span>
-          ${error.message}
-        </span>
-
-      </div>
-
-    `;
-
-
-    showToast(
-      "Não foi possível carregar o histórico."
-    );
-
-  }
-
-}
-
-
-// ======================================================
-// CALCULAR QUANTIDADE TOTAL DE ITENS
-// ======================================================
-
-function getSaleItemsQuantity(sale) {
-
-  if (
-    !Array.isArray(
-      sale.items
-    )
-  ) {
-    return 0;
-  }
-
-
-  return sale.items.reduce(
-    (sum, item) =>
-      sum +
-      (
-        Number(
-          item.quantity
-        ) || 0
-      ),
-    0
-  );
-
-}
-
-
-// ======================================================
-// OBTER ÍCONES DE PAGAMENTO
-// ======================================================
-
-function getPaymentIcon(payment) {
-
-  switch (
-    String(payment).toLowerCase()
-  ) {
-
-    case "pix":
-      return "⚡";
-
-    case "dinheiro":
-      return "💵";
-
-    case "débito":
-    case "debito":
-      return "💳";
-
-    case "crédito":
-    case "credito":
-      return "💳";
-
-    default:
-      return "💰";
-
-  }
-
-}
-
-
-// ======================================================
-// RENDERIZAR HISTÓRICO
-// ======================================================
-
-function renderSalesHistory() {
-
-  if (
-    !salesHistory
-  ) {
-    return;
-  }
-
-
-  const search =
-    historySearchInput
-      ? historySearchInput.value
-          .trim()
-          .toLowerCase()
-      : "";
-
-
-  const selectedDate =
-    historyDateFilter
-      ? historyDateFilter.value
-      : "";
-
-
-  const selectedPayment =
-    historyPaymentFilter
-      ? historyPaymentFilter.value
-      : "Todos";
-
-
-  // ==================================================
-  // FILTRAR
-  // ==================================================
-
-  const filteredSales =
-    sales.filter(
-      sale => {
-
-        // ----------------------------------------------
-        // BUSCA
-        // ----------------------------------------------
-
-        let matchesSearch =
-          true;
-
-
-        if (search) {
-
-          const customer =
-            String(
-              sale.customerName || ""
-            ).toLowerCase();
-
-
-          const saleId =
-            String(
-              sale.id || ""
-            ).toLowerCase();
-
-
-          const payment =
-            String(
-              sale.payment || ""
-            ).toLowerCase();
-
-
-          const productNames =
-            sale.items
-              .map(
-                item =>
-                  String(
-                    item.name || ""
-                  ).toLowerCase()
-              )
-              .join(" ");
-
-
-          matchesSearch =
-            customer.includes(search) ||
-            saleId.includes(search) ||
-            payment.includes(search) ||
-            productNames.includes(search);
-
-        }
-
-
-        // ----------------------------------------------
-        // DATA
-        // ----------------------------------------------
-
-        let matchesDate =
-          true;
-
-
-        if (selectedDate) {
-
-          const saleDate =
-            getSaleDate(
-              sale.createdAt
-            );
-
-
-          if (!saleDate) {
-
-            matchesDate = false;
-
-          } else {
-
-            const year =
-              saleDate.getFullYear()
-                .toString()
-                .padStart(4, "0");
-
-
-            const month =
-              String(
-                saleDate.getMonth() + 1
-              ).padStart(2, "0");
-
-
-            const day =
-              String(
-                saleDate.getDate()
-              ).padStart(2, "0");
-
-
-            const saleDateString =
-              `${year}-${month}-${day}`;
-
-
-            matchesDate =
-              saleDateString ===
-              selectedDate;
-
-          }
-
-        }
-
-
-        // ----------------------------------------------
-        // PAGAMENTO
-        // ----------------------------------------------
-
-        const matchesPayment =
-          selectedPayment === "Todos" ||
-          sale.payment === selectedPayment;
-
-
-        return (
-          matchesSearch &&
-          matchesDate &&
-          matchesPayment
-        );
-
-      }
-    );
-
-
-  // ==================================================
-  // ATUALIZAR INDICADORES
-  // ==================================================
-
-  updateHistoryStats(
-    filteredSales
-  );
-
-
-  // ==================================================
-  // ESTADO VAZIO
-  // ==================================================
-
-  if (
-    filteredSales.length === 0
-  ) {
-
-    salesHistory.innerHTML = "";
-
-    historyEmptyState.classList.remove(
-      "hidden"
-    );
-
-    return;
-
-  }
-
-
-  historyEmptyState.classList.add(
-    "hidden"
-  );
-
-
-  // ==================================================
-  // RENDERIZAR VENDAS
-  // ==================================================
-
-  salesHistory.innerHTML =
-    filteredSales
-      .map(
-        sale => {
-
-          const itemsQuantity =
-            getSaleItemsQuantity(
-              sale
-            );
-
-
-          const paymentIcon =
-            getPaymentIcon(
-              sale.payment
-            );
-
-
-          const date =
-            formatSaleDate(
-              sale.createdAt
-            );
-
-
-          const shortId =
-            sale.id.length > 10
-              ? `${sale.id.substring(0, 10)}...`
-              : sale.id;
-
-
-          return `
-
-            <div
-              class="sale-row"
-              data-sale-id="${sale.id}">
-
-
-              <!-- VENDA -->
-
-              <div
-                class="sale-cell sale-id-cell"
-                data-label="Venda">
-
-                <strong>
-                  #${shortId}
-                </strong>
-
-                <small>
-                  ID da venda
-                </small>
-
-              </div>
-
-
-              <!-- CLIENTE -->
-
-              <div
-                class="sale-cell"
-                data-label="Cliente">
-
-                <strong>
-                  ${escapeHtml(
-                    sale.customerName
-                  )}
-                </strong>
-
-              </div>
-
-
-              <!-- ITENS -->
-
-              <div
-                class="sale-cell"
-                data-label="Itens">
-
-                <strong>
-                  ${itemsQuantity}
-                </strong>
-
-                <small>
-                  ${itemsQuantity === 1
-                    ? "item"
-                    : "itens"}
-                </small>
-
-              </div>
-
-
-              <!-- PAGAMENTO -->
-
-              <div
-                class="sale-cell"
-                data-label="Pagamento">
-
-                <span class="payment-badge">
-
-                  ${paymentIcon}
-
-                  ${escapeHtml(
-                    sale.payment
-                  )}
-
-                </span>
-
-              </div>
-
-
-              <!-- TOTAL -->
-
-              <div
-                class="sale-cell sale-total-cell"
-                data-label="Total">
-
-                <strong>
-                  ${brl(sale.total)}
-                </strong>
-
-              </div>
-
-
-              <!-- DATA -->
-
-              <div
-                class="sale-cell sale-date-cell"
-                data-label="Data">
-
-                ${date}
-
-              </div>
-
-
-              <!-- AÇÃO -->
-
-              <div
-                class="sale-cell sale-action-cell"
-                data-label="Ação">
-
-                <button
-                  class="sale-view-button"
-                  type="button"
-                  data-sale-action="view"
-                  data-sale-id="${sale.id}">
-
-                  Ver detalhes
-
-                </button>
-
-              </div>
-
-
-            </div>
-
-          `;
-
-        }
-      )
-      .join("");
-
-}
-
-
-// ======================================================
-// ATUALIZAR INDICADORES DO HISTÓRICO
-// ======================================================
-
-function updateHistoryStats(
-  filteredSales
-) {
-
-  const totalSales =
-    filteredSales.length;
-
-
-  const revenue =
-    filteredSales.reduce(
-      (sum, sale) =>
-        sum +
-        (
-          Number(
-            sale.total
-          ) || 0
-        ),
-      0
-    );
-
-
-  const average =
-    totalSales > 0
-      ? revenue / totalSales
-      : 0;
-
-
-  historyTotalSales.textContent =
-    totalSales;
-
-
-  historyRevenue.textContent =
-    brl(revenue);
-
-
-  historyAverage.textContent =
-    brl(average);
-
-}
-
-
-// ======================================================
-// ESCAPAR HTML
-// Evita problemas quando nomes vêm do Firebase.
-// ======================================================
-
-function escapeHtml(value) {
-
-  return String(value)
-    .replace(
-      /&/g,
-      "&amp;"
-    )
-    .replace(
-      /</g,
-      "&lt;"
-    )
-    .replace(
-      />/g,
-      "&gt;"
-    )
-    .replace(
-      /"/g,
-      "&quot;"
-    )
-    .replace(
-      /'/g,
-      "&#039;"
-    );
-
-}
-
-
-// ======================================================
-// ABRIR DETALHES DA VENDA
-// ======================================================
-
-function openSaleDetails(
-  saleId
-) {
-
-  const sale =
-    sales.find(
-      item =>
-        item.id === saleId
-    );
-
-
-  if (!sale) {
-
-    showToast(
-      "Venda não encontrada."
-    );
-
-    return;
-
-  }
-
-
-  selectedSale =
-    sale;
-
-
-  // ==================================================
-  // ID
-  // ==================================================
-
-  document.getElementById(
-    "saleDetailsTitle"
-  ).textContent =
-    `Venda #${sale.id.substring(0, 10)}`;
-
-
-  document.getElementById(
-    "saleDetailsId"
-  ).textContent =
-    sale.id;
-
-
-  // ==================================================
-  // CLIENTE
-  // ==================================================
-
-  document.getElementById(
-    "saleDetailsCustomer"
-  ).textContent =
-    sale.customerName;
-
-
-  // ==================================================
-  // PAGAMENTO
-  // ==================================================
-
-  document.getElementById(
-    "saleDetailsPayment"
-  ).textContent =
-    `${getPaymentIcon(sale.payment)} ${sale.payment}`;
-
-
-  // ==================================================
-  // DATA
-  // ==================================================
-
-  document.getElementById(
-    "saleDetailsDate"
-  ).textContent =
-    formatSaleDate(
-      sale.createdAt
-    );
-
-
-  // ==================================================
-  // STATUS
-  // ==================================================
-
-  const statusElement =
-    document.getElementById(
-      "saleDetailsStatus"
-    );
-
-
-  statusElement.textContent =
-    sale.status;
-
-
-  statusElement.className =
-    "sale-status";
-
-
-  if (
-    sale.status === "finalizada"
-  ) {
-
-    statusElement.classList.add(
-      "success"
-    );
-
-  }
-
-
-  // ==================================================
-  // ITENS
-  // ==================================================
-
-  const itemsContainer =
-    document.getElementById(
-      "saleDetailsItems"
-    );
-
-
-  if (
-    !sale.items ||
-    sale.items.length === 0
-  ) {
-
-    itemsContainer.innerHTML = `
-
-      <div class="sale-no-items">
-        Nenhum item registrado.
-      </div>
-
-    `;
-
-  } else {
-
-    itemsContainer.innerHTML =
-      sale.items
-        .map(
-          item => {
-
-            const quantity =
-              Number(
-                item.quantity
-              ) || 0;
-
-
-            const price =
-              Number(
-                item.price
-              ) || 0;
-
-
-            const subtotal =
-              Number(
-                item.subtotal
-              ) ||
-              (
-                price *
-                quantity
-              );
-
-
-            return `
-
-              <div class="sale-detail-item">
-
-                <div class="sale-detail-item-main">
-
-                  <strong>
-                    ${escapeHtml(
-                      item.name
-                    )}
-                  </strong>
-
-                  <span>
-                    ${quantity} × ${brl(price)}
-                  </span>
-
-                </div>
-
-                <strong>
-                  ${brl(subtotal)}
-                </strong>
-
-              </div>
-
-            `;
-
-          }
-        )
-        .join("");
-
-  }
-
-
-  // ==================================================
-  // RESUMO
-  // ==================================================
-
-  document.getElementById(
-    "saleDetailsSubtotal"
-  ).textContent =
-    brl(
-      sale.subtotal
-    );
-
-
-  document.getElementById(
-    "saleDetailsDiscount"
-  ).textContent =
-    brl(
-      sale.discount
-    );
-
-
-  document.getElementById(
-    "saleDetailsTotal"
-  ).textContent =
-    brl(
-      sale.total
-    );
-
-
-  renderSaleProfit(
-    sale
-  );
-
-
-  // ==================================================
-  // ABRIR MODAL
-  // ==================================================
-
-  saleDetailsModal.classList.remove(
-    "hidden"
-  );
-
-}
-
-
-// ======================================================
-// ABRIR HISTÓRICO
-// ======================================================
-
-async function openHistory() {
-
-  // Esconde o PDV
-  pdvSection.classList.add(
-    "hidden"
-  );
-
-
-  // Mostra histórico
-  historySection.classList.remove(
-    "hidden"
-  );
-
-
-  // Carrega dados atualizados
-  await loadSales();
-
-
-  // Scroll até histórico
-  historySection.scrollIntoView({
-    behavior: "smooth",
-    block: "start"
-  });
-
-}
-
-
-// ======================================================
-// VOLTAR PARA O PDV
-// ======================================================
-
-function backToPdv() {
-
-  historySection.classList.add(
-    "hidden"
-  );
-
-
-  pdvSection.classList.remove(
-    "hidden"
-  );
-
-
-  pdvSection.scrollIntoView({
-    behavior: "smooth",
-    block: "start"
-  });
-
-}
-
-
-// ======================================================
-// BOTÃO HISTÓRICO
-// ======================================================
-
-if (openHistoryButton) {
-
-  openHistoryButton.addEventListener(
-    "click",
-    openHistory
-  );
-
-}
-
-
-// ======================================================
-// BOTÃO VOLTAR AO PDV
-// ======================================================
-
-if (backToPdvButton) {
-
-  backToPdvButton.addEventListener(
-    "click",
-    backToPdv
-  );
-
-}
-
-
-// ======================================================
-// PESQUISA NO HISTÓRICO
-// ======================================================
-
-if (historySearchInput) {
-
-  historySearchInput.addEventListener(
-    "input",
-    renderSalesHistory
-  );
-
-}
-
-
-// ======================================================
-// FILTRO POR DATA
-// ======================================================
-
-if (historyDateFilter) {
-
-  historyDateFilter.addEventListener(
-    "change",
-    renderSalesHistory
-  );
-
-}
-
-
-// ======================================================
-// FILTRO POR PAGAMENTO
-// ======================================================
-
-if (historyPaymentFilter) {
-
-  historyPaymentFilter.addEventListener(
-    "change",
-    renderSalesHistory
-  );
-
-}
-
-
-// ======================================================
-// LIMPAR FILTROS
-// ======================================================
-
-if (clearHistoryFilters) {
-
-  clearHistoryFilters.addEventListener(
-    "click",
-    () => {
-
-      if (historySearchInput) {
-
-        historySearchInput.value =
-          "";
-
-      }
-
-
-      if (historyDateFilter) {
-
-        historyDateFilter.value =
-          "";
-
-      }
-
-
-      if (historyPaymentFilter) {
-
-        historyPaymentFilter.value =
-          "Todos";
-
-      }
-
-
-      renderSalesHistory();
-
-    }
-  );
-
-}
-
-
-// ======================================================
-// CLIQUES NA LISTA DE VENDAS
-// ======================================================
-
-if (salesHistory) {
-
-  salesHistory.addEventListener(
-    "click",
-    event => {
-
-      const button =
-        event.target.closest(
-          "[data-sale-action]"
-        );
-
-
-      if (!button) {
-        return;
-      }
-
-
-      const action =
-        button.dataset.saleAction;
-
-
-      const saleId =
-        button.dataset.saleId;
-
-
-      if (
-        action === "view"
-      ) {
-
-        openSaleDetails(
-          saleId
-        );
-
-      }
-
-    }
-  );
-
-}
-
-
-// ======================================================
-// FECHAR MODAL DE DETALHES
-// ======================================================
-
-if (closeSaleDetailsModal) {
-
-  closeSaleDetailsModal.addEventListener(
-    "click",
-    () => {
-
-      closeModal(
-        saleDetailsModal
-      );
-
-    }
-  );
-
-}
-
-
-// ======================================================
-// ======================================================
-// GESTÃO DE PRODUTOS (ADMIN) — CRUD
-// ======================================================
-// ======================================================
-//
-// Regras de segurança do Firestore:
-// - criar/excluir produto: só administrador
-// - editar produto (qualquer campo): só administrador
-// - editar produto (só o campo "stock", diminuindo):
-//   qualquer autenticado de verdade, não-anônimo (é o
-//   que o checkout usa)
-//
-// Ou seja: tudo que acontece aqui embaixo só funciona
-// de fato se quem estiver logado for administrador —
-// o botão que abre essa tela já vem escondido pra quem
-// não é, mas a garantia real está nas Security Rules.
-// ======================================================
-
-
-// ======================================================
-// RENDERIZAR LISTA DE PRODUTOS (ADMIN)
-// ======================================================
-
-function renderAdminProductList() {
-
-  if (!adminProductList) {
-    return;
-  }
-
-
-  if (!products.length) {
-
-    adminProductList.innerHTML = `
-
-      <div class="admin-empty">
-        Nenhum produto cadastrado ainda. Clique em
-        "+ Novo produto" para começar.
-      </div>
-
-    `;
-
-    return;
-
-  }
-
-
-  adminProductList.innerHTML =
-    products
-      .map(
-        product => {
-
-          const statusClass =
-            product.available
-              ? "available"
-              : "unavailable";
-
-
-          const statusLabel =
-            product.available
-              ? (
-                  product.stock > 0
-                    ? "Disponível"
-                    : "Sem estoque"
-                )
-              : "Inativo";
-
-
-          return `
-
-            <div class="admin-product-row">
-
-              <div class="admin-product-emoji">
-                ${renderProductImage(product.emoji, product.name)}
-              </div>
-
-              <div class="admin-product-info">
-
-                <strong>
-                  ${escapeHtml(product.name)}
-                </strong>
-
-                <small>
-                  ${escapeHtml(product.category)} •
-                  ${brl(product.price)} •
-                  Estoque: ${product.stock} •
-                  ${formatMarginLabel(product)}
-                </small>
-
-              </div>
-
-              <span class="admin-status-badge ${statusClass}">
-                ${statusLabel}
-              </span>
-
-              <div class="admin-product-actions">
-
-                <button
-                  class="admin-icon-button"
-                  type="button"
-                  data-admin-action="edit"
-                  data-id="${product.id}"
-                  aria-label="Editar produto">
-                  ✏️
-                </button>
-
-                <button
-                  class="admin-icon-button"
-                  type="button"
-                  data-admin-action="toggle"
-                  data-id="${product.id}"
-                  aria-label="Ativar ou desativar produto">
-                  ${product.available ? "🚫" : "✅"}
-                </button>
-
-                <button
-                  class="admin-icon-button danger"
-                  type="button"
-                  data-admin-action="delete"
-                  data-id="${product.id}"
-                  aria-label="Excluir produto">
-                  🗑️
-                </button>
-
-              </div>
-
-            </div>
-
-          `;
-
-        }
-      )
-      .join("");
-
-}
-
-
-// ======================================================
-// ABRIR MODAL DE GESTÃO DE PRODUTOS
-// ======================================================
-
-async function openProductManage() {
-
-  await loadProducts();
-
-  renderAdminProductList();
-
-  productManageModal.classList.remove(
-    "hidden"
-  );
-
-}
-
-
-// ======================================================
-// ABRIR FORMULÁRIO (CRIAR OU EDITAR)
-// ======================================================
-
-function openProductForm(productId) {
-
-  const product =
-    productId
-      ? products.find(
-          item =>
-            item.id === productId
-        )
-      : null;
-
-
-  productFormId.value =
-    product
-      ? product.id
-      : "";
-
-
-  productFormTitle.textContent =
-    product
-      ? "Editar produto"
-      : "Novo produto";
-
-
-  productFormName.value =
-    product
-      ? product.name
-      : "";
-
-
-  productFormCategory.value =
-    product
-      ? product.category
-      : "Lanches";
-
-
-  productFormEmoji.value =
-    product
-      ? product.emoji
-      : "🍔";
-
-
-  productFormPrice.value =
-    product
-      ? product.price
-      : "";
-
-
-  productFormStock.value =
-    product
-      ? product.stock
-      : "";
-
-
-  productFormDescription.value =
-    product
-      ? product.description
-      : "";
-
-
-  productFormAvailable.checked =
-    product
-      ? product.available
-      : true;
-
-
-  productFormSubmitButton.textContent =
-    product
-      ? "Salvar alterações"
-      : "Cadastrar produto";
-
-
-  deleteProductButton.classList.toggle(
-    "hidden",
-    !product
-  );
-
-
-  productFormCost.value =
-    product && typeof product.cost === "number"
-      ? product.cost
-      : "";
-
-
-  productFormTargetMargin.value =
-    "";
-
-
-  updateCostCalculator();
-
-
-  productFormModal.classList.remove(
-    "hidden"
-  );
-
-}
-
-
-// ======================================================
-// ATIVAR / DESATIVAR PRODUTO
-// ======================================================
-
-async function toggleProductAvailability(
-  productId
-) {
-
-  const product =
-    products.find(
-      item =>
-        item.id === productId
-    );
-
-
-  if (!product) {
-    return;
-  }
-
-
-  try {
-
-    await updateDoc(
-      doc(
-        window.db,
-        "produtos",
-        productId
-      ),
-      {
-        available:
-          !product.available
-      }
-    );
-
-
-    showToast(
-      `${product.name} agora está ${
-        !product.available
-          ? "disponível"
-          : "inativo"
-      }.`
-    );
-
-
-    await loadProducts();
-
-    renderAdminProductList();
-
-
-  } catch (error) {
-
-    console.error(
-      "Erro ao atualizar disponibilidade:",
-      error
-    );
-
-
-    showToast(
-      "Não foi possível atualizar o produto."
-    );
-
-  }
-
-}
-
-
-// ======================================================
-// EXCLUIR PRODUTO
-// ======================================================
-
-async function deleteProduct(
-  productId
-) {
-
-  const product =
-    products.find(
-      item =>
-        item.id === productId
-    );
-
-
-  if (!product) {
-    return;
-  }
-
-
-  const confirmado =
-    window.confirm(
-      `Excluir "${product.name}" definitivamente? Essa ação não pode ser desfeita.`
-    );
-
-
-  if (!confirmado) {
-    return;
-  }
-
-
-  try {
-
-    await deleteDoc(
-      doc(
-        window.db,
-        "produtos",
-        productId
-      )
-    );
-
-
-    showToast(
-      `${product.name} excluído.`
-    );
-
-
-    await loadProducts();
-
-    renderAdminProductList();
-
-
-  } catch (error) {
-
-    console.error(
-      "Erro ao excluir produto:",
-      error
-    );
-
-
-    showToast(
-      "Não foi possível excluir o produto."
-    );
-
-  }
-
-}
-
-
-// ======================================================
-// BOTÃO "GERENCIAR PRODUTOS" (ABRE A LISTAGEM)
-// ======================================================
-
-if (manageProductsButton) {
-
-  manageProductsButton.addEventListener(
-    "click",
-    openProductManage
-  );
-
-}
-
-
-// ======================================================
-// FECHAR MODAL DE GESTÃO
-// ======================================================
-
-if (closeProductManageModal) {
-
-  closeProductManageModal.addEventListener(
-    "click",
-    () => {
-
-      closeModal(
-        productManageModal
-      );
-
-    }
-  );
-
-}
-
-
-// ======================================================
-// BOTÃO "+ NOVO PRODUTO"
-// ======================================================
-
-if (addProductButton) {
-
-  addProductButton.addEventListener(
-    "click",
-    () => {
-
-      openProductForm(
-        null
-      );
-
-    }
-  );
-
-}
-
-
-// ======================================================
-// CLIQUES NA LISTA DE PRODUTOS (ADMIN)
-// ======================================================
-
-if (adminProductList) {
-
-  adminProductList.addEventListener(
-    "click",
-    event => {
-
-      const button =
-        event.target.closest(
-          "[data-admin-action]"
-        );
-
-
-      if (!button) {
-        return;
-      }
-
-
-      const id =
-        button.dataset.id;
-
-
-      const action =
-        button.dataset.adminAction;
-
-
-      if (action === "edit") {
-
-        openProductForm(
-          id
-        );
-
-      }
-
-
-      if (action === "toggle") {
-
-        toggleProductAvailability(
-          id
-        );
-
-      }
-
-
-      if (action === "delete") {
-
-        deleteProduct(
-          id
-        );
-
-      }
-
-    }
-  );
-
-}
-
-
-// ======================================================
-// FECHAR MODAL DO FORMULÁRIO
-// ======================================================
-
-if (closeProductFormModal) {
-
-  closeProductFormModal.addEventListener(
-    "click",
-    () => {
-
-      closeModal(
-        productFormModal
-      );
-
-    }
-  );
-
-}
-
-
-// ======================================================
-// EXCLUIR PRODUTO A PARTIR DO FORMULÁRIO
-// ======================================================
-
-if (deleteProductButton) {
-
-  deleteProductButton.addEventListener(
-    "click",
-    async () => {
-
-      const id =
-        productFormId.value;
-
-
-      if (!id) {
-        return;
-      }
-
-
-      await deleteProduct(
-        id
-      );
-
-
-      closeModal(
-        productFormModal
-      );
-
-    }
-  );
-
-}
-
-
-// ======================================================
-// ENVIAR FORMULÁRIO (CRIAR OU SALVAR EDIÇÃO)
-// ======================================================
-
-if (productForm) {
-
-  productForm.addEventListener(
-    "submit",
-    async event => {
-
-      event.preventDefault();
-
-
-      const id =
-        productFormId.value;
-
-
-      const name =
-        productFormName.value.trim();
-
-
-      if (!name) {
-
-        showToast(
-          "Informe o nome do produto."
-        );
-
-        return;
-
-      }
-
-
-      const productData = {
-
-        name:
-          name,
-
-        category:
-          productFormCategory.value,
-
-        image:
-          productFormEmoji.value.trim() ||
-          "🍔",
-
-        price:
-          Number(
-            productFormPrice.value
-          ) || 0,
-
-        stock:
-          Math.max(
-            0,
-            Number(
-              productFormStock.value
-            ) || 0
-          ),
-
-        description:
-          productFormDescription.value.trim() ||
-          "Sem descrição disponível.",
-
-        available:
-          productFormAvailable.checked,
-
-        cost:
-          readCostInput()
-
-      };
-
-
-      productFormSubmitButton.disabled =
-        true;
-
-
-      productFormSubmitButton.textContent =
-        "Salvando...";
-
-
-      try {
-
-        if (id) {
-
-          await updateDoc(
-            doc(
-              window.db,
-              "produtos",
-              id
-            ),
-            productData
-          );
-
-
-          showToast(
-            `${productData.name} atualizado.`
-          );
-
-        } else {
-
-          await addDoc(
-            collection(
-              window.db,
-              "produtos"
-            ),
-            productData
-          );
-
-
-          showToast(
-            `${productData.name} cadastrado.`
-          );
-
-        }
-
-
-        closeModal(
-          productFormModal
-        );
-
-
-        await loadProducts();
-
-        renderAdminProductList();
-
-
-      } catch (error) {
-
-        console.error(
-          "Erro ao salvar produto:",
-          error
-        );
-
-
-        showToast(
-          "Não foi possível salvar o produto."
-        );
-
-
-      } finally {
-
-        productFormSubmitButton.disabled =
-          false;
-
-
-        productFormSubmitButton.textContent =
-          id
-            ? "Salvar alterações"
-            : "Cadastrar produto";
-
-      }
-
-    }
-  );
-
-}
-
-
-// ======================================================
-// ======================================================
-// RELATÓRIOS (ADMIN) — FATURAMENTO + ESTOQUE BAIXO
-// ======================================================
-// ======================================================
-//
-// Reaproveita os arrays "sales" e "products" já
-// carregados pelo restante do app (loadSales() e
-// loadProducts()) — não inventa nenhuma leitura nova
-// no Firestore além do que as Security Rules já
-// liberam para administrador.
-// ======================================================
-
-
-// ======================================================
-// AGRUPAR VENDAS POR DIA
-// ======================================================
-
-function calcularFaturamentoPorDia() {
-
-  const porDia = {};
-
-
-  sales.forEach(
-    sale => {
-
-      const data =
-        getSaleDate(
-          sale.createdAt
-        );
-
-
-      if (!data) {
-        return;
-      }
-
-
-      const ano =
-        data.getFullYear()
-          .toString()
-          .padStart(4, "0");
-
-
-      const mes =
-        String(
-          data.getMonth() + 1
-        ).padStart(2, "0");
-
-
-      const dia =
-        String(
-          data.getDate()
-        ).padStart(2, "0");
-
-
-      const chave =
-        `${ano}-${mes}-${dia}`;
-
-
-      if (!porDia[chave]) {
-
-        porDia[chave] = {
-
-          faturamento: 0,
-
-          quantidade: 0
-
-        };
-
-      }
-
-
-      porDia[chave].faturamento +=
-        Number(sale.total) || 0;
-
-
-      porDia[chave].quantidade +=
-        1;
-
-    }
-  );
-
-
-  // ==================================================
-  // ORDENAR DO DIA MAIS RECENTE PARA O MAIS ANTIGO
-  // E LIMITAR AOS ÚLTIMOS 14 DIAS COM MOVIMENTO
-  // ==================================================
-
-  return Object.entries(porDia)
-    .sort(
-      (a, b) =>
-        b[0].localeCompare(a[0])
-    )
-    .slice(0, 14);
-
-}
-
-
-// ======================================================
-// RENDERIZAR FATURAMENTO POR DIA
-// ======================================================
-
-function renderDailyRevenue() {
-
-  if (!dailyRevenueList) {
-    return;
-  }
-
-
-  const dias =
-    calcularFaturamentoPorDia();
-
-
-  if (!dias.length) {
-
-    dailyRevenueList.innerHTML = `
-
-      <div class="reports-empty">
-        Nenhuma venda registrada ainda.
-      </div>
-
-    `;
-
-    return;
-
-  }
-
-
-  const maiorFaturamento =
-    Math.max(
-      ...dias.map(
-        ([, dados]) =>
-          dados.faturamento
-      )
-    );
-
-
-  dailyRevenueList.innerHTML =
-    dias
-      .map(
-        ([chave, dados]) => {
-
-          const [
-            ano,
-            mes,
-            dia
-          ] =
-            chave.split("-");
-
-
-          const dataExibicao =
-            `${dia}/${mes}/${ano}`;
-
-
-          const percentual =
-            maiorFaturamento > 0
-              ? Math.round(
-                  (
-                    dados.faturamento /
-                    maiorFaturamento
-                  ) * 100
-                )
-              : 0;
-
-
-          return `
-
-            <div class="daily-revenue-row">
-
-              <span class="daily-revenue-date">
-                ${dataExibicao}
-              </span>
-
-              <div class="daily-revenue-bar-track">
-
-                <div
-                  class="daily-revenue-bar-fill"
-                  style="width: ${percentual}%">
-                </div>
-
-              </div>
-
-              <span class="daily-revenue-value">
-                ${brl(dados.faturamento)}
-              </span>
-
-            </div>
-
-          `;
-
-        }
-      )
-      .join("");
-
-}
-
-
-// ======================================================
-// RENDERIZAR ESTOQUE BAIXO
-// ======================================================
-
-function renderLowStock() {
-
-  if (!lowStockList) {
-    return;
-  }
-
-
-  const produtosComEstoqueBaixo =
-    products
-      .filter(
-        product =>
-          product.available &&
-          product.stock <=
-          LOW_STOCK_THRESHOLD
-      )
-      .sort(
-        (a, b) =>
-          a.stock - b.stock
-      );
-
-
-  if (!produtosComEstoqueBaixo.length) {
-
-    lowStockList.innerHTML = `
-
-      <div class="reports-empty">
-        Nenhum produto com estoque baixo. 🎉
-      </div>
-
-    `;
-
-    return;
-
-  }
-
-
-  lowStockList.innerHTML =
-    produtosComEstoqueBaixo
-      .map(
-        product => {
-
-          const critico =
-            product.stock === 0;
-
-
-          return `
-
-            <div class="low-stock-row">
-
-              <div class="low-stock-emoji">
-                ${renderProductImage(product.emoji, product.name)}
-              </div>
-
-              <div class="low-stock-info">
-
-                <strong>
-                  ${escapeHtml(product.name)}
-                </strong>
-
-                <small>
-                  ${escapeHtml(product.category)}
-                </small>
-
-              </div>
-
-              <span class="low-stock-badge ${
-                critico
-                  ? "critico"
-                  : "baixo"
-              }">
-                ${
-                  critico
-                    ? "Sem estoque"
-                    : `${product.stock} un.`
-                }
-              </span>
-
-            </div>
-
-          `;
-
-        }
-      )
-      .join("");
-
-}
-
-
-// ======================================================
-// ABRIR MODAL DE RELATÓRIOS
-// ======================================================
-
-async function openReports() {
-
-  await loadProducts();
-
-  await loadSales();
-
-
-  renderDailyRevenue();
-
-  renderLowStock();
-
-
-  reportsModal.classList.remove(
-    "hidden"
-  );
-
-}
-
-
-// ======================================================
-// BOTÃO "RELATÓRIOS"
-// ======================================================
-
-if (reportsButton) {
-
-  reportsButton.addEventListener(
-    "click",
-    openReports
-  );
-
-}
-
-
-// ======================================================
-// FECHAR MODAL DE RELATÓRIOS
-// ======================================================
-
-if (closeReportsModal) {
-
-  closeReportsModal.addEventListener(
-    "click",
-    () => {
-
-      closeModal(
-        reportsModal
-      );
-
-    }
-  );
-
-}
-
-
-// ======================================================
-// FECHAR MODAL DE DETALHES CLICANDO FORA
-// ======================================================
-
-if (saleDetailsModal) {
-
-  saleDetailsModal.addEventListener(
-    "click",
-    event => {
-
-      if (
-        event.target ===
-        saleDetailsModal
-      ) {
-
-        closeModal(
-          saleDetailsModal
-        );
-
-      }
-
-    }
-  );
-
-}
 
 
 // ======================================================
@@ -4594,10 +1546,7 @@ document.addEventListener(
   "keydown",
   event => {
 
-    if (
-      event.key !==
-      "Escape"
-    ) {
+    if (event.key !== "Escape") {
       return;
     }
 
@@ -4606,29 +1555,8 @@ document.addEventListener(
       productModal
     );
 
-
     closeModal(
       checkoutModal
-    );
-
-
-    closeModal(
-      saleDetailsModal
-    );
-
-
-    closeModal(
-      productManageModal
-    );
-
-
-    closeModal(
-      productFormModal
-    );
-
-
-    closeModal(
-      reportsModal
     );
 
   }
@@ -4648,1629 +1576,45 @@ renderCart();
 // ======================================================
 // FUNÇÃO EXPOSTA PARA O SCRIPT DE AUTENTICAÇÃO
 //
-// loadProducts() e loadSales() fazem leitura no
-// Firestore, e as Security Rules dependem de existir
-// uma sessão (anônima ou de verdade) autenticada. Por
-// isso elas NÃO rodam mais assim que o app.js carrega —
-// index.html chama window.iniciarApp() só depois que o
-// Firebase confirma essa sessão, evitando um erro de
-// "permissão insuficiente" no instante antes da sessão
-// anônima terminar de ser criada.
+// loadProducts() faz leitura no Firestore, e as Security
+// Rules dependem de existir uma sessão (anônima ou de
+// verdade). Por isso ela NÃO roda assim que o app.js
+// carrega: index.html chama window.iniciarApp() só depois
+// que o Firebase confirma a sessão.
 //
-// loadSales() só roda para administrador: para
-// visitante e cliente, a leitura de "vendas" é negada
-// pelas regras mesmo (histórico é admin-only), então
-// nem vale tentar — evita um toast de erro desnecessário
-// toda vez que a página carrega.
+// ADMINISTRADOR: não usa o cardápio. Quem tem papel de
+// administrador é enviado direto para o painel
+// (admin.html). Para testar a página do cliente estando
+// logado como admin, abra index.html?cliente=1.
 // ======================================================
 
 window.iniciarApp = () => {
 
+  const querVerComoCliente =
+    new URLSearchParams(
+      window.location.search
+    ).has("cliente");
+
+
+  if (
+    window.userRole === "administrador" &&
+    !querVerComoCliente
+  ) {
+
+    // Esconde a página para não piscar o cardápio
+
+    document.body.style.visibility =
+      "hidden";
+
+    window.location.replace(
+      "admin.html"
+    );
+
+    return;
+
+  }
+
+
   loadProducts();
 
-
-  if (
-    window.userRole ===
-    "administrador"
-  ) {
-
-    loadSales();
-
-  }
-
 };
-
-
-
-// ======================================================
-// ======================================================
-// MÓDULO FINANCEIRO (ADMIN) — DESPESAS + RESULTADO
-// ======================================================
-// ======================================================
-//
-// Entradas = soma de "total" das vendas do período
-//            (array "sales", já usado pelo histórico).
-// Saídas   = soma de "amount" das despesas do período
-//            (coleção "despesas").
-// Saldo    = Entradas - Saídas.
-//
-// A data da despesa é guardada como texto "AAAA-MM-DD"
-// (sem horário), assim não sofre com fuso horário.
-//
-// Só administrador lê/escreve em "despesas" — a garantia
-// real está nas Security Rules do Firestore.
-// ======================================================
-
-let expenses = [];
-
-
-// ======================================================
-// ELEMENTOS DO FINANCEIRO
-// ======================================================
-
-const financeButton =
-  document.getElementById("financeButton");
-
-const financeModal =
-  document.getElementById("financeModal");
-
-const closeFinanceModal =
-  document.getElementById("closeFinanceModal");
-
-const financeMonthFilter =
-  document.getElementById("financeMonthFilter");
-
-const financeAllButton =
-  document.getElementById("financeAllButton");
-
-const financeIncome =
-  document.getElementById("financeIncome");
-
-const financeExpense =
-  document.getElementById("financeExpense");
-
-const financeBalance =
-  document.getElementById("financeBalance");
-
-const financeCategoryList =
-  document.getElementById("financeCategoryList");
-
-const expenseList =
-  document.getElementById("expenseList");
-
-const addExpenseButton =
-  document.getElementById("addExpenseButton");
-
-const expenseFormModal =
-  document.getElementById("expenseFormModal");
-
-const closeExpenseFormModal =
-  document.getElementById("closeExpenseFormModal");
-
-const expenseForm =
-  document.getElementById("expenseForm");
-
-const expenseFormTitle =
-  document.getElementById("expenseFormTitle");
-
-const expenseFormId =
-  document.getElementById("expenseFormId");
-
-const expenseFormDescription =
-  document.getElementById("expenseFormDescription");
-
-const expenseFormCategory =
-  document.getElementById("expenseFormCategory");
-
-const expenseFormAmount =
-  document.getElementById("expenseFormAmount");
-
-const expenseFormDate =
-  document.getElementById("expenseFormDate");
-
-const expenseFormSubmitButton =
-  document.getElementById("expenseFormSubmitButton");
-
-const deleteExpenseButton =
-  document.getElementById("deleteExpenseButton");
-
-
-// ======================================================
-// DATAS
-// ======================================================
-
-function todayISO() {
-
-  const now =
-    new Date();
-
-  const year =
-    now.getFullYear();
-
-  const month =
-    String(now.getMonth() + 1).padStart(2, "0");
-
-  const day =
-    String(now.getDate()).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
-
-}
-
-
-function formatExpenseDate(iso) {
-
-  const [year, month, day] =
-    String(iso || "").split("-");
-
-  return (year && month && day)
-    ? `${day}/${month}/${year}`
-    : "—";
-
-}
-
-
-function saleMonthKey(sale) {
-
-  const date =
-    getSaleDate(sale.createdAt);
-
-  if (!date) {
-    return "";
-  }
-
-  const month =
-    String(date.getMonth() + 1).padStart(2, "0");
-
-  return `${date.getFullYear()}-${month}`;
-
-}
-
-
-// ======================================================
-// CARREGAR DESPESAS DO FIRESTORE
-// ======================================================
-
-async function loadExpenses() {
-
-  try {
-
-    const snapshot =
-      await getDocs(
-        collection(
-          window.db,
-          "despesas"
-        )
-      );
-
-
-    expenses =
-      snapshot.docs.map(
-        documentSnapshot => {
-
-          const data =
-            documentSnapshot.data();
-
-          return {
-
-            id:
-              documentSnapshot.id,
-
-            description:
-              String(
-                data.description ||
-                "Despesa sem descrição"
-              ),
-
-            category:
-              String(
-                data.category ||
-                "Outros"
-              ),
-
-            amount:
-              Number(
-                data.amount
-              ) || 0,
-
-            date:
-              String(
-                data.date || ""
-              )
-
-          };
-
-        }
-      );
-
-
-    // Mais recentes primeiro
-    expenses.sort(
-      (a, b) =>
-        b.date.localeCompare(a.date)
-    );
-
-
-  } catch (error) {
-
-    console.error(
-      "Erro ao carregar despesas:",
-      error
-    );
-
-    showToast(
-      "Não foi possível carregar as despesas."
-    );
-
-  }
-
-}
-
-
-// ======================================================
-// RENDERIZAR RESUMO + LISTAS
-// ======================================================
-
-function renderFinance() {
-
-  const period =
-    financeMonthFilter
-      ? financeMonthFilter.value
-      : "";
-
-
-  const periodSales =
-    period
-      ? sales.filter(
-          sale =>
-            saleMonthKey(sale) === period
-        )
-      : sales;
-
-
-  const periodExpenses =
-    period
-      ? expenses.filter(
-          expense =>
-            expense.date.startsWith(period)
-        )
-      : expenses;
-
-
-  const income =
-    periodSales.reduce(
-      (sum, sale) =>
-        sum + (Number(sale.total) || 0),
-      0
-    );
-
-
-  const outcome =
-    periodExpenses.reduce(
-      (sum, expense) =>
-        sum + expense.amount,
-      0
-    );
-
-
-  const balance =
-    Math.round(
-      (income - outcome) * 100
-    ) / 100;
-
-
-  financeIncome.textContent =
-    brl(income);
-
-  financeExpense.textContent =
-    brl(outcome);
-
-  financeBalance.textContent =
-    brl(balance);
-
-
-  financeBalance.classList.toggle(
-    "finance-negative",
-    balance < 0
-  );
-
-  financeBalance.classList.toggle(
-    "finance-positive",
-    balance > 0
-  );
-
-
-  renderExpenseCategories(
-    periodExpenses,
-    outcome
-  );
-
-
-  renderExpenseList(
-    periodExpenses
-  );
-
-
-  renderProfitSummary(
-    periodSales,
-    periodExpenses
-  );
-
-}
-
-
-// ======================================================
-// DESPESAS POR CATEGORIA
-// ======================================================
-
-function renderExpenseCategories(
-  periodExpenses,
-  outcome
-) {
-
-  if (!financeCategoryList) {
-    return;
-  }
-
-
-  if (!periodExpenses.length) {
-
-    financeCategoryList.innerHTML = `
-
-      <div class="reports-empty">
-        Nenhuma despesa neste período.
-      </div>
-
-    `;
-
-    return;
-
-  }
-
-
-  const byCategory = {};
-
-
-  periodExpenses.forEach(
-    expense => {
-
-      byCategory[expense.category] =
-        (byCategory[expense.category] || 0) +
-        expense.amount;
-
-    }
-  );
-
-
-  const rows =
-    Object.entries(byCategory)
-      .sort(
-        (a, b) =>
-          b[1] - a[1]
-      );
-
-
-  financeCategoryList.innerHTML =
-    rows
-      .map(
-        ([category, value]) => {
-
-          const percent =
-            outcome > 0
-              ? Math.round(
-                  (value / outcome) * 100
-                )
-              : 0;
-
-
-          return `
-
-            <div class="finance-category-row">
-
-              <span class="finance-category-name">
-                ${escapeHtml(category)}
-              </span>
-
-              <div class="daily-revenue-bar-track">
-
-                <div
-                  class="daily-revenue-bar-fill"
-                  style="width: ${percent}%">
-                </div>
-
-              </div>
-
-              <span class="daily-revenue-value">
-                ${brl(value)}
-                (${percent}%)
-              </span>
-
-            </div>
-
-          `;
-
-        }
-      )
-      .join("");
-
-}
-
-
-// ======================================================
-// LISTA DE DESPESAS
-// ======================================================
-
-function renderExpenseList(
-  periodExpenses
-) {
-
-  if (!expenseList) {
-    return;
-  }
-
-
-  if (!periodExpenses.length) {
-
-    expenseList.innerHTML = `
-
-      <div class="reports-empty">
-        Nenhuma despesa lançada neste período.
-        Clique em "+ Nova despesa" para começar.
-      </div>
-
-    `;
-
-    return;
-
-  }
-
-
-  expenseList.innerHTML =
-    periodExpenses
-      .map(
-        expense => `
-
-          <div class="expense-row">
-
-            <span class="expense-date">
-              ${formatExpenseDate(expense.date)}
-            </span>
-
-            <div class="expense-info">
-
-              <strong>
-                ${escapeHtml(expense.description)}
-              </strong>
-
-              <small>
-                ${escapeHtml(expense.category)}
-              </small>
-
-            </div>
-
-            <span class="expense-amount">
-              − ${brl(expense.amount)}
-            </span>
-
-            <div class="admin-product-actions">
-
-              <button
-                class="admin-icon-button"
-                type="button"
-                data-expense-action="edit"
-                data-id="${expense.id}"
-                aria-label="Editar despesa">
-                ✏️
-              </button>
-
-              <button
-                class="admin-icon-button danger"
-                type="button"
-                data-expense-action="delete"
-                data-id="${expense.id}"
-                aria-label="Excluir despesa">
-                🗑️
-              </button>
-
-            </div>
-
-          </div>
-
-        `
-      )
-      .join("");
-
-}
-
-
-// ======================================================
-// ABRIR O FINANCEIRO
-// ======================================================
-
-async function openFinance() {
-
-  // Mês atual como padrão na primeira abertura
-  if (
-    financeMonthFilter &&
-    !financeMonthFilter.value
-  ) {
-
-    financeMonthFilter.value =
-      todayISO().slice(0, 7);
-
-  }
-
-
-  await Promise.all([
-    loadSales(),
-    loadExpenses()
-  ]);
-
-
-  renderFinance();
-
-
-  financeModal.classList.remove(
-    "hidden"
-  );
-
-}
-
-
-// ======================================================
-// FORMULÁRIO DE DESPESA (CRIAR OU EDITAR)
-// ======================================================
-
-function openExpenseForm(expenseId) {
-
-  const expense =
-    expenseId
-      ? expenses.find(
-          item =>
-            item.id === expenseId
-        )
-      : null;
-
-
-  expenseFormId.value =
-    expense
-      ? expense.id
-      : "";
-
-  expenseFormTitle.textContent =
-    expense
-      ? "Editar despesa"
-      : "Nova despesa";
-
-  expenseFormDescription.value =
-    expense
-      ? expense.description
-      : "";
-
-  expenseFormCategory.value =
-    expense
-      ? expense.category
-      : "Insumos";
-
-  expenseFormAmount.value =
-    expense
-      ? expense.amount
-      : "";
-
-  expenseFormDate.value =
-    expense
-      ? expense.date
-      : todayISO();
-
-  expenseFormSubmitButton.textContent =
-    expense
-      ? "Salvar alterações"
-      : "Lançar despesa";
-
-  deleteExpenseButton.classList.toggle(
-    "hidden",
-    !expense
-  );
-
-
-  expenseFormModal.classList.remove(
-    "hidden"
-  );
-
-}
-
-
-// ======================================================
-// EXCLUIR DESPESA
-// ======================================================
-
-async function deleteExpense(expenseId) {
-
-  const expense =
-    expenses.find(
-      item =>
-        item.id === expenseId
-    );
-
-
-  if (!expense) {
-    return;
-  }
-
-
-  const confirmado =
-    window.confirm(
-      `Excluir a despesa "${expense.description}" (${brl(expense.amount)})? Essa ação não pode ser desfeita.`
-    );
-
-
-  if (!confirmado) {
-    return;
-  }
-
-
-  try {
-
-    await deleteDoc(
-      doc(
-        window.db,
-        "despesas",
-        expenseId
-      )
-    );
-
-
-    showToast(
-      "Despesa excluída."
-    );
-
-
-    await loadExpenses();
-
-    renderFinance();
-
-
-  } catch (error) {
-
-    console.error(
-      "Erro ao excluir despesa:",
-      error
-    );
-
-    showToast(
-      "Não foi possível excluir a despesa."
-    );
-
-  }
-
-}
-
-
-// ======================================================
-// EVENTOS DO FINANCEIRO
-// ======================================================
-
-if (financeButton) {
-
-  financeButton.addEventListener(
-    "click",
-    openFinance
-  );
-
-}
-
-
-if (closeFinanceModal) {
-
-  closeFinanceModal.addEventListener(
-    "click",
-    () => {
-
-      closeModal(
-        financeModal
-      );
-
-    }
-  );
-
-}
-
-
-if (financeMonthFilter) {
-
-  financeMonthFilter.addEventListener(
-    "change",
-    renderFinance
-  );
-
-}
-
-
-if (financeAllButton) {
-
-  financeAllButton.addEventListener(
-    "click",
-    () => {
-
-      financeMonthFilter.value =
-        "";
-
-      renderFinance();
-
-    }
-  );
-
-}
-
-
-if (addExpenseButton) {
-
-  addExpenseButton.addEventListener(
-    "click",
-    () => {
-
-      openExpenseForm(
-        null
-      );
-
-    }
-  );
-
-}
-
-
-if (closeExpenseFormModal) {
-
-  closeExpenseFormModal.addEventListener(
-    "click",
-    () => {
-
-      closeModal(
-        expenseFormModal
-      );
-
-    }
-  );
-
-}
-
-
-if (expenseList) {
-
-  expenseList.addEventListener(
-    "click",
-    event => {
-
-      const button =
-        event.target.closest(
-          "[data-expense-action]"
-        );
-
-
-      if (!button) {
-        return;
-      }
-
-
-      if (
-        button.dataset.expenseAction ===
-        "edit"
-      ) {
-
-        openExpenseForm(
-          button.dataset.id
-        );
-
-      }
-
-
-      if (
-        button.dataset.expenseAction ===
-        "delete"
-      ) {
-
-        deleteExpense(
-          button.dataset.id
-        );
-
-      }
-
-    }
-  );
-
-}
-
-
-if (deleteExpenseButton) {
-
-  deleteExpenseButton.addEventListener(
-    "click",
-    async () => {
-
-      const id =
-        expenseFormId.value;
-
-
-      if (!id) {
-        return;
-      }
-
-
-      await deleteExpense(
-        id
-      );
-
-
-      closeModal(
-        expenseFormModal
-      );
-
-    }
-  );
-
-}
-
-
-// ======================================================
-// ENVIAR FORMULÁRIO (LANÇAR OU SALVAR EDIÇÃO)
-// ======================================================
-
-if (expenseForm) {
-
-  expenseForm.addEventListener(
-    "submit",
-    async event => {
-
-      event.preventDefault();
-
-
-      const id =
-        expenseFormId.value;
-
-
-      const description =
-        expenseFormDescription.value.trim();
-
-
-      const amount =
-        Math.round(
-          (
-            Number(
-              expenseFormAmount.value
-            ) || 0
-          ) * 100
-        ) / 100;
-
-
-      const date =
-        expenseFormDate.value;
-
-
-      if (!description) {
-
-        showToast(
-          "Informe a descrição da despesa."
-        );
-
-        return;
-
-      }
-
-
-      if (amount <= 0) {
-
-        showToast(
-          "Informe um valor maior que zero."
-        );
-
-        return;
-
-      }
-
-
-      if (!date) {
-
-        showToast(
-          "Informe a data da despesa."
-        );
-
-        return;
-
-      }
-
-
-      const expenseData = {
-
-        description:
-          description,
-
-        category:
-          expenseFormCategory.value,
-
-        amount:
-          amount,
-
-        date:
-          date,
-
-        updatedAt:
-          serverTimestamp()
-
-      };
-
-
-      expenseFormSubmitButton.disabled =
-        true;
-
-
-      expenseFormSubmitButton.textContent =
-        "Salvando...";
-
-
-      try {
-
-        if (id) {
-
-          await updateDoc(
-            doc(
-              window.db,
-              "despesas",
-              id
-            ),
-            expenseData
-          );
-
-
-          showToast(
-            "Despesa atualizada."
-          );
-
-        } else {
-
-          await addDoc(
-            collection(
-              window.db,
-              "despesas"
-            ),
-            {
-
-              ...expenseData,
-
-              createdAt:
-                serverTimestamp()
-
-            }
-          );
-
-
-          showToast(
-            "Despesa lançada."
-          );
-
-        }
-
-
-        closeModal(
-          expenseFormModal
-        );
-
-
-        await loadExpenses();
-
-        renderFinance();
-
-
-      } catch (error) {
-
-        console.error(
-          "Erro ao salvar despesa:",
-          error
-        );
-
-
-        showToast(
-          "Não foi possível salvar a despesa."
-        );
-
-
-      } finally {
-
-        expenseFormSubmitButton.disabled =
-          false;
-
-
-        expenseFormSubmitButton.textContent =
-          id
-            ? "Salvar alterações"
-            : "Lançar despesa";
-
-      }
-
-    }
-  );
-
-}
-
-
-// ======================================================
-// FECHAR MODAIS DO FINANCEIRO COM ESC
-// ======================================================
-
-document.addEventListener(
-  "keydown",
-  event => {
-
-    if (
-      event.key !==
-      "Escape"
-    ) {
-      return;
-    }
-
-
-    closeModal(
-      financeModal
-    );
-
-
-    closeModal(
-      expenseFormModal
-    );
-
-  }
-);
-
-
-
-// ======================================================
-// ======================================================
-// CALCULADORA DE CUSTO x LUCRO (ADMIN)
-// ======================================================
-// ======================================================
-//
-// - "cost" (custo unitário) fica no documento do produto.
-// - No checkout, o custo de cada item é copiado para a
-//   venda (items[].cost), então o lucro histórico não
-//   muda se o custo do produto for alterado depois.
-// - Vendas antigas, sem custo registrado, ficam fora dos
-//   cálculos de lucro (continuam normais no faturamento).
-//
-// Margem  = lucro / preço de venda
-// Markup  = lucro / custo
-// Preço sugerido para uma margem M:  custo / (1 - M)
-// ======================================================
-
-let suggestedPrice = null;
-
-
-const productFormCost =
-  document.getElementById("productFormCost");
-
-const productFormTargetMargin =
-  document.getElementById("productFormTargetMargin");
-
-const costCalcProfit =
-  document.getElementById("costCalcProfit");
-
-const costCalcMargin =
-  document.getElementById("costCalcMargin");
-
-const costCalcMarkup =
-  document.getElementById("costCalcMarkup");
-
-const costCalcSuggestion =
-  document.getElementById("costCalcSuggestion");
-
-const applySuggestedPriceButton =
-  document.getElementById("applySuggestedPriceButton");
-
-
-// ======================================================
-// UTILITÁRIOS
-// ======================================================
-
-function round2(value) {
-
-  return Math.round(
-    (Number(value) || 0) * 100
-  ) / 100;
-
-}
-
-
-function formatPercent(value) {
-
-  return `${
-    (
-      Math.round(value * 10) / 10
-    ).toLocaleString("pt-BR")
-  }%`;
-
-}
-
-
-function setValueSign(element, value) {
-
-  if (!element) {
-    return;
-  }
-
-  element.classList.toggle(
-    "value-negative",
-    value < 0
-  );
-
-  element.classList.toggle(
-    "value-positive",
-    value > 0
-  );
-
-}
-
-
-// Custo digitado no formulário: vazio = sem custo (null)
-
-function readCostInput() {
-
-  if (
-    !productFormCost ||
-    productFormCost.value === ""
-  ) {
-    return null;
-  }
-
-  return Math.max(
-    0,
-    round2(productFormCost.value)
-  );
-
-}
-
-
-// Texto de margem na lista de produtos do admin
-
-function formatMarginLabel(product) {
-
-  if (
-    typeof product.cost !== "number" ||
-    !(product.price > 0)
-  ) {
-    return "Sem custo";
-  }
-
-  const margin =
-    (
-      (product.price - product.cost) /
-      product.price
-    ) * 100;
-
-  return `Margem ${formatPercent(margin)}`;
-
-}
-
-
-// ======================================================
-// CALCULADORA DO FORMULÁRIO
-// ======================================================
-
-function updateCostCalculator() {
-
-  if (!costCalcProfit) {
-    return;
-  }
-
-
-  const price =
-    productFormPrice.value === ""
-      ? NaN
-      : Number(productFormPrice.value);
-
-  const cost =
-    productFormCost.value === ""
-      ? NaN
-      : Number(productFormCost.value);
-
-  const targetMargin =
-    productFormTargetMargin.value === ""
-      ? NaN
-      : Number(productFormTargetMargin.value);
-
-
-  let profitText = "—";
-  let marginText = "—";
-  let markupText = "—";
-  let profitValue = 0;
-
-
-  if (
-    Number.isFinite(price) &&
-    price > 0 &&
-    Number.isFinite(cost) &&
-    cost >= 0
-  ) {
-
-    const profit =
-      price - cost;
-
-    profitValue =
-      profit;
-
-    profitText =
-      brl(profit);
-
-    marginText =
-      formatPercent(
-        (profit / price) * 100
-      );
-
-    markupText =
-      cost > 0
-        ? formatPercent(
-            (profit / cost) * 100
-          )
-        : "—";
-
-  }
-
-
-  costCalcProfit.textContent =
-    profitText;
-
-  costCalcMargin.textContent =
-    marginText;
-
-  costCalcMarkup.textContent =
-    markupText;
-
-
-  setValueSign(costCalcProfit, profitValue);
-  setValueSign(costCalcMargin, profitValue);
-  setValueSign(costCalcMarkup, profitValue);
-
-
-  // ----------------------------------------------------
-  // PREÇO SUGERIDO PARA A MARGEM DESEJADA
-  // ----------------------------------------------------
-
-  suggestedPrice =
-    null;
-
-
-  if (
-    Number.isFinite(cost) &&
-    cost > 0 &&
-    Number.isFinite(targetMargin) &&
-    targetMargin > 0 &&
-    targetMargin < 100
-  ) {
-
-    suggestedPrice =
-      round2(
-        cost /
-        (1 - targetMargin / 100)
-      );
-
-  }
-
-
-  if (suggestedPrice !== null) {
-
-    costCalcSuggestion.textContent =
-      `Para ${formatPercent(targetMargin)} de margem, o preço sugerido é ${brl(suggestedPrice)}.`;
-
-    applySuggestedPriceButton.classList.remove(
-      "hidden"
-    );
-
-  } else {
-
-    costCalcSuggestion.textContent =
-      "Informe o custo e a margem desejada para ver o preço sugerido.";
-
-    applySuggestedPriceButton.classList.add(
-      "hidden"
-    );
-
-  }
-
-}
-
-
-[
-  productFormPrice,
-  productFormCost,
-  productFormTargetMargin
-].forEach(
-  field => {
-
-    if (field) {
-
-      field.addEventListener(
-        "input",
-        updateCostCalculator
-      );
-
-    }
-
-  }
-);
-
-
-if (applySuggestedPriceButton) {
-
-  applySuggestedPriceButton.addEventListener(
-    "click",
-    () => {
-
-      if (suggestedPrice === null) {
-        return;
-      }
-
-      productFormPrice.value =
-        suggestedPrice.toFixed(2);
-
-      updateCostCalculator();
-
-    }
-  );
-
-}
-
-
-// ======================================================
-// LUCRO DE UMA VENDA
-//
-// Só dá para calcular quando TODOS os itens têm custo
-// registrado (vendas feitas depois da calculadora).
-// ======================================================
-
-function getSaleProfit(sale) {
-
-  const items =
-    Array.isArray(sale.items)
-      ? sale.items
-      : [];
-
-
-  if (!items.length) {
-
-    return {
-      known: false,
-      cost: 0,
-      profit: 0
-    };
-
-  }
-
-
-  let cost = 0;
-
-
-  for (const item of items) {
-
-    if (typeof item.cost !== "number") {
-
-      return {
-        known: false,
-        cost: 0,
-        profit: 0
-      };
-
-    }
-
-    cost +=
-      item.cost *
-      (Number(item.quantity) || 0);
-
-  }
-
-
-  return {
-
-    known: true,
-
-    cost:
-      round2(cost),
-
-    profit:
-      round2(
-        (Number(sale.total) || 0) - cost
-      )
-
-  };
-
-}
-
-
-// ======================================================
-// LUCRO NO MODAL "DETALHES DA VENDA"
-// ======================================================
-
-function renderSaleProfit(sale) {
-
-  const costRow =
-    document.getElementById("saleDetailsCostRow");
-
-  const profitRow =
-    document.getElementById("saleDetailsProfitRow");
-
-  const costEl =
-    document.getElementById("saleDetailsCost");
-
-  const profitEl =
-    document.getElementById("saleDetailsProfit");
-
-
-  if (
-    !costRow ||
-    !profitRow ||
-    !costEl ||
-    !profitEl
-  ) {
-    return;
-  }
-
-
-  const info =
-    getSaleProfit(sale);
-
-
-  costRow.classList.toggle(
-    "hidden",
-    !info.known
-  );
-
-  profitRow.classList.toggle(
-    "hidden",
-    !info.known
-  );
-
-
-  if (!info.known) {
-    return;
-  }
-
-
-  costEl.textContent =
-    brl(info.cost);
-
-  profitEl.textContent =
-    brl(info.profit);
-
-
-  setValueSign(
-    profitEl,
-    info.profit
-  );
-
-}
-
-
-
-// ======================================================
-// LUCRO NO MÓDULO FINANCEIRO
-// ======================================================
-//
-// Custo dos produtos vendidos (CMV) = soma dos custos dos
-//   itens das vendas do período que têm custo registrado.
-// Lucro bruto   = vendas (com custo) - CMV.
-// Lucro líquido = lucro bruto - despesas do período,
-//   EXCETO a categoria "Insumos": a compra de insumos já
-//   está embutida no custo dos produtos, então contá-la de
-//   novo seria descontar o mesmo gasto duas vezes.
-//
-// O "Saldo" do módulo continua sendo o caixa simples
-// (entradas - todas as saídas).
-// ======================================================
-
-function renderProfitSummary(
-  periodSales,
-  periodExpenses
-) {
-
-  const costEl =
-    document.getElementById("financeCost");
-
-  const grossEl =
-    document.getElementById("financeGrossProfit");
-
-  const netEl =
-    document.getElementById("financeNetProfit");
-
-  const noteEl =
-    document.getElementById("financeProfitNote");
-
-
-  if (
-    !costEl ||
-    !grossEl ||
-    !netEl
-  ) {
-    return;
-  }
-
-
-  let totalCost = 0;
-  let grossProfit = 0;
-  let withoutCost = 0;
-
-
-  periodSales.forEach(
-    sale => {
-
-      const info =
-        getSaleProfit(sale);
-
-      if (!info.known) {
-
-        withoutCost++;
-
-        return;
-
-      }
-
-      totalCost +=
-        info.cost;
-
-      grossProfit +=
-        info.profit;
-
-    }
-  );
-
-
-  const operatingExpenses =
-    periodExpenses
-      .filter(
-        expense =>
-          expense.category !== "Insumos"
-      )
-      .reduce(
-        (sum, expense) =>
-          sum + expense.amount,
-        0
-      );
-
-
-  const netProfit =
-    round2(
-      grossProfit - operatingExpenses
-    );
-
-
-  costEl.textContent =
-    brl(totalCost);
-
-  grossEl.textContent =
-    brl(grossProfit);
-
-  netEl.textContent =
-    brl(netProfit);
-
-
-  setValueSign(grossEl, grossProfit);
-  setValueSign(netEl, netProfit);
-
-
-  if (noteEl) {
-
-    const notes = [];
-
-    if (withoutCost > 0) {
-
-      notes.push(
-        `${withoutCost} venda${withoutCost === 1 ? "" : "s"} do período sem custo registrado ficou${withoutCost === 1 ? "" : "ram"} fora do cálculo de lucro.`
-      );
-
-    }
-
-    notes.push(
-      'Lucro líquido = lucro bruto − despesas, sem contar "Insumos" (o custo dos produtos já cobre esse gasto).'
-    );
-
-    noteEl.textContent =
-      notes.join(" ");
-
-  }
-
-}
