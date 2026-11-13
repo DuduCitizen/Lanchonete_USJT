@@ -3,7 +3,8 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#050505">
 
   <title>Byte Burger | PDV</title>
 
@@ -21,12 +22,11 @@
        Esconde a página imediatamente. Só volta a
        aparecer depois que o Firebase confirmar ALGUMA
        sessão — anônima (visitante navegando) ou real
-       (cliente/admin logado) — ver script no fim do
-       <body>. O cardápio é público agora; isso aqui só
-       evita o "flash" de conteúdo antes da sessão
-       anônima terminar de ser criada. Fica ANTES do CSS
-       externo de propósito, pra já esconder mesmo se o
-       stylesheet demorar a carregar.
+       (cliente logado) — ver script no fim do <body>.
+       O cardápio é público; isso aqui só evita o "flash"
+       de conteúdo antes da sessão anônima terminar de ser
+       criada. Fica ANTES do CSS externo de propósito, pra
+       já esconder mesmo se o stylesheet demorar a carregar.
   =================================================== -->
 
   <style>
@@ -40,6 +40,10 @@
 
   <!-- ==================================================
        BARRA SUPERIOR
+
+       Página do CLIENTE: marca, carrinho, usuário e
+       entrar/sair. Os módulos de administração ficam em
+       admin.html.
   =================================================== -->
 
   <header class="topbar">
@@ -65,6 +69,7 @@
       <button
         class="icon-button"
         id="openCartButton"
+        type="button"
         aria-label="Abrir carrinho">
 
         🛒
@@ -72,73 +77,6 @@
         <span id="cartCount">
           0
         </span>
-
-      </button>
-
-
-      <!-- ==================================================
-           BOTÃO HISTÓRICO (SÓ ADMINISTRADOR)
-
-           O papel "cliente" é o cliente final da lanchonete:
-           ele pede, paga e não tem acesso ao histórico de
-           vendas. Escondido por padrão; revelado pelo script
-           de autenticação só se role === "administrador".
-      =================================================== -->
-
-      <button
-        class="history-button hidden"
-        id="openHistoryButton"
-        type="button">
-
-        📋
-        <span>Histórico</span>
-
-      </button>
-
-
-      <!-- BOTÃO RELATÓRIOS (SÓ ADMINISTRADOR) -->
-
-      <button
-        class="history-button hidden"
-        id="reportsButton"
-        type="button">
-
-        📊
-        <span>Relatórios</span>
-
-      </button>
-
-      <!-- ==================================================
-           BOTÃO FINANCEIRO (SÓ ADMINISTRADOR)
-      =================================================== -->
-
-      <button
-        class="history-button hidden"
-        id="financeButton"
-        type="button">
-
-        💼
-        <span>Financeiro</span>
-
-      </button>
-
-
-      <!-- ==================================================
-           BOTÃO GERENCIAR PRODUTOS (SÓ ADMINISTRADOR)
-
-           Escondido por padrão. Só é revelado pelo script
-           de autenticação depois de confirmar, no Firestore
-           (coleção "usuarios"), que o usuário logado tem
-           role === "administrador".
-      =================================================== -->
-
-      <button
-        class="history-button hidden"
-        id="manageProductsButton"
-        type="button">
-
-        ⚙️
-        <span>Gerenciar Produtos</span>
 
       </button>
 
@@ -171,12 +109,12 @@
       =================================================== -->
 
       <button
-        class="history-button"
+        class="topbar-button"
         id="logoutButton"
         type="button"
         aria-label="Sair ou entrar">
 
-        <span id="logoutIcon">🚪</span>
+        <span id="logoutIcon" aria-hidden="true">🚪</span>
         <span id="logoutLabel">Sair</span>
 
       </button>
@@ -231,7 +169,7 @@
 
       <div class="search-box">
 
-        <span>
+        <span aria-hidden="true">
           ⌕
         </span>
 
@@ -250,6 +188,7 @@
 
         <button
           class="category active"
+          type="button"
           data-category="Todos">
 
           Todos
@@ -258,6 +197,7 @@
 
         <button
           class="category"
+          type="button"
           data-category="Lanches">
 
           Lanches
@@ -266,6 +206,7 @@
 
         <button
           class="category"
+          type="button"
           data-category="Combos">
 
           Combos
@@ -274,6 +215,7 @@
 
         <button
           class="category"
+          type="button"
           data-category="Porções">
 
           Porções
@@ -282,6 +224,7 @@
 
         <button
           class="category"
+          type="button"
           data-category="Bebidas">
 
           Bebidas
@@ -290,6 +233,7 @@
 
         <button
           class="category"
+          type="button"
           data-category="Sobremesas">
 
           Sobremesas
@@ -304,9 +248,7 @@
 
     <!-- PRODUTOS + CARRINHO -->
 
-    <section
-      class="content-layout"
-      id="pdvSection">
+    <section class="content-layout">
 
 
       <!-- LISTA DE PRODUTOS -->
@@ -387,7 +329,8 @@
 
           <button
             class="clear-button"
-            id="clearCartButton">
+            id="clearCartButton"
+            type="button">
 
             Limpar
 
@@ -460,6 +403,7 @@
           <button
             class="checkout-button"
             id="checkoutButton"
+            type="button"
             disabled>
 
             Finalizar venda
@@ -469,268 +413,6 @@
         </div>
 
       </aside>
-
-    </section>
-
-
-
-    <!-- HISTÓRICO DE VENDAS -->
-
-    <section
-      class="history-section hidden"
-      id="historySection">
-
-      <div class="history-heading">
-
-        <div>
-
-          <span class="section-kicker">
-            MOVIMENTAÇÃO
-          </span>
-
-          <h2>
-            Histórico de vendas
-          </h2>
-
-          <p>
-            Consulte as vendas realizadas no sistema.
-          </p>
-
-        </div>
-
-        <button
-          class="history-back-button"
-          id="backToPdvButton"
-          type="button">
-
-          ← Voltar ao PDV
-
-        </button>
-
-      </div>
-
-
-      <!-- RESUMO DO HISTÓRICO -->
-
-      <div class="history-stats">
-
-        <div class="history-stat-card">
-
-          <div class="history-stat-icon">
-            🧾
-          </div>
-
-          <div>
-
-            <span>
-              Total de vendas
-            </span>
-
-            <strong id="historyTotalSales">
-              0
-            </strong>
-
-          </div>
-
-        </div>
-
-        <div class="history-stat-card">
-
-          <div class="history-stat-icon">
-            💰
-          </div>
-
-          <div>
-
-            <span>
-              Faturamento
-            </span>
-
-            <strong id="historyRevenue">
-              R$ 0,00
-            </strong>
-
-          </div>
-
-        </div>
-
-        <div class="history-stat-card">
-
-          <div class="history-stat-icon">
-            📈
-          </div>
-
-          <div>
-
-            <span>
-              Ticket médio
-            </span>
-
-            <strong id="historyAverage">
-              R$ 0,00
-            </strong>
-
-          </div>
-
-        </div>
-
-      </div>
-
-
-      <!-- FILTROS -->
-
-      <div class="history-filters">
-
-        <div class="history-search">
-
-          <span>
-            ⌕
-          </span>
-
-          <input
-            id="historySearchInput"
-            type="search"
-            placeholder="Buscar cliente, produto ou ID da venda..."
-            autocomplete="off">
-
-        </div>
-
-        <div class="history-date">
-
-          <label for="historyDateFilter">
-            Data
-          </label>
-
-          <input
-            id="historyDateFilter"
-            type="date">
-
-        </div>
-
-        <div class="history-payment">
-
-          <label for="historyPaymentFilter">
-            Pagamento
-          </label>
-
-          <select
-            id="historyPaymentFilter">
-
-            <option value="Todos">
-              Todos
-            </option>
-
-            <option value="PIX">
-              PIX
-            </option>
-
-            <option value="Dinheiro">
-              Dinheiro
-            </option>
-
-            <option value="Débito">
-              Débito
-            </option>
-
-            <option value="Crédito">
-              Crédito
-            </option>
-
-          </select>
-
-        </div>
-
-        <button
-          class="clear-history-button"
-          id="clearHistoryFilters"
-          type="button">
-
-          Limpar filtros
-
-        </button>
-
-      </div>
-
-
-      <!-- LISTA DE VENDAS -->
-
-      <div class="history-card">
-
-        <div class="history-table-header">
-
-          <span>
-            Venda
-          </span>
-
-          <span>
-            Cliente
-          </span>
-
-          <span>
-            Itens
-          </span>
-
-          <span>
-            Pagamento
-          </span>
-
-          <span>
-            Total
-          </span>
-
-          <span>
-            Data
-          </span>
-
-          <span>
-            Ação
-          </span>
-
-        </div>
-
-
-        <div
-          id="salesHistory"
-          class="sales-history">
-
-          <div class="history-loading">
-
-            <div class="history-loading-icon">
-              ⏳
-            </div>
-
-            <strong>
-              Carregando vendas...
-            </strong>
-
-            <span>
-              Buscando informações no Firebase.
-            </span>
-
-          </div>
-
-        </div>
-
-
-        <div
-          id="historyEmptyState"
-          class="history-empty hidden">
-
-          <div>
-            📋
-          </div>
-
-          <h3>
-            Nenhuma venda encontrada
-          </h3>
-
-          <p>
-            Não existem vendas correspondentes aos filtros selecionados.
-          </p>
-
-        </div>
-
-      </div>
 
     </section>
 
@@ -755,6 +437,7 @@
       <button
         class="modal-close"
         id="closeProductModal"
+        type="button"
         aria-label="Fechar">
 
         ×
@@ -801,7 +484,8 @@
 
           <button
             id="modalDecrease"
-            type="button">
+            type="button"
+            aria-label="Diminuir quantidade">
 
             −
 
@@ -813,7 +497,8 @@
 
           <button
             id="modalIncrease"
-            type="button">
+            type="button"
+            aria-label="Aumentar quantidade">
 
             +
 
@@ -849,11 +534,13 @@
     <div
       class="modal checkout-modal"
       role="dialog"
-      aria-modal="true">
+      aria-modal="true"
+      aria-labelledby="checkoutTitle">
 
       <button
         class="modal-close"
         id="closeCheckoutModal"
+        type="button"
         aria-label="Fechar">
 
         ×
@@ -864,7 +551,7 @@
         FECHAMENTO
       </span>
 
-      <h2>
+      <h2 id="checkoutTitle">
         Finalizar venda
       </h2>
 
@@ -917,6 +604,7 @@
         class="text-input"
         id="customerPhone"
         type="tel"
+        inputmode="tel"
         placeholder="Ex: 11999998888"
         autocomplete="off">
 
@@ -999,1066 +687,13 @@
 
 
 
-  <!-- ==================================================
-       MODAL DE DETALHES DA VENDA
-  =================================================== -->
-
-  <div
-    class="modal-backdrop hidden"
-    id="saleDetailsModal">
-
-    <div
-      class="modal sale-details-modal"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="saleDetailsTitle">
-
-      <button
-        class="modal-close"
-        id="closeSaleDetailsModal"
-        aria-label="Fechar">
-
-        ×
-
-      </button>
-
-      <div class="sale-details-header">
-
-        <span class="section-kicker">
-          DETALHES DA VENDA
-        </span>
-
-        <h2 id="saleDetailsTitle">
-          Venda
-        </h2>
-
-        <span
-          id="saleDetailsId"
-          class="sale-details-id">
-
-        </span>
-
-      </div>
-
-      <div class="sale-details-info">
-
-        <div class="sale-info-item">
-
-          <span>
-            Cliente
-          </span>
-
-          <strong id="saleDetailsCustomer">
-            -
-          </strong>
-
-        </div>
-
-        <div class="sale-info-item">
-
-          <span>
-            Pagamento
-          </span>
-
-          <strong id="saleDetailsPayment">
-            -
-          </strong>
-
-        </div>
-
-        <div class="sale-info-item">
-
-          <span>
-            Data
-          </span>
-
-          <strong id="saleDetailsDate">
-            -
-          </strong>
-
-        </div>
-
-        <div class="sale-info-item">
-
-          <span>
-            Status
-          </span>
-
-          <strong
-            id="saleDetailsStatus"
-            class="sale-status">
-
-            Finalizada
-
-          </strong>
-
-        </div>
-
-      </div>
-
-      <div class="sale-details-items">
-
-        <div class="sale-details-section-title">
-
-          <span>
-            ITENS DO PEDIDO
-          </span>
-
-        </div>
-
-        <div
-          id="saleDetailsItems"
-          class="sale-items-list">
-
-        </div>
-
-      </div>
-
-      <div class="sale-details-summary">
-
-        <div>
-
-          <span>
-            Subtotal
-          </span>
-
-          <strong id="saleDetailsSubtotal">
-            R$ 0,00
-          </strong>
-
-        </div>
-
-        <div>
-
-          <span>
-            Desconto
-          </span>
-
-          <strong id="saleDetailsDiscount">
-            R$ 0,00
-          </strong>
-
-        </div>
-
-        <div class="sale-profit-row hidden" id="saleDetailsCostRow">
-
-          <span>
-            Custo dos itens
-          </span>
-
-          <strong id="saleDetailsCost">
-            R$ 0,00
-          </strong>
-
-        </div>
-
-        <div class="sale-profit-row hidden" id="saleDetailsProfitRow">
-
-          <span>
-            Lucro
-          </span>
-
-          <strong id="saleDetailsProfit">
-            R$ 0,00
-          </strong>
-
-        </div>
-
-        <div class="sale-details-total">
-
-          <span>
-            Total
-          </span>
-
-          <strong id="saleDetailsTotal">
-            R$ 0,00
-          </strong>
-
-        </div>
-
-      </div>
-
-    </div>
-
-  </div>
-
-
-
-  <!-- ==================================================
-       MODAL DE GESTÃO DE PRODUTOS (SÓ ADMINISTRADOR)
-
-       Lista todos os produtos cadastrados, com ações
-       para editar, ativar/desativar e excluir. O botão
-       que abre esse modal (manageProductsButton) só
-       fica visível para role === "administrador", e as
-       Firestore Security Rules bloqueiam qualquer
-       escrita completa em "produtos" para quem não é
-       admin — então essa tela é reforço de UX, não a
-       única camada de proteção.
-  =================================================== -->
-
-  <div
-    class="modal-backdrop hidden"
-    id="productManageModal">
-
-    <div
-      class="modal admin-modal"
-      role="dialog"
-      aria-modal="true">
-
-      <button
-        class="modal-close"
-        id="closeProductManageModal"
-        aria-label="Fechar">
-
-        ×
-
-      </button>
-
-      <div class="admin-modal-header">
-
-        <div>
-
-          <span class="section-kicker">
-            GESTÃO
-          </span>
-
-          <h2>
-            Produtos cadastrados
-          </h2>
-
-        </div>
-
-        <button
-          class="primary-button"
-          id="addProductButton"
-          type="button">
-
-          + Novo produto
-
-        </button>
-
-      </div>
-
-      <div
-        id="adminProductList"
-        class="admin-product-list">
-
-      </div>
-
-    </div>
-
-  </div>
-
-
-
-  <!-- ==================================================
-       MODAL DE FORMULÁRIO DE PRODUTO (CRIAR/EDITAR)
-  =================================================== -->
-
-  <div
-    class="modal-backdrop hidden"
-    id="productFormModal">
-
-    <div
-      class="modal admin-modal"
-      role="dialog"
-      aria-modal="true">
-
-      <button
-        class="modal-close"
-        id="closeProductFormModal"
-        aria-label="Fechar">
-
-        ×
-
-      </button>
-
-      <span class="section-kicker">
-        GESTÃO
-      </span>
-
-      <h2 id="productFormTitle">
-        Novo produto
-      </h2>
-
-      <form id="productForm">
-
-        <!-- ID do produto (vazio = criação) -->
-
-        <input
-          type="hidden"
-          id="productFormId">
-
-        <div class="form-grid">
-
-          <div class="full">
-
-            <label
-              class="field-label"
-              for="productFormName">
-
-              Nome do produto
-
-            </label>
-
-            <input
-              class="text-input"
-              id="productFormName"
-              type="text"
-              placeholder="Ex: X-Salada"
-              required>
-
-          </div>
-
-          <div>
-
-            <label
-              class="field-label"
-              for="productFormCategory">
-
-              Categoria
-
-            </label>
-
-            <select
-              class="text-input"
-              id="productFormCategory">
-
-              <option value="Lanches">
-                Lanches
-              </option>
-
-              <option value="Combos">
-                Combos
-              </option>
-
-              <option value="Porções">
-                Porções
-              </option>
-
-              <option value="Bebidas">
-                Bebidas
-              </option>
-
-              <option value="Sobremesas">
-                Sobremesas
-              </option>
-
-            </select>
-
-          </div>
-
-          <div>
-
-            <label
-              class="field-label"
-              for="productFormEmoji">
-
-              Imagem (arquivo ou emoji)
-
-            </label>
-
-            <input
-              class="text-input"
-              id="productFormEmoji"
-              type="text"
-              placeholder="x-burger.webp ou 🍔"
-              maxlength="120">
-
-            <small class="field-hint">Nome do arquivo em <code>img/produtos/</code> ou um emoji.</small>
-
-          </div>
-
-          <div>
-
-            <label
-              class="field-label"
-              for="productFormPrice">
-
-              Preço (R$)
-
-            </label>
-
-            <input
-              class="text-input"
-              id="productFormPrice"
-              type="number"
-              min="0"
-              step="0.01"
-              placeholder="0,00"
-              required>
-
-          </div>
-
-          <div>
-
-            <label
-              class="field-label"
-              for="productFormStock">
-
-              Estoque inicial
-
-            </label>
-
-            <input
-              class="text-input"
-              id="productFormStock"
-              type="number"
-              min="0"
-              step="1"
-              placeholder="0"
-              required>
-
-          </div>
-
-          <div>
-
-            <label
-              class="field-label"
-              for="productFormCost">
-
-              Custo (R$)
-
-            </label>
-
-            <input
-              class="text-input"
-              id="productFormCost"
-              type="number"
-              min="0"
-              step="0.01"
-              placeholder="0,00">
-
-          </div>
-
-          <div>
-
-            <label
-              class="field-label"
-              for="productFormTargetMargin">
-
-              Margem desejada (%) — opcional
-
-            </label>
-
-            <input
-              class="text-input"
-              id="productFormTargetMargin"
-              type="number"
-              min="0"
-              max="99"
-              step="0.1"
-              placeholder="Ex: 60">
-
-          </div>
-
-          <div class="full cost-calculator">
-
-            <span class="section-kicker">
-              Calculadora de lucro
-            </span>
-
-            <div class="cost-calc-grid">
-
-              <div class="cost-calc-item">
-                <span>Lucro por unidade</span>
-                <strong id="costCalcProfit">—</strong>
-              </div>
-
-              <div class="cost-calc-item">
-                <span>Margem</span>
-                <strong id="costCalcMargin">—</strong>
-              </div>
-
-              <div class="cost-calc-item">
-                <span>Markup</span>
-                <strong id="costCalcMarkup">—</strong>
-              </div>
-
-            </div>
-
-            <div class="cost-calc-suggest">
-
-              <span id="costCalcSuggestion">
-                Informe o custo e a margem desejada para ver o preço sugerido.
-              </span>
-
-              <button
-                class="detail-button hidden"
-                id="applySuggestedPriceButton"
-                type="button">
-
-                Usar preço sugerido
-
-              </button>
-
-            </div>
-
-            <small class="field-hint">
-              Margem = lucro ÷ preço de venda. Markup = lucro ÷ custo.
-            </small>
-
-          </div>
-
-          <div class="full">
-
-            <label
-              class="field-label"
-              for="productFormDescription">
-
-              Descrição
-
-            </label>
-
-            <textarea
-              class="textarea-input"
-              id="productFormDescription"
-              placeholder="Descrição curta do produto"></textarea>
-
-          </div>
-
-          <div class="full checkbox-field">
-
-            <input
-              type="checkbox"
-              id="productFormAvailable"
-              checked>
-
-            <label for="productFormAvailable">
-              Produto disponível para venda
-            </label>
-
-          </div>
-
-        </div>
-
-        <div class="admin-form-actions">
-
-          <button
-            class="detail-button hidden"
-            id="deleteProductButton"
-            type="button">
-
-            🗑️ Excluir produto
-
-          </button>
-
-          <button
-            class="checkout-button"
-            id="productFormSubmitButton"
-            type="submit">
-
-            Cadastrar produto
-
-          </button>
-
-        </div>
-
-      </form>
-
-    </div>
-
-  </div>
-
-
-
-  <!-- ==================================================
-       MODAL DE RELATÓRIOS (SÓ ADMINISTRADOR)
-
-       Dois blocos:
-       1. Faturamento por dia — soma o campo "total" das
-          vendas já carregadas (array "sales"), agrupado
-          por data, dos últimos dias com movimento.
-       2. Estoque baixo — produtos disponíveis com stock
-          igual ou abaixo do limite definido em
-          LOW_STOCK_THRESHOLD, no app.js.
-  =================================================== -->
-
-  <div
-    class="modal-backdrop hidden"
-    id="reportsModal">
-
-    <div
-      class="modal admin-modal reports-modal"
-      role="dialog"
-      aria-modal="true">
-
-      <button
-        class="modal-close"
-        id="closeReportsModal"
-        aria-label="Fechar">
-
-        ×
-
-      </button>
-
-      <span class="section-kicker">
-        GESTÃO
-      </span>
-
-      <h2>
-        Relatórios
-      </h2>
-
-      <!-- FATURAMENTO POR DIA -->
-
-      <div class="reports-section">
-
-        <div class="reports-section-title">
-
-          <span class="section-kicker">
-            Faturamento por dia
-          </span>
-
-        </div>
-
-        <div
-          id="dailyRevenueList"
-          class="daily-revenue-list">
-
-        </div>
-
-      </div>
-
-      <!-- ESTOQUE BAIXO -->
-
-      <div class="reports-section">
-
-        <div class="reports-section-title">
-
-          <span class="section-kicker">
-            Estoque baixo
-          </span>
-
-        </div>
-
-        <div
-          id="lowStockList"
-          class="low-stock-list">
-
-        </div>
-
-      </div>
-
-    </div>
-
-  </div>
-
-
-
-  <!-- ==================================================
-       MODAL FINANCEIRO (SÓ ADMINISTRADOR)
-
-       Entradas = soma das vendas do período (coleção "vendas").
-       Saídas   = soma das despesas do período (coleção "despesas").
-       Saldo    = Entradas - Saídas.
-       Sem o mês preenchido, considera todo o período.
-  =================================================== -->
-
-  <div
-    class="modal-backdrop hidden"
-    id="financeModal">
-
-    <div
-      class="modal admin-modal finance-modal"
-      role="dialog"
-      aria-modal="true">
-
-      <button
-        class="modal-close"
-        id="closeFinanceModal"
-        aria-label="Fechar">
-
-        ×
-
-      </button>
-
-      <div class="admin-modal-header">
-
-        <div>
-
-          <span class="section-kicker">
-            GESTÃO
-          </span>
-
-          <h2>
-            Financeiro
-          </h2>
-
-        </div>
-
-        <button
-          class="primary-button"
-          id="addExpenseButton"
-          type="button">
-
-          + Nova despesa
-
-        </button>
-
-      </div>
-
-      <div class="finance-toolbar">
-
-        <div class="history-date">
-
-          <label for="financeMonthFilter">
-            Mês
-          </label>
-
-          <input
-            id="financeMonthFilter"
-            type="month">
-
-        </div>
-
-        <button
-          class="clear-history-button"
-          id="financeAllButton"
-          type="button">
-
-          Ver todo o período
-
-        </button>
-
-      </div>
-
-      <div class="history-stats finance-stats">
-
-        <div class="history-stat-card">
-
-          <div class="history-stat-icon">
-            💰
-          </div>
-
-          <div>
-
-            <span>
-              Entradas (vendas)
-            </span>
-
-            <strong id="financeIncome">
-              R$ 0,00
-            </strong>
-
-          </div>
-
-        </div>
-
-        <div class="history-stat-card">
-
-          <div class="history-stat-icon">
-            💸
-          </div>
-
-          <div>
-
-            <span>
-              Saídas (despesas)
-            </span>
-
-            <strong id="financeExpense">
-              R$ 0,00
-            </strong>
-
-          </div>
-
-        </div>
-
-        <div class="history-stat-card">
-
-          <div class="history-stat-icon">
-            🧮
-          </div>
-
-          <div>
-
-            <span>
-              Saldo
-            </span>
-
-            <strong id="financeBalance">
-              R$ 0,00
-            </strong>
-
-          </div>
-
-        </div>
-
-      </div>
-
-      <div class="history-stats finance-stats">
-
-        <div class="history-stat-card">
-
-          <div class="history-stat-icon">
-            📦
-          </div>
-
-          <div>
-
-            <span>
-              Custo dos produtos vendidos
-            </span>
-
-            <strong id="financeCost">
-              R$ 0,00
-            </strong>
-
-          </div>
-
-        </div>
-
-        <div class="history-stat-card">
-
-          <div class="history-stat-icon">
-            📈
-          </div>
-
-          <div>
-
-            <span>
-              Lucro bruto
-            </span>
-
-            <strong id="financeGrossProfit">
-              R$ 0,00
-            </strong>
-
-          </div>
-
-        </div>
-
-        <div class="history-stat-card">
-
-          <div class="history-stat-icon">
-            🏆
-          </div>
-
-          <div>
-
-            <span>
-              Lucro líquido
-            </span>
-
-            <strong id="financeNetProfit">
-              R$ 0,00
-            </strong>
-
-          </div>
-
-        </div>
-
-      </div>
-
-      <p
-        class="finance-note"
-        id="financeProfitNote">
-      </p>
-
-      <div class="reports-section">
-
-        <div class="reports-section-title">
-
-          <span class="section-kicker">
-            Despesas por categoria
-          </span>
-
-        </div>
-
-        <div
-          id="financeCategoryList"
-          class="finance-category-list">
-
-        </div>
-
-      </div>
-
-      <div class="reports-section">
-
-        <div class="reports-section-title">
-
-          <span class="section-kicker">
-            Despesas lançadas
-          </span>
-
-        </div>
-
-        <div
-          id="expenseList"
-          class="expense-list">
-
-        </div>
-
-      </div>
-
-    </div>
-
-  </div>
-
-
-
-  <!-- ==================================================
-       MODAL DE FORMULÁRIO DE DESPESA (CRIAR/EDITAR)
-  =================================================== -->
-
-  <div
-    class="modal-backdrop hidden"
-    id="expenseFormModal">
-
-    <div
-      class="modal admin-modal"
-      role="dialog"
-      aria-modal="true">
-
-      <button
-        class="modal-close"
-        id="closeExpenseFormModal"
-        aria-label="Fechar">
-
-        ×
-
-      </button>
-
-      <span class="section-kicker">
-        FINANCEIRO
-      </span>
-
-      <h2 id="expenseFormTitle">
-        Nova despesa
-      </h2>
-
-      <form id="expenseForm">
-
-        <input
-          type="hidden"
-          id="expenseFormId">
-
-        <div class="form-grid">
-
-          <div class="full">
-
-            <label
-              class="field-label"
-              for="expenseFormDescription">
-
-              Descrição
-
-            </label>
-
-            <input
-              class="text-input"
-              id="expenseFormDescription"
-              type="text"
-              placeholder="Ex: Compra de carne e pão"
-              required>
-
-          </div>
-
-          <div>
-
-            <label
-              class="field-label"
-              for="expenseFormCategory">
-
-              Categoria
-
-            </label>
-
-            <select
-              class="text-input"
-              id="expenseFormCategory">
-
-              <option value="Insumos">Insumos</option>
-              <option value="Aluguel">Aluguel</option>
-              <option value="Salários">Salários</option>
-              <option value="Energia e água">Energia e água</option>
-              <option value="Marketing">Marketing</option>
-              <option value="Manutenção">Manutenção</option>
-              <option value="Impostos">Impostos</option>
-              <option value="Outros">Outros</option>
-
-            </select>
-
-          </div>
-
-          <div>
-
-            <label
-              class="field-label"
-              for="expenseFormAmount">
-
-              Valor (R$)
-
-            </label>
-
-            <input
-              class="text-input"
-              id="expenseFormAmount"
-              type="number"
-              min="0.01"
-              step="0.01"
-              placeholder="0,00"
-              required>
-
-          </div>
-
-          <div class="full">
-
-            <label
-              class="field-label"
-              for="expenseFormDate">
-
-              Data
-
-            </label>
-
-            <input
-              class="text-input"
-              id="expenseFormDate"
-              type="date"
-              required>
-
-          </div>
-
-        </div>
-
-        <div class="admin-form-actions">
-
-          <button
-            class="detail-button hidden"
-            id="deleteExpenseButton"
-            type="button">
-
-            🗑️ Excluir despesa
-
-          </button>
-
-          <button
-            class="checkout-button"
-            id="expenseFormSubmitButton"
-            type="submit">
-
-            Lançar despesa
-
-          </button>
-
-        </div>
-
-      </form>
-
-    </div>
-
-  </div>
-
-
-
   <!-- TOAST -->
 
   <div
     class="toast hidden"
-    id="toast">
+    id="toast"
+    role="status"
+    aria-live="polite">
 
   </div>
 
@@ -2081,8 +716,6 @@
       getDoc
     } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
-
-    // ADIÇÃO: Firebase Authentication
 
     import {
       getAuth,
@@ -2109,26 +742,20 @@
 
 
     // ================================================
-    // INICIALIZAR FIREBASE
+    // INICIALIZAR FIREBASE E FIRESTORE
     // ================================================
 
     const app =
       initializeApp(firebaseConfig);
 
-
-    // ================================================
-    // INICIALIZAR FIRESTORE
-    // ================================================
-
     const db =
       getFirestore(app);
 
 
-    // ================================================
-    // DISPONIBILIZAR PARA O app.js
-    // ================================================
+    // Disponibiliza o Firestore para o app.js
 
-    window.db = db;
+    window.db =
+      db;
 
 
     // ================================================
@@ -2138,10 +765,10 @@
     // sem sessão nenhuma ganha automaticamente uma
     // sessão ANÔNIMA do Firebase Auth (ver
     // onAuthStateChanged mais abaixo), que só permite
-    // NAVEGAR pelo cardápio. Comprar, ver histórico,
-    // etc. continuam exigindo login de verdade — e isso
-    // é garantido nas Firestore Security Rules (função
-    // ehAnonimo()), não só aqui na tela.
+    // NAVEGAR pelo cardápio. Comprar continua exigindo
+    // login de verdade — e isso é garantido nas Firestore
+    // Security Rules (função ehAnonimo()), não só aqui
+    // na tela.
     //
     // A página continua com "visibility: hidden" (ver
     // <style> no <head>) até o Firebase confirmar
@@ -2153,13 +780,9 @@
       getAuth(app);
 
 
-    // Disponibiliza um logout global simples.
-    // Pode ser chamado de qualquer botão com
-    // onclick="window.logout()". Depois de sair,
-    // volta para o próprio index.html — não faz mais
-    // sentido forçar login.html, já que o cardápio é
-    // público; ao recarregar, uma nova sessão anônima
-    // é criada automaticamente.
+    // Logout global. Depois de sair, volta para o próprio
+    // index.html: o cardápio é público e, ao recarregar,
+    // uma nova sessão anônima é criada automaticamente.
 
     window.logout = () => {
 
@@ -2191,17 +814,13 @@
 
       try {
 
-        const userRef =
-          doc(
-            db,
-            "usuarios",
-            user.uid
-          );
-
-
         const userSnapshot =
           await getDoc(
-            userRef
+            doc(
+              db,
+              "usuarios",
+              user.uid
+            )
           );
 
 
@@ -2229,20 +848,13 @@
       }
 
 
-      // Disponibiliza para o app.js e para
-      // qualquer outro script da página.
+      // Disponibiliza para o app.js
 
       window.userRole =
         role;
 
       window.currentUser =
         user;
-
-
-      console.log(
-        "Perfil do usuário:",
-        role
-      );
 
 
       atualizarInterfacePorPerfil(
@@ -2275,21 +887,6 @@
           "userRoleLabel"
         );
 
-      const manageProductsButton =
-        document.getElementById(
-          "manageProductsButton"
-        );
-
-      const openHistoryButton =
-        document.getElementById(
-          "openHistoryButton"
-        );
-
-      const reportsButton =
-        document.getElementById(
-          "reportsButton"
-        );
-
 
       if (avatar) {
 
@@ -2319,52 +916,6 @@
       }
 
 
-      if (manageProductsButton) {
-
-        manageProductsButton.classList.toggle(
-          "hidden",
-          !isAdmin
-        );
-
-      }
-
-
-      if (openHistoryButton) {
-
-        openHistoryButton.classList.toggle(
-          "hidden",
-          !isAdmin
-        );
-
-      }
-
-
-      if (reportsButton) {
-
-        reportsButton.classList.toggle(
-          "hidden",
-          !isAdmin
-        );
-
-      }
-
-
-      const financeButtonEl =
-        document.getElementById(
-          "financeButton"
-        );
-
-
-      if (financeButtonEl) {
-
-        financeButtonEl.classList.toggle(
-          "hidden",
-          !isAdmin
-        );
-
-      }
-
-
       configurarBotaoSairOuEntrar(
         isVisitante
       );
@@ -2376,8 +927,8 @@
     // BOTÃO SAIR / ENTRAR
     //
     // Visitante (sessão anônima) vê "Entrar" e vai pro
-    // login. Quem está logado de verdade (cliente ou
-    // admin) vê "Sair" e desloga normalmente.
+    // login. Quem está logado de verdade vê "Sair" e
+    // desloga normalmente.
     // ================================================
 
     function configurarBotaoSairOuEntrar(isVisitante) {
@@ -2494,11 +1045,6 @@
 
         if (user.isAnonymous) {
 
-          console.log(
-            "Visitante navegando (sessão anônima)."
-          );
-
-
           window.userRole =
             "visitante";
 
@@ -2531,20 +1077,41 @@
         // USUÁRIO LOGADO DE VERDADE (E-MAIL OU GOOGLE)
         // ================================================
 
-        console.log(
-          "Usuário autenticado:",
-          user.email
-        );
-
-
         // Busca o perfil (role) antes de revelar
         // a página, para já abrir com a interface
-        // correta (sem "flash" de botão de admin
-        // aparecendo e sumindo).
+        // correta.
 
         await loadUserRole(
           user
         );
+
+
+        // ================================================
+        // ADMINISTRADOR NÃO USA O CARDÁPIO
+        //
+        // Vai direto para o painel, sem nem revelar esta
+        // página. Para ver/testar a página do cliente
+        // estando logado como admin: index.html?cliente=1
+        // ================================================
+
+        const querVerComoCliente =
+          new URLSearchParams(
+            window.location.search
+          ).has("cliente");
+
+
+        if (
+          window.userRole === "administrador" &&
+          !querVerComoCliente
+        ) {
+
+          window.location.replace(
+            "admin.html"
+          );
+
+          return;
+
+        }
 
 
         // Só revela a página depois de
