@@ -1619,6 +1619,110 @@ select.text-input option,
 
 }
 
+/* ==========================================================================
+   DASHBOARD (INÍCIO)
+========================================================================== */
+
+.dashboard-toolbar {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 0 0 18px;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.dashboard-card {
+  margin-bottom: 0;
+  padding: 20px;
+}
+
+.dashboard-card-wide {
+  grid-column: 1 / -1;
+}
+
+.dashboard-card .panel-title {
+  margin-bottom: 14px;
+}
+
+.chart-wrap {
+  position: relative;
+  height: 260px;
+}
+
+.chart-wrap canvas {
+  display: block;
+  max-width: 100%;
+}
+
+.chart-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  color: var(--text-soft);
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
+  pointer-events: none;
+}
+
+.chart-note {
+  margin: 12px 0 0;
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.chart-note:empty {
+  display: none;
+}
+
+
+@media (max-width: 900px) {
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-card-wide {
+    grid-column: auto;
+  }
+
+  .chart-wrap {
+    height: 220px;
+  }
+
+}
+
+
+@media (max-width: 720px) {
+
+  .dashboard-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .dashboard-toolbar .history-date input {
+    min-width: 0;
+  }
+
+  .dashboard-toolbar .clear-history-button {
+    width: 100%;
+  }
+
+  .dashboard-card {
+    padding: 16px;
+  }
+
+}
+
 
 /* ---- Movimento reduzido ----------------------------------------------------- */
 

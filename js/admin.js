@@ -100,6 +100,12 @@ const homeMonthRevenue = $("homeMonthRevenue");
 const homeTodaySales = $("homeTodaySales");
 const homeLowStock = $("homeLowStock");
 
+// ---- Dashboard do Início ----
+
+const homeMonthFilter = $("homeMonthFilter");
+const homeAllButton = $("homeAllButton");
+const homeProfitNote = $("homeProfitNote");
+
 // ---- Vendas ----
 
 const historySearchInput = $("historySearchInput");
@@ -319,10 +325,13 @@ async function loadView(name) {
 
     await Promise.all([
       loadProducts(),
-      loadSales()
+      loadSales(),
+      loadExpenses()
     ]);
 
     renderHome();
+
+    renderHomeDashboard();
 
   }
 
@@ -745,6 +754,990 @@ function renderHome() {
 
 }
 
+// ======================================================
+// ======================================================
+// DASHBOARD DO INÍCIO (Chart.js)
+// ======================================================
+// ======================================================
+//
+// Reaproveita os mesmos dados do painel:
+//   - sales    → faturamento, meios de pagamento,
+//                top produtos e lucro
+//   - expenses → lucro líquido do período
+//
+// O filtro de mês (#homeMonthFilter) vale para todos
+// os gráficos. Sem mês, considera todo o período.
+//
+// Chart.js vem do CDN (UMD) e fica em window.Chart.
+// Se ele não estiver disponível (CDN fora), os
+// gráficos simplesmente não são montados — o resto do
+// painel continua funcionando.
+// ======================================================
+
+const CHART_COLORS = {
+
+  neon: "#39ff14",
+  lime: "#b6ff00",
+  neonDark: "#22c20a",
+  danger: "#ff4d4d",
+  text: "#a7ada7",
+  grid: "rgba(57, 255, 20, .14)"
+
+};
+
+const CHART_FONT = {
+  family: "Montserrat, sans-serif",
+  size: 11
+};
+
+const PAYMENT_PALETTE = [
+  CHART_COLORS.neon,
+  CHART_COLORS.lime,
+  "#1e90ff",
+  "#ff9a3c",
+  "#b76bff",
+  "#ff4d4d"
+];
+
+
+// Referências das instâncias atuais (para destruir
+// antes de recriar — evita canvas "fantasma")
+
+let charts = {
+  dailyRevenue: null,
+  paymentMethods: null,
+  topProducts: null,
+  profit: null
+};
+
+
+function setupChartDefaults() {
+
+  if (!window.Chart) {
+    return;
+  }
+
+  window.Chart.defaults.color =
+    CHART_COLORS.text;
+
+  window.Chart.defaults.font.family =
+    CHART_FONT.family;
+
+  window.Chart.defaults.font.size =
+    CHART_FONT.size;
+
+  window.Chart.defaults.borderColor =
+    CHART_COLORS.grid;
+
+}
+
+
+function destroyChart(name) {
+
+  if (charts[name]) {
+
+    charts[name].destroy();
+    charts[name] = null;
+
+  }
+
+}
+
+
+function setChartEmpty(canvasId, isEmpty, message = "") {
+
+  const canvas =
+    document.getElementById(canvasId);
+
+  const wrap =
+    canvas ? canvas.closest(".chart-wrap") : null;
+
+  if (!wrap) {
+    return;
+  }
+
+
+  let overlay =
+    wrap.querySelector(".chart-empty");
+
+
+  if (isEmpty) {
+
+    if (!overlay) {
+
+      overlay =
+        document.createElement("div");
+
+      overlay.className =
+        "chart-empty";
+
+      wrap.appendChild(overlay);
+
+    }
+
+    overlay.textContent = message;
+
+  } else if (overlay) {
+
+    overlay.remove();
+
+  }
+
+}
+
+
+// ---- opções compartilhadas (barras / linhas) ----
+
+function makeChartOptions({
+  horizontal = false,
+  valueFormat = null
+} = {}) {
+
+  const valueAxis = {
+
+    beginAtZero: true,
+
+    grid: { color: CHART_COLORS.grid },
+
+    ticks: {
+      color: CHART_COLORS.text,
+      font: CHART_FONT,
+      ...(valueFormat ? { callback: valueFormat } : {})
+    }
+
+  };
+
+
+  const categoryAxis = {
+
+    grid: { display: false },
+
+    ticks: {
+      color: CHART_COLORS.text,
+      font: CHART_FONT
+    }
+
+  };
+
+
+  return {
+
+    responsive: true,
+
+    maintainAspectRatio: false,
+
+    indexAxis: horizontal ? "y" : "x",
+
+    interaction: {
+      mode: "nearest",
+      intersect: false
+    },
+
+    plugins: {
+
+      legend: { display: false },
+
+      tooltip: {
+
+        backgroundColor: "#0d100d",
+        borderColor: CHART_COLORS.neon,
+        borderWidth: 1,
+        titleColor: CHART_COLORS.neon,
+        bodyColor: "#ffffff",
+        padding: 10,
+        cornerRadius: 4
+
+      }
+
+    },
+
+    scales: horizontal
+      ? { x: valueAxis, y: categoryAxis }
+      : { x: categoryAxis, y: valueAxis }
+
+  };
+
+}
+
+
+// ---- orquestrador ----
+
+function renderHomeDashboard() {
+
+  // Chart.js ainda não carregou? Tenta de novo na
+  // próxima vez que a Início for aberta.
+
+  if (!window.Chart) {
+
+    console.warn(
+      "Chart.js não está disponível — dashboard não será renderizado."
+    );
+
+    return;
+
+  }
+
+
+  setupChartDefaults();
+
+
+  const period =
+    homeMonthFilter
+      ? homeMonthFilter.value
+      : "";
+
+
+  const periodSales =
+    period
+      ? sales.filter(
+          sale =>
+            saleMonthKey(sale) === period
+        )
+      : sales;
+
+
+  const periodExpenses =
+    period
+      ? expenses.filter(
+          expense =>
+            expense.date.startsWith(period)
+        )
+      : expenses;
+
+
+  renderDailyRevenueChart(
+    periodSales,
+    period
+  );
+
+  renderPaymentMethodsChart(
+    periodSales
+  );
+
+  renderTopProductsChart(
+    periodSales
+  );
+
+  renderProfitChart(
+    periodSales,
+    periodExpenses
+  );
+
+}
+
+
+// ---- 1) faturamento por dia ----
+
+function renderDailyRevenueChart(periodSales, period) {
+
+  destroyChart("dailyRevenue");
+
+
+  const byDay = {};
+
+  periodSales.forEach(
+    sale => {
+
+      const key =
+        saleDayKey(sale);
+
+      if (!key) {
+        return;
+      }
+
+      byDay[key] =
+        (byDay[key] || 0) +
+        (Number(sale.total) || 0);
+
+    }
+  );
+
+
+  const labels = [];
+  const values = [];
+
+
+  if (period) {
+
+    // Mês selecionado: mostra todos os dias do mês
+    // (inclusive os sem venda — o zero também conta).
+
+    const [year, month] =
+      period.split("-");
+
+    const daysInMonth =
+      new Date(
+        Number(year),
+        Number(month),
+        0
+      ).getDate();
+
+
+    for (let day = 1; day <= daysInMonth; day++) {
+
+      const key =
+        `${year}-${month}-${String(day).padStart(2, "0")}`;
+
+      labels.push(
+        `${String(day).padStart(2, "0")}/${month}`
+      );
+
+      values.push(
+        round2(byDay[key] || 0)
+      );
+
+    }
+
+  } else {
+
+    // Sem mês: últimos 14 dias que tiveram venda.
+
+    const entries =
+      Object.entries(byDay)
+        .sort(
+          (a, b) =>
+            a[0].localeCompare(b[0])
+        )
+        .slice(-14);
+
+
+    entries.forEach(
+      ([key, value]) => {
+
+        const [, month, day] =
+          key.split("-");
+
+        labels.push(`${day}/${month}`);
+
+        values.push(round2(value));
+
+      }
+    );
+
+  }
+
+
+  if (!labels.length) {
+
+    setChartEmpty(
+      "chartDailyRevenue",
+      true,
+      "Nenhuma venda no período."
+    );
+
+    return;
+
+  }
+
+
+  setChartEmpty("chartDailyRevenue", false);
+
+
+  const canvas =
+    document.getElementById("chartDailyRevenue");
+
+
+  charts.dailyRevenue =
+    new window.Chart(canvas, {
+
+      type: "line",
+
+      data: {
+
+        labels,
+
+        datasets: [{
+
+          label: "Faturamento",
+
+          data: values,
+
+          borderColor: CHART_COLORS.neon,
+
+          backgroundColor: "rgba(57, 255, 20, .16)",
+
+          pointBackgroundColor: CHART_COLORS.neon,
+
+          pointBorderColor: "#050505",
+
+          pointRadius: 3,
+
+          pointHoverRadius: 6,
+
+          borderWidth: 2,
+
+          fill: true,
+
+          tension: .35
+
+        }]
+
+      },
+
+      options: {
+
+        ...makeChartOptions({
+          valueFormat: value => brl(value)
+        }),
+
+        plugins: {
+
+          ...makeChartOptions().plugins,
+
+          tooltip: {
+
+            ...makeChartOptions().plugins.tooltip,
+
+            callbacks: {
+              label: context =>
+                ` ${brl(context.parsed.y)}`
+            }
+
+          }
+
+        }
+
+      }
+
+    });
+
+}
+
+
+// ---- 2) meios de pagamento ----
+
+function renderPaymentMethodsChart(periodSales) {
+
+  destroyChart("paymentMethods");
+
+
+  const byPayment = {};
+
+  periodSales.forEach(
+    sale => {
+
+      const key =
+        sale.payment || "Não informado";
+
+      if (!byPayment[key]) {
+
+        byPayment[key] = {
+          count: 0,
+          total: 0
+        };
+
+      }
+
+      byPayment[key].count += 1;
+
+      byPayment[key].total +=
+        Number(sale.total) || 0;
+
+    }
+  );
+
+
+  const entries =
+    Object.entries(byPayment)
+      .sort(
+        (a, b) =>
+          b[1].total - a[1].total
+      );
+
+
+  if (!entries.length) {
+
+    setChartEmpty(
+      "chartPaymentMethods",
+      true,
+      "Nenhuma venda no período."
+    );
+
+    return;
+
+  }
+
+
+  setChartEmpty("chartPaymentMethods", false);
+
+
+  const labels =
+    entries.map(([label]) => label);
+
+  const data =
+    entries.map(
+      ([, value]) =>
+        round2(value.total)
+    );
+
+
+  const canvas =
+    document.getElementById("chartPaymentMethods");
+
+
+  charts.paymentMethods =
+    new window.Chart(canvas, {
+
+      type: "doughnut",
+
+      data: {
+
+        labels,
+
+        datasets: [{
+
+          data,
+
+          backgroundColor:
+            labels.map(
+              (_, index) =>
+                PAYMENT_PALETTE[
+                  index % PAYMENT_PALETTE.length
+                ]
+            ),
+
+          borderColor: "#050505",
+
+          borderWidth: 2,
+
+          hoverOffset: 8
+
+        }]
+
+      },
+
+      options: {
+
+        responsive: true,
+
+        maintainAspectRatio: false,
+
+        cutout: "62%",
+
+        plugins: {
+
+          legend: {
+
+            position: "bottom",
+
+            labels: {
+
+              color: CHART_COLORS.text,
+
+              boxWidth: 12,
+
+              padding: 14,
+
+              font: CHART_FONT
+
+            }
+
+          },
+
+          tooltip: {
+
+            backgroundColor: "#0d100d",
+            borderColor: CHART_COLORS.neon,
+            borderWidth: 1,
+            titleColor: CHART_COLORS.neon,
+            bodyColor: "#ffffff",
+            padding: 10,
+            cornerRadius: 4,
+
+            callbacks: {
+
+              label: context => {
+
+                const entry =
+                  entries[context.dataIndex];
+
+                const value =
+                  entry[1];
+
+                const suffix =
+                  value.count === 1
+                    ? "venda"
+                    : "vendas";
+
+                return ` ${brl(value.total)} (${value.count} ${suffix})`;
+
+              }
+
+            }
+
+          }
+
+        }
+
+      }
+
+    });
+
+}
+
+
+// ---- 3) produtos mais vendidos ----
+
+function renderTopProductsChart(periodSales) {
+
+  destroyChart("topProducts");
+
+
+  const byProduct = {};
+
+  periodSales.forEach(
+    sale => {
+
+      (sale.items || []).forEach(
+        item => {
+
+          const name =
+            String(item.name || "—");
+
+          const quantity =
+            Number(item.quantity) || 0;
+
+          if (!name || quantity <= 0) {
+            return;
+          }
+
+          byProduct[name] =
+            (byProduct[name] || 0) +
+            quantity;
+
+        }
+      );
+
+    }
+  );
+
+
+  const entries =
+    Object.entries(byProduct)
+      .sort(
+        (a, b) =>
+          b[1] - a[1]
+      )
+      .slice(0, 5);
+
+
+  if (!entries.length) {
+
+    setChartEmpty(
+      "chartTopProducts",
+      true,
+      "Nenhum produto vendido no período."
+    );
+
+    return;
+
+  }
+
+
+  setChartEmpty("chartTopProducts", false);
+
+
+  const labels =
+    entries.map(([label]) => label);
+
+  const data =
+    entries.map(([, value]) => value);
+
+
+  const canvas =
+    document.getElementById("chartTopProducts");
+
+
+  const options =
+    makeChartOptions({ horizontal: true });
+
+
+  // Trunca rótulos longos no eixo Y (categorias)
+
+  options.scales.y.ticks.callback =
+    function (value) {
+
+      const label =
+        this.getLabelForValue(value);
+
+      return label.length > 20
+        ? `${label.slice(0, 18)}…`
+        : label;
+
+    };
+
+
+  charts.topProducts =
+    new window.Chart(canvas, {
+
+      type: "bar",
+
+      data: {
+
+        labels,
+
+        datasets: [{
+
+          label: "Unidades vendidas",
+
+          data,
+
+          backgroundColor: "rgba(57, 255, 20, .38)",
+
+          borderColor: CHART_COLORS.neon,
+
+          borderWidth: 1.5,
+
+          borderRadius: 3
+
+        }]
+
+      },
+
+      options: {
+
+        ...options,
+
+        plugins: {
+
+          ...options.plugins,
+
+          tooltip: {
+
+            ...options.plugins.tooltip,
+
+            callbacks: {
+              label: context =>
+                ` ${context.parsed.x} unidade${context.parsed.x === 1 ? "" : "s"}`
+            }
+
+          }
+
+        }
+
+      }
+
+    });
+
+}
+
+
+// ---- 4) lucro do período ----
+
+function renderProfitChart(periodSales, periodExpenses) {
+
+  destroyChart("profit");
+
+
+  let totalRevenue = 0;
+  let totalCost = 0;
+  let grossProfit = 0;
+  let withoutCost = 0;
+
+
+  periodSales.forEach(
+    sale => {
+
+      totalRevenue +=
+        Number(sale.total) || 0;
+
+
+      const info =
+        getSaleProfit(sale);
+
+
+      if (!info.known) {
+
+        withoutCost++;
+
+        return;
+
+      }
+
+      totalCost += info.cost;
+      grossProfit += info.profit;
+
+    }
+  );
+
+
+  const operatingExpenses =
+    periodExpenses
+      .filter(
+        expense =>
+          expense.category !== "Insumos"
+      )
+      .reduce(
+        (sum, expense) =>
+          sum + expense.amount,
+        0
+      );
+
+
+  const netProfit =
+    round2(grossProfit - operatingExpenses);
+
+
+  const labels = [
+    "Receita",
+    "Custo",
+    "Lucro bruto",
+    "Lucro líquido"
+  ];
+
+  const data = [
+    round2(totalRevenue),
+    round2(totalCost),
+    round2(grossProfit),
+    netProfit
+  ];
+
+  const fill = [
+    "rgba(57, 255, 20, .38)",
+    "rgba(255, 77, 77, .35)",
+    "rgba(182, 255, 0, .5)",
+    netProfit >= 0
+      ? "rgba(57, 255, 20, .75)"
+      : "rgba(255, 77, 77, .7)"
+  ];
+
+  const stroke = [
+    CHART_COLORS.neon,
+    CHART_COLORS.danger,
+    CHART_COLORS.lime,
+    netProfit >= 0
+      ? CHART_COLORS.neon
+      : CHART_COLORS.danger
+  ];
+
+
+  if (
+    !periodSales.length &&
+    !periodExpenses.length
+  ) {
+
+    setChartEmpty(
+      "chartProfit",
+      true,
+      "Nenhum dado no período."
+    );
+
+  } else {
+
+    setChartEmpty("chartProfit", false);
+
+
+    const canvas =
+      document.getElementById("chartProfit");
+
+
+    charts.profit =
+      new window.Chart(canvas, {
+
+        type: "bar",
+
+        data: {
+
+          labels,
+
+          datasets: [{
+
+            data,
+
+            backgroundColor: fill,
+
+            borderColor: stroke,
+
+            borderWidth: 1.5,
+
+            borderRadius: 3
+
+          }]
+
+        },
+
+        options: {
+
+          ...makeChartOptions({
+            valueFormat: value => brl(value)
+          }),
+
+          plugins: {
+
+            ...makeChartOptions().plugins,
+
+            tooltip: {
+
+              ...makeChartOptions().plugins.tooltip,
+
+              callbacks: {
+                label: context =>
+                  ` ${brl(context.parsed.y)}`
+              }
+
+            }
+
+          }
+
+        }
+
+      });
+
+  }
+
+
+  // ---- nota de rodapé ----
+
+  if (homeProfitNote) {
+
+    const notes = [];
+
+    if (withoutCost > 0) {
+
+      notes.push(
+        `${withoutCost} venda${withoutCost === 1 ? "" : "s"} do período sem custo registrado ficou${withoutCost === 1 ? "" : "ram"} fora do cálculo de lucro.`
+      );
+
+    }
+
+    if (operatingExpenses > 0) {
+
+      notes.push(
+        "Lucro líquido desconta as despesas do período (exceto Insumos)."
+      );
+
+    }
+
+    homeProfitNote.textContent =
+      notes.join(" ");
+
+  }
+
+}
+
+
+// ---- eventos do filtro ----
+
+on(
+  homeMonthFilter,
+  "change",
+  () => renderHomeDashboard()
+);
+
+on(
+  homeAllButton,
+  "click",
+  () => {
+
+    if (homeMonthFilter) {
+      homeMonthFilter.value = "";
+    }
+
+    renderHomeDashboard();
+
+  }
+);
+
 
 // ======================================================
 // ======================================================
@@ -917,8 +1910,8 @@ function renderSalesHistory() {
 
                 <small>
                   ${itemsQuantity === 1
-                    ? "item"
-                    : "itens"}
+              ? "item"
+              : "itens"}
                 </small>
 
               </div>
@@ -1342,10 +2335,10 @@ function renderAdminProductList() {
           const statusLabel =
             product.available
               ? (
-                  product.stock > 0
-                    ? "Disponível"
-                    : "Sem estoque"
-                )
+                product.stock > 0
+                  ? "Disponível"
+                  : "Sem estoque"
+              )
               : "Inativo";
 
 
@@ -1468,8 +2461,8 @@ function updateCostCalculator() {
     markupText =
       cost > 0
         ? formatPercent(
-            (profit / cost) * 100
-          )
+          (profit / cost) * 100
+        )
         : "—";
 
   }
@@ -1570,9 +2563,9 @@ function openProductForm(productId) {
   const product =
     productId
       ? products.find(
-          item =>
-            item.id === productId
-        )
+        item =>
+          item.id === productId
+      )
       : null;
 
 
@@ -1662,10 +2655,9 @@ async function toggleProductAvailability(productId) {
 
 
     showToast(
-      `${product.name} agora está ${
-        !product.available
-          ? "disponível"
-          : "inativo"
+      `${product.name} agora está ${!product.available
+        ? "disponível"
+        : "inativo"
       }.`
     );
 
@@ -2192,11 +3184,11 @@ function renderDailyRevenue() {
           const percentual =
             maiorFaturamento > 0
               ? Math.round(
-                  (
-                    dados.faturamento /
-                    maiorFaturamento
-                  ) * 100
-                )
+                (
+                  dados.faturamento /
+                  maiorFaturamento
+                ) * 100
+              )
               : 0;
 
 
@@ -2291,16 +3283,14 @@ function renderLowStock() {
 
               </div>
 
-              <span class="low-stock-badge ${
-                critico
-                  ? "critico"
-                  : "baixo"
-              }">
-                ${
-                  critico
-                    ? "Sem estoque"
-                    : `${product.stock} un.`
-                }
+              <span class="low-stock-badge ${critico
+              ? "critico"
+              : "baixo"
+            }">
+                ${critico
+              ? "Sem estoque"
+              : `${product.stock} un.`
+            }
               </span>
 
             </div>
@@ -2342,18 +3332,18 @@ function renderFinance() {
   const periodSales =
     period
       ? sales.filter(
-          sale =>
-            saleMonthKey(sale) === period
-        )
+        sale =>
+          saleMonthKey(sale) === period
+      )
       : sales;
 
 
   const periodExpenses =
     period
       ? expenses.filter(
-          expense =>
-            expense.date.startsWith(period)
-        )
+        expense =>
+          expense.date.startsWith(period)
+      )
       : expenses;
 
 
@@ -2465,8 +3455,8 @@ function renderExpenseCategories(
           const percent =
             outcome > 0
               ? Math.round(
-                  (value / outcome) * 100
-                )
+                (value / outcome) * 100
+              )
               : 0;
 
 
@@ -2698,9 +3688,9 @@ function openExpenseForm(expenseId) {
   const expense =
     expenseId
       ? expenses.find(
-          item =>
-            item.id === expenseId
-        )
+        item =>
+          item.id === expenseId
+      )
       : null;
 
 
@@ -3105,6 +4095,41 @@ window.iniciarAdmin = () => {
   }
 
   iniciado = true;
+
+  window.iniciarAdmin = () => {
+
+  if (iniciado) {
+    return;
+  }
+
+  iniciado = true;
+
+
+  // Mês atual como padrão no dashboard (uma vez só)
+
+  if (homeMonthFilter && !homeMonthFilter.value) {
+
+    homeMonthFilter.value =
+      todayISO().slice(0, 7);
+
+  }
+
+
+  const fromHash =
+    window.location.hash
+      .replace("#", "");
+
+
+  showView(
+    VIEWS.includes(fromHash)
+      ? fromHash
+      : "home",
+    {
+      updateHash: false
+    }
+  );
+
+};
 
 
   const fromHash =

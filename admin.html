@@ -9,13 +9,19 @@
 
   <title>Byte Burger | Painel</title>
 
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Cg fill='%2339ff14'%3E%3Crect x='4' y='1' width='8' height='1'/%3E%3Crect x='3' y='2' width='10' height='1'/%3E%3Crect x='2' y='3' width='12' height='2'/%3E%3Crect x='1' y='6' width='14' height='1'/%3E%3Crect x='2' y='11' width='12' height='1'/%3E%3Crect x='3' y='12' width='10' height='2'/%3E%3C/g%3E%3Crect x='2' y='8' width='12' height='2' fill='%23b6ff00'/%3E%3C/svg%3E">
+  <link rel="icon"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Cg fill='%2339ff14'%3E%3Crect x='4' y='1' width='8' height='1'/%3E%3Crect x='3' y='2' width='10' height='1'/%3E%3Crect x='2' y='3' width='12' height='2'/%3E%3Crect x='1' y='6' width='14' height='1'/%3E%3Crect x='2' y='11' width='12' height='1'/%3E%3Crect x='3' y='12' width='10' height='2'/%3E%3C/g%3E%3Crect x='2' y='8' width='12' height='2' fill='%23b6ff00'/%3E%3C/svg%3E">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;500;600;700;800&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;500;600;700;800&family=Orbitron:wght@400;500;600;700;800;900&display=swap"
+    rel="stylesheet">
 
   <link rel="stylesheet" href="css/admin.css">
+
+  <!-- Chart.js (CDN, sem custo) — usado só pelo dashboard do Início -->
+  <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
 
   <!-- ==================================================
        GUARDA ANTI-FLASH
@@ -49,7 +55,22 @@
     <div class="brand">
 
       <div class="brand-icon">
-        <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges" aria-hidden="true"><g fill="#39ff14"><rect x="4" y="1" width="8" height="1"/><rect x="3" y="2" width="10" height="1"/><rect x="2" y="3" width="12" height="2"/><rect x="1" y="6" width="14" height="1"/><rect x="2" y="11" width="12" height="1"/><rect x="3" y="12" width="10" height="2"/></g><rect x="2" y="8" width="12" height="2" fill="#b6ff00"/><g fill="#050505"><rect x="6" y="2" width="1" height="1"/><rect x="9" y="2" width="1" height="1"/><rect x="7" y="3" width="1" height="1"/></g></svg>
+        <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges" aria-hidden="true">
+          <g fill="#39ff14">
+            <rect x="4" y="1" width="8" height="1" />
+            <rect x="3" y="2" width="10" height="1" />
+            <rect x="2" y="3" width="12" height="2" />
+            <rect x="1" y="6" width="14" height="1" />
+            <rect x="2" y="11" width="12" height="1" />
+            <rect x="3" y="12" width="10" height="2" />
+          </g>
+          <rect x="2" y="8" width="12" height="2" fill="#b6ff00" />
+          <g fill="#050505">
+            <rect x="6" y="2" width="1" height="1" />
+            <rect x="9" y="2" width="1" height="1" />
+            <rect x="7" y="3" width="1" height="1" />
+          </g>
+        </svg>
       </div>
 
       <div>
@@ -64,9 +85,7 @@
 
       <div class="user-badge">
 
-        <span
-          class="avatar"
-          id="userAvatar">
+        <span class="avatar" id="userAvatar">
           AD
         </span>
 
@@ -77,11 +96,7 @@
       </div>
 
 
-      <button
-        class="history-button"
-        id="logoutButton"
-        type="button"
-        aria-label="Sair">
+      <button class="history-button" id="logoutButton" type="button" aria-label="Sair">
 
         <span aria-hidden="true">🚪</span>
         <span class="btn-label">Sair</span>
@@ -109,56 +124,37 @@
 
     <!-- NAVEGAÇÃO -->
 
-    <nav
-      class="admin-sidebar"
-      id="adminNav"
-      aria-label="Módulos do painel">
+    <nav class="admin-sidebar" id="adminNav" aria-label="Módulos do painel">
 
-      <button
-        class="admin-nav-item is-active"
-        type="button"
-        data-view="home"
-        aria-current="page">
+      <button class="admin-nav-item is-active" type="button" data-view="home" aria-current="page">
 
         <span class="admin-nav-icon" aria-hidden="true">🏠</span>
         <span class="admin-nav-label">Início</span>
 
       </button>
 
-      <button
-        class="admin-nav-item"
-        type="button"
-        data-view="sales">
+      <button class="admin-nav-item" type="button" data-view="sales">
 
         <span class="admin-nav-icon" aria-hidden="true">📋</span>
         <span class="admin-nav-label">Vendas</span>
 
       </button>
 
-      <button
-        class="admin-nav-item"
-        type="button"
-        data-view="products">
+      <button class="admin-nav-item" type="button" data-view="products">
 
         <span class="admin-nav-icon" aria-hidden="true">🍔</span>
         <span class="admin-nav-label">Produtos</span>
 
       </button>
 
-      <button
-        class="admin-nav-item"
-        type="button"
-        data-view="reports">
+      <button class="admin-nav-item" type="button" data-view="reports">
 
         <span class="admin-nav-icon" aria-hidden="true">📊</span>
         <span class="admin-nav-label">Relatórios</span>
 
       </button>
 
-      <button
-        class="admin-nav-item"
-        type="button"
-        data-view="finance">
+      <button class="admin-nav-item" type="button" data-view="finance">
 
         <span class="admin-nav-icon" aria-hidden="true">💼</span>
         <span class="admin-nav-label">Financeiro</span>
@@ -180,10 +176,7 @@
            com gráficos vai entrar depois.
       =================================================== -->
 
-      <section
-        class="admin-view"
-        id="view-home"
-        data-view-panel="home">
+      <section class="admin-view" id="view-home" data-view-panel="home">
 
         <div class="view-header">
 
@@ -267,16 +260,106 @@
         </div>
 
 
+        <!-- ==================================================
+       DASHBOARD
+
+       Gráficos montados com Chart.js (CDN) usando os
+       dados já carregados por admin.js: vendas,
+       produtos e despesas. O filtro de mês vale para
+       todos os gráficos.
+  =================================================== -->
+
+        <h3 class="group-title">
+          Desempenho
+        </h3>
+
+        <div class="dashboard-toolbar">
+
+          <div class="history-date">
+
+            <label for="homeMonthFilter">
+              Mês
+            </label>
+
+            <input id="homeMonthFilter" type="month">
+
+          </div>
+
+          <button class="clear-history-button" id="homeAllButton" type="button">
+
+            Ver todo o período
+
+          </button>
+
+        </div>
+
+
+        <div class="dashboard-grid">
+
+          <div class="panel dashboard-card dashboard-card-wide">
+
+            <h3 class="panel-title">
+              Faturamento por dia
+            </h3>
+
+            <div class="chart-wrap">
+              <canvas id="chartDailyRevenue" aria-label="Gráfico de faturamento por dia"></canvas>
+            </div>
+
+          </div>
+
+
+          <div class="panel dashboard-card">
+
+            <h3 class="panel-title">
+              Vendas por forma de pagamento
+            </h3>
+
+            <div class="chart-wrap">
+              <canvas id="chartPaymentMethods" aria-label="Gráfico de vendas por forma de pagamento"></canvas>
+            </div>
+
+          </div>
+
+
+          <div class="panel dashboard-card">
+
+            <h3 class="panel-title">
+              Produtos mais vendidos
+            </h3>
+
+            <div class="chart-wrap">
+              <canvas id="chartTopProducts" aria-label="Gráfico de produtos mais vendidos"></canvas>
+            </div>
+
+          </div>
+
+
+          <div class="panel dashboard-card dashboard-card-wide">
+
+            <h3 class="panel-title">
+              Lucro do período
+            </h3>
+
+            <div class="chart-wrap">
+              <canvas id="chartProfit" aria-label="Gráfico de lucro do período"></canvas>
+            </div>
+
+            <p class="chart-note" id="homeProfitNote">
+            </p>
+
+          </div>
+
+        </div>
+
+
         <h3 class="group-title">
           Ir para
         </h3>
 
         <div class="home-shortcuts">
 
-          <button
-            class="home-tile"
-            type="button"
-            data-view="sales">
+          <button class="home-tile" type="button" data-view="sales">
 
             <span class="home-tile-icon" aria-hidden="true">📋</span>
 
@@ -287,10 +370,7 @@
 
           </button>
 
-          <button
-            class="home-tile"
-            type="button"
-            data-view="products">
+          <button class="home-tile" type="button" data-view="products">
 
             <span class="home-tile-icon" aria-hidden="true">🍔</span>
 
@@ -301,10 +381,7 @@
 
           </button>
 
-          <button
-            class="home-tile"
-            type="button"
-            data-view="reports">
+          <button class="home-tile" type="button" data-view="reports">
 
             <span class="home-tile-icon" aria-hidden="true">📊</span>
 
@@ -315,10 +392,7 @@
 
           </button>
 
-          <button
-            class="home-tile"
-            type="button"
-            data-view="finance">
+          <button class="home-tile" type="button" data-view="finance">
 
             <span class="home-tile-icon" aria-hidden="true">💼</span>
 
@@ -339,10 +413,7 @@
            VENDAS (HISTÓRICO)
       =================================================== -->
 
-      <section
-        class="admin-view hidden"
-        id="view-sales"
-        data-view-panel="sales">
+      <section class="admin-view hidden" id="view-sales" data-view-panel="sales">
 
         <div class="view-header">
 
@@ -434,10 +505,7 @@
               ⌕
             </span>
 
-            <input
-              id="historySearchInput"
-              type="search"
-              placeholder="Buscar cliente, produto ou ID da venda..."
+            <input id="historySearchInput" type="search" placeholder="Buscar cliente, produto ou ID da venda..."
               autocomplete="off">
 
           </div>
@@ -448,9 +516,7 @@
               Data
             </label>
 
-            <input
-              id="historyDateFilter"
-              type="date">
+            <input id="historyDateFilter" type="date">
 
           </div>
 
@@ -460,8 +526,7 @@
               Pagamento
             </label>
 
-            <select
-              id="historyPaymentFilter">
+            <select id="historyPaymentFilter">
 
               <option value="Todos">
                 Todos
@@ -487,10 +552,7 @@
 
           </div>
 
-          <button
-            class="clear-history-button"
-            id="clearHistoryFilters"
-            type="button">
+          <button class="clear-history-button" id="clearHistoryFilters" type="button">
 
             Limpar filtros
 
@@ -534,9 +596,7 @@
           </div>
 
 
-          <div
-            id="salesHistory"
-            class="sales-history">
+          <div id="salesHistory" class="sales-history">
 
             <div class="history-loading">
 
@@ -557,9 +617,7 @@
           </div>
 
 
-          <div
-            id="historyEmptyState"
-            class="history-empty hidden">
+          <div id="historyEmptyState" class="history-empty hidden">
 
             <div>
               📋
@@ -588,10 +646,7 @@
            e edição continua sendo um modal (mais abaixo).
       =================================================== -->
 
-      <section
-        class="admin-view hidden"
-        id="view-products"
-        data-view-panel="products">
+      <section class="admin-view hidden" id="view-products" data-view-panel="products">
 
         <div class="view-header">
 
@@ -607,10 +662,7 @@
 
           </div>
 
-          <button
-            class="primary-button"
-            id="addProductButton"
-            type="button">
+          <button class="primary-button" id="addProductButton" type="button">
 
             + Novo produto
 
@@ -621,9 +673,7 @@
 
         <div class="panel">
 
-          <div
-            id="adminProductList"
-            class="admin-product-list">
+          <div id="adminProductList" class="admin-product-list">
 
           </div>
 
@@ -643,10 +693,7 @@
               LOW_STOCK_THRESHOLD, no código do painel.
       =================================================== -->
 
-      <section
-        class="admin-view hidden"
-        id="view-reports"
-        data-view-panel="reports">
+      <section class="admin-view hidden" id="view-reports" data-view-panel="reports">
 
         <div class="view-header">
 
@@ -671,9 +718,7 @@
             Faturamento por dia
           </h3>
 
-          <div
-            id="dailyRevenueList"
-            class="daily-revenue-list">
+          <div id="dailyRevenueList" class="daily-revenue-list">
 
           </div>
 
@@ -686,9 +731,7 @@
             Estoque baixo
           </h3>
 
-          <div
-            id="lowStockList"
-            class="low-stock-list">
+          <div id="lowStockList" class="low-stock-list">
 
           </div>
 
@@ -707,10 +750,7 @@
            Sem o mês preenchido, considera todo o período.
       =================================================== -->
 
-      <section
-        class="admin-view hidden"
-        id="view-finance"
-        data-view-panel="finance">
+      <section class="admin-view hidden" id="view-finance" data-view-panel="finance">
 
         <div class="view-header">
 
@@ -726,10 +766,7 @@
 
           </div>
 
-          <button
-            class="primary-button"
-            id="addExpenseButton"
-            type="button">
+          <button class="primary-button" id="addExpenseButton" type="button">
 
             + Nova despesa
 
@@ -746,16 +783,11 @@
               Mês
             </label>
 
-            <input
-              id="financeMonthFilter"
-              type="month">
+            <input id="financeMonthFilter" type="month">
 
           </div>
 
-          <button
-            class="clear-history-button"
-            id="financeAllButton"
-            type="button">
+          <button class="clear-history-button" id="financeAllButton" type="button">
 
             Ver todo o período
 
@@ -894,9 +926,7 @@
         </div>
 
 
-        <p
-          class="finance-note"
-          id="financeProfitNote">
+        <p class="finance-note" id="financeProfitNote">
         </p>
 
 
@@ -906,9 +936,7 @@
             Despesas por categoria
           </h3>
 
-          <div
-            id="financeCategoryList"
-            class="finance-category-list">
+          <div id="financeCategoryList" class="finance-category-list">
 
           </div>
 
@@ -921,9 +949,7 @@
             Despesas lançadas
           </h3>
 
-          <div
-            id="expenseList"
-            class="expense-list">
+          <div id="expenseList" class="expense-list">
 
           </div>
 
@@ -942,21 +968,11 @@
        MODAL DE DETALHES DA VENDA
   =================================================== -->
 
-  <div
-    class="modal-backdrop hidden"
-    id="saleDetailsModal">
+  <div class="modal-backdrop hidden" id="saleDetailsModal">
 
-    <div
-      class="modal sale-details-modal"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="saleDetailsTitle">
+    <div class="modal sale-details-modal" role="dialog" aria-modal="true" aria-labelledby="saleDetailsTitle">
 
-      <button
-        class="modal-close"
-        id="closeSaleDetailsModal"
-        type="button"
-        aria-label="Fechar">
+      <button class="modal-close" id="closeSaleDetailsModal" type="button" aria-label="Fechar">
 
         ×
 
@@ -968,9 +984,7 @@
           Venda
         </h2>
 
-        <span
-          id="saleDetailsId"
-          class="sale-details-id">
+        <span id="saleDetailsId" class="sale-details-id">
 
         </span>
 
@@ -1020,9 +1034,7 @@
             Status
           </span>
 
-          <strong
-            id="saleDetailsStatus"
-            class="sale-status">
+          <strong id="saleDetailsStatus" class="sale-status">
 
             Finalizada
 
@@ -1042,9 +1054,7 @@
 
         </div>
 
-        <div
-          id="saleDetailsItems"
-          class="sale-items-list">
+        <div id="saleDetailsItems" class="sale-items-list">
 
         </div>
 
@@ -1124,21 +1134,11 @@
        MODAL DE FORMULÁRIO DE PRODUTO (CRIAR/EDITAR)
   =================================================== -->
 
-  <div
-    class="modal-backdrop hidden"
-    id="productFormModal">
+  <div class="modal-backdrop hidden" id="productFormModal">
 
-    <div
-      class="modal admin-modal"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="productFormTitle">
+    <div class="modal admin-modal" role="dialog" aria-modal="true" aria-labelledby="productFormTitle">
 
-      <button
-        class="modal-close"
-        id="closeProductFormModal"
-        type="button"
-        aria-label="Fechar">
+      <button class="modal-close" id="closeProductFormModal" type="button" aria-label="Fechar">
 
         ×
 
@@ -1152,44 +1152,31 @@
 
         <!-- ID do produto (vazio = criação) -->
 
-        <input
-          type="hidden"
-          id="productFormId">
+        <input type="hidden" id="productFormId">
 
         <div class="form-grid">
 
           <div class="full">
 
-            <label
-              class="field-label"
-              for="productFormName">
+            <label class="field-label" for="productFormName">
 
               Nome do produto
 
             </label>
 
-            <input
-              class="text-input"
-              id="productFormName"
-              type="text"
-              placeholder="Ex: X-Salada"
-              required>
+            <input class="text-input" id="productFormName" type="text" placeholder="Ex: X-Salada" required>
 
           </div>
 
           <div>
 
-            <label
-              class="field-label"
-              for="productFormCategory">
+            <label class="field-label" for="productFormCategory">
 
               Categoria
 
             </label>
 
-            <select
-              class="text-input"
-              id="productFormCategory">
+            <select class="text-input" id="productFormCategory">
 
               <option value="Lanches">
                 Lanches
@@ -1217,19 +1204,13 @@
 
           <div>
 
-            <label
-              class="field-label"
-              for="productFormEmoji">
+            <label class="field-label" for="productFormEmoji">
 
               Imagem (arquivo ou emoji)
 
             </label>
 
-            <input
-              class="text-input"
-              id="productFormEmoji"
-              type="text"
-              placeholder="x-burger.webp ou 🍔"
+            <input class="text-input" id="productFormEmoji" type="text" placeholder="x-burger.webp ou 🍔"
               maxlength="120">
 
             <small class="field-hint">Nome do arquivo em <code>img/</code> ou um emoji.</small>
@@ -1238,88 +1219,53 @@
 
           <div>
 
-            <label
-              class="field-label"
-              for="productFormPrice">
+            <label class="field-label" for="productFormPrice">
 
               Preço (R$)
 
             </label>
 
-            <input
-              class="text-input"
-              id="productFormPrice"
-              type="number"
-              inputmode="decimal"
-              min="0"
-              step="0.01"
-              placeholder="0,00"
-              required>
+            <input class="text-input" id="productFormPrice" type="number" inputmode="decimal" min="0" step="0.01"
+              placeholder="0,00" required>
 
           </div>
 
           <div>
 
-            <label
-              class="field-label"
-              for="productFormStock">
+            <label class="field-label" for="productFormStock">
 
               Estoque inicial
 
             </label>
 
-            <input
-              class="text-input"
-              id="productFormStock"
-              type="number"
-              inputmode="numeric"
-              min="0"
-              step="1"
-              placeholder="0"
-              required>
+            <input class="text-input" id="productFormStock" type="number" inputmode="numeric" min="0" step="1"
+              placeholder="0" required>
 
           </div>
 
           <div>
 
-            <label
-              class="field-label"
-              for="productFormCost">
+            <label class="field-label" for="productFormCost">
 
               Custo (R$)
 
             </label>
 
-            <input
-              class="text-input"
-              id="productFormCost"
-              type="number"
-              inputmode="decimal"
-              min="0"
-              step="0.01"
+            <input class="text-input" id="productFormCost" type="number" inputmode="decimal" min="0" step="0.01"
               placeholder="0,00">
 
           </div>
 
           <div>
 
-            <label
-              class="field-label"
-              for="productFormTargetMargin">
+            <label class="field-label" for="productFormTargetMargin">
 
               Margem desejada (%) — opcional
 
             </label>
 
-            <input
-              class="text-input"
-              id="productFormTargetMargin"
-              type="number"
-              inputmode="decimal"
-              min="0"
-              max="99"
-              step="0.1"
-              placeholder="Ex: 60">
+            <input class="text-input" id="productFormTargetMargin" type="number" inputmode="decimal" min="0" max="99"
+              step="0.1" placeholder="Ex: 60">
 
           </div>
 
@@ -1354,10 +1300,7 @@
                 Informe o custo e a margem desejada para ver o preço sugerido.
               </span>
 
-              <button
-                class="detail-button hidden"
-                id="applySuggestedPriceButton"
-                type="button">
+              <button class="detail-button hidden" id="applySuggestedPriceButton" type="button">
 
                 Usar preço sugerido
 
@@ -1373,27 +1316,20 @@
 
           <div class="full">
 
-            <label
-              class="field-label"
-              for="productFormDescription">
+            <label class="field-label" for="productFormDescription">
 
               Descrição
 
             </label>
 
-            <textarea
-              class="textarea-input"
-              id="productFormDescription"
+            <textarea class="textarea-input" id="productFormDescription"
               placeholder="Descrição curta do produto"></textarea>
 
           </div>
 
           <div class="full checkbox-field">
 
-            <input
-              type="checkbox"
-              id="productFormAvailable"
-              checked>
+            <input type="checkbox" id="productFormAvailable" checked>
 
             <label for="productFormAvailable">
               Produto disponível para venda
@@ -1405,19 +1341,13 @@
 
         <div class="admin-form-actions">
 
-          <button
-            class="detail-button hidden"
-            id="deleteProductButton"
-            type="button">
+          <button class="detail-button hidden" id="deleteProductButton" type="button">
 
             🗑️ Excluir produto
 
           </button>
 
-          <button
-            class="checkout-button"
-            id="productFormSubmitButton"
-            type="submit">
+          <button class="checkout-button" id="productFormSubmitButton" type="submit">
 
             Cadastrar produto
 
@@ -1437,21 +1367,11 @@
        MODAL DE FORMULÁRIO DE DESPESA (CRIAR/EDITAR)
   =================================================== -->
 
-  <div
-    class="modal-backdrop hidden"
-    id="expenseFormModal">
+  <div class="modal-backdrop hidden" id="expenseFormModal">
 
-    <div
-      class="modal admin-modal"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="expenseFormTitle">
+    <div class="modal admin-modal" role="dialog" aria-modal="true" aria-labelledby="expenseFormTitle">
 
-      <button
-        class="modal-close"
-        id="closeExpenseFormModal"
-        type="button"
-        aria-label="Fechar">
+      <button class="modal-close" id="closeExpenseFormModal" type="button" aria-label="Fechar">
 
         ×
 
@@ -1463,44 +1383,32 @@
 
       <form id="expenseForm">
 
-        <input
-          type="hidden"
-          id="expenseFormId">
+        <input type="hidden" id="expenseFormId">
 
         <div class="form-grid">
 
           <div class="full">
 
-            <label
-              class="field-label"
-              for="expenseFormDescription">
+            <label class="field-label" for="expenseFormDescription">
 
               Descrição
 
             </label>
 
-            <input
-              class="text-input"
-              id="expenseFormDescription"
-              type="text"
-              placeholder="Ex: Compra de carne e pão"
+            <input class="text-input" id="expenseFormDescription" type="text" placeholder="Ex: Compra de carne e pão"
               required>
 
           </div>
 
           <div>
 
-            <label
-              class="field-label"
-              for="expenseFormCategory">
+            <label class="field-label" for="expenseFormCategory">
 
               Categoria
 
             </label>
 
-            <select
-              class="text-input"
-              id="expenseFormCategory">
+            <select class="text-input" id="expenseFormCategory">
 
               <option value="Insumos">Insumos</option>
               <option value="Aluguel">Aluguel</option>
@@ -1517,41 +1425,26 @@
 
           <div>
 
-            <label
-              class="field-label"
-              for="expenseFormAmount">
+            <label class="field-label" for="expenseFormAmount">
 
               Valor (R$)
 
             </label>
 
-            <input
-              class="text-input"
-              id="expenseFormAmount"
-              type="number"
-              inputmode="decimal"
-              min="0.01"
-              step="0.01"
-              placeholder="0,00"
-              required>
+            <input class="text-input" id="expenseFormAmount" type="number" inputmode="decimal" min="0.01" step="0.01"
+              placeholder="0,00" required>
 
           </div>
 
           <div class="full">
 
-            <label
-              class="field-label"
-              for="expenseFormDate">
+            <label class="field-label" for="expenseFormDate">
 
               Data
 
             </label>
 
-            <input
-              class="text-input"
-              id="expenseFormDate"
-              type="date"
-              required>
+            <input class="text-input" id="expenseFormDate" type="date" required>
 
           </div>
 
@@ -1559,19 +1452,13 @@
 
         <div class="admin-form-actions">
 
-          <button
-            class="detail-button hidden"
-            id="deleteExpenseButton"
-            type="button">
+          <button class="detail-button hidden" id="deleteExpenseButton" type="button">
 
             🗑️ Excluir despesa
 
           </button>
 
-          <button
-            class="checkout-button"
-            id="expenseFormSubmitButton"
-            type="submit">
+          <button class="checkout-button" id="expenseFormSubmitButton" type="submit">
 
             Lançar despesa
 
@@ -1589,11 +1476,7 @@
 
   <!-- TOAST -->
 
-  <div
-    class="toast hidden"
-    id="toast"
-    role="status"
-    aria-live="polite">
+  <div class="toast hidden" id="toast" role="status" aria-live="polite">
 
   </div>
 
@@ -1830,9 +1713,7 @@
 
   <!-- ADMIN.JS -->
 
-  <script
-    type="module"
-    src="js/admin.js">
+  <script type="module" src="js/admin.js">
   </script>
 
 
