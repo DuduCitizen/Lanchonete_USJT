@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#050505">
+  <meta name="robots" content="noindex, nofollow">
+
+  <title>Byte Burger | QR das mesas</title>
+
+  <link rel="icon"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Cg fill='%2339ff14'%3E%3Crect x='4' y='1' width='8' height='1'/%3E%3Crect x='3' y='2' width='10' height='1'/%3E%3Crect x='2' y='3' width='12' height='2'/%3E%3Crect x='1' y='6' width='14' height='1'/%3E%3Crect x='2' y='11' width='12' height='1'/%3E%3Crect x='3' y='12' width='10' height='2'/%3E%3C/g%3E%3Crect x='2' y='8' width='12' height='2' fill='%23b6ff00'/%3E%3C/svg%3E">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;500;600;700;800&family=Orbitron:wght@400;500;600;700;800;900&display=swap"
+    rel="stylesheet">
+
+  <link rel="stylesheet" href="css/admin.css">
+  <link rel="stylesheet" href="css/equipe.css">
+
+  <!-- Gerador de QR Code (o mesmo do Pix) -->
+  <script defer src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+
+  <!-- Escondida até o login e o papel serem confirmados
+       (js/equipe.js → protegerPagina) -->
+  <style>
+    body {
+      visibility: hidden;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ==================================================
+       QR CODES DAS MESAS (administrador ou garçom)
+
+       Gera um QR por mesa apontando para
+         <endereço do site>/mesa.html?mesa=N
+       O número de mesas vem de js/config-restaurante.js.
+       O endereço é o do próprio site; se estiver abrindo
+       pelo computador (localhost), troque pelo endereço
+       público (ex.: GitHub Pages) antes de imprimir.
+  =================================================== -->
+
+  <header class="topbar">
+
+    <div class="brand">
+
+      <div class="brand-icon">
+        <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges" aria-hidden="true">
+          <g fill="#39ff14">
+            <rect x="4" y="1" width="8" height="1" />
+            <rect x="3" y="2" width="10" height="1" />
+            <rect x="2" y="3" width="12" height="2" />
+            <rect x="1" y="6" width="14" height="1" />
+            <rect x="2" y="11" width="12" height="1" />
+            <rect x="3" y="12" width="10" height="2" />
+          </g>
+          <rect x="2" y="8" width="12" height="2" fill="#b6ff00" />
+          <g fill="#050505">
+            <rect x="6" y="2" width="1" height="1" />
+            <rect x="9" y="2" width="1" height="1" />
+            <rect x="7" y="3" width="1" height="1" />
+          </g>
+        </svg>
+      </div>
+
+      <div>
+        <h1>BYT<em>E</em></h1>
+        <span>Burger • Salão</span>
+      </div>
+
+    </div>
+
+    <div class="top-actions">
+
+      <div class="user-badge">
+        <span class="avatar" id="userAvatar">
+          ..
+        </span>
+        <span id="userRoleLabel">
+          ...
+        </span>
+      </div>
+
+      <button class="history-button" id="logoutButton" type="button" aria-label="Sair">
+        <span aria-hidden="true">🚪</span>
+        <span class="btn-label">Sair</span>
+      </button>
+
+    </div>
+
+  </header>
+
+  <main class="equipe-main">
+
+    <div class="view-header">
+
+      <div>
+
+        <h2>
+          QR Codes das mesas
+        </h2>
+
+        <p class="view-subtitle">
+          Imprima e cole um em cada mesa. O cliente escaneia com a câmera
+          do celular e já cai no cardápio com o número da mesa.
+        </p>
+
+      </div>
+
+      <button class="primary-button" id="imprimirButton" type="button">
+        🖨 Imprimir
+      </button>
+
+    </div>
+
+    <div class="qr-config">
+
+      <div>
+
+        <label class="field-label" for="enderecoBase">
+          Endereço do site (onde ele está publicado)
+        </label>
+
+        <input class="text-input" id="enderecoBase" type="url" spellcheck="false">
+
+      </div>
+
+      <button class="detail-button" id="gerarButton" type="button">
+        Gerar de novo
+      </button>
+
+    </div>
+
+    <p class="conta-aviso hidden no-print" id="avisoLocal">
+    </p>
+
+    <div class="qr-grid" id="qrGrid">
+    </div>
+
+  </main>
+
+  <div class="toast hidden" id="toast" role="status" aria-live="polite">
+  </div>
+
+  <script type="module" src="js/qr-mesas.js"></script>
+
+</body>
+
+</html>

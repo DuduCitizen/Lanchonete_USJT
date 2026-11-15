@@ -15,17 +15,65 @@ import {
   doc,
   serverTimestamp,
   runTransaction,
-  increment
+  increment,
+  onSnapshot,
+  query,
+  where,
+  getDoc,
+  setDoc
 } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
 import {
   brl,
   escapeHtml,
   renderProductImage,
+  getSaleDate,
+  formatSaleDate,
+  getPaymentIcon,
   showToast,
   closeModal,
   fetchProducts
 } from "./utils.js";
+
+import {
+  STATUS,
+  ETAPAS_PEDIDO,
+  STATUS_ATIVOS,
+  TIPO,
+  infoStatus,
+  ehPix,
+  ehMesa,
+  etapasDoPedido,
+  mensagemParaCliente,
+  statusInicial,
+  codigoPedido
+} from "./pedidos.js";
+
+import {
+  gerarPixCopiaECola,
+  gerarQrCodeSvg
+} from "./pix.js";
+
+import {
+  PIX_CONFIG,
+  CHAVE_PIX_EXEMPLO
+} from "./config-pix.js";
+
+import {
+  ehEquipe,
+  PAGINA_DO_PAPEL
+} from "./papeis.js";
+
+import {
+  somenteDigitos,
+  formatarCpf,
+  formatarTelefone,
+  formatarCep,
+  formatarEndereco,
+  problemasDoPerfil,
+  perfilCompleto,
+  buscarCep
+} from "./perfil.js";
 
 
 // ======================================================
@@ -37,6 +85,16 @@ let cart = [];
 let activeCategory = "Todos";
 let selectedProduct = null;
 let modalQuantity = 1;
+
+// Rastreio: pedidos do cliente logado (tempo real)
+let myOrders = [];
+let stopOrdersListener = null;
+let pixOrderId = null;
+
+// Cadastro do cliente (perfis/{uid})
+let myProfile = null;
+let profileLoaded = false;
+let afterProfileSave = null;
 
 
 // ======================================================
@@ -1002,27 +1060,108 @@ document
 // ABRIR / FECHAR CHECKOUT
 // ======================================================
 
-checkoutButton.addEventListener(
-  "click",
-  () => {
+// ======================================================
+// O pedido só abre com cadastro completo:
+// - visitante (sessão anônima) vai para o login;
+// - cliente sem cadastro completo preenche o perfil e,
+//   ao salvar, o checkout abre sozinho em seguida.
+// (As Security Rules também recusam pedido sem perfil.)
+// ======================================================
 
-    if (!cart.length) {
-      return;
-    }
+function openCheckout() {
+
+  if (!cart.length) {
+    return;
+  }
 
 
-    document.getElementById(
-      "checkoutTotal"
-    ).textContent =
-      brl(getCartTotal());
+  if (
+    !window.currentUser ||
+    window.userRole === "visitante"
+  ) {
 
-
-    checkoutModal.classList.remove(
-      "hidden"
+    showToast(
+      "Entre na sua conta para fazer o pedido."
     );
 
+    setTimeout(
+      () => {
+        window.location.href =
+          "login.html";
+      },
+      1500
+    );
+
+    return;
+
   }
+
+
+  if (!perfilCompleto(myProfile)) {
+
+    openProfileModal({
+      motivo: "pedido",
+      depois: openCheckout
+    });
+
+    return;
+
+  }
+
+
+  document.getElementById(
+    "checkoutTotal"
+  ).textContent =
+    brl(getCartTotal());
+
+
+  // Resumo de entrega vindo do cadastro
+  document.getElementById(
+    "checkoutDeliveryName"
+  ).textContent =
+    myProfile.nome;
+
+  document.getElementById(
+    "checkoutDeliveryPhone"
+  ).textContent =
+    `📞 ${formatarTelefone(myProfile.telefone)}`;
+
+  document.getElementById(
+    "checkoutDeliveryAddress"
+  ).textContent =
+    `📍 ${formatarEndereco(myProfile.endereco)}`;
+
+
+  checkoutModal.classList.remove(
+    "hidden"
+  );
+
+}
+
+
+checkoutButton.addEventListener(
+  "click",
+  openCheckout
 );
+
+
+document
+  .getElementById("editProfileFromCheckout")
+  .addEventListener(
+    "click",
+    () => {
+
+      closeModal(
+        checkoutModal
+      );
+
+      openProfileModal({
+        motivo: "editar",
+        depois: openCheckout
+      });
+
+    }
+  );
 
 
 document
@@ -1047,7 +1186,8 @@ document
 // 1. leitura dos produtos
 // 2. validação do estoque
 // 3. baixa do estoque
-// 4. criação da venda (com o custo de cada item)
+// 4. criação da venda (com o custo de cada item, o dono
+//    do pedido e o status inicial do rastreio)
 // 5. criação/atualização do cliente (CRM)
 //
 // O Firestore exige que TODAS as leituras aconteçam
@@ -1068,31 +1208,46 @@ async function finalizeSale() {
 
 
   // ====================================================
-  // CLIENTE
+  // CLIENTE (vem do cadastro obrigatório)
+  //
+  // Nome, CPF, telefone e endereço saem do perfil em
+  // "perfis/{uid}". O pedido grava uma CÓPIA desses
+  // dados, para a cozinha/motoboy ver para onde levar e
+  // para o pedido antigo não mudar se o cliente trocar de
+  // endereço depois.
+  //
+  // O telefone (só dígitos) continua sendo o ID do
+  // documento do cliente em "clientes" (CRM).
   // ====================================================
+
+  if (!perfilCompleto(myProfile)) {
+
+    closeModal(
+      checkoutModal
+    );
+
+    openProfileModal({
+      motivo: "pedido",
+      depois: openCheckout
+    });
+
+    return;
+
+  }
+
 
   const customerName =
-    document
-      .getElementById("customerName")
-      .value
-      .trim() ||
-    "Cliente não identificado";
-
-
-  // ====================================================
-  // TELEFONE DO CLIENTE (chave do CRM)
-  //
-  // Mantém só dígitos, para usar como ID do documento
-  // na coleção "clientes". Se vier vazio, a venda segue
-  // sem vínculo de CRM (venda avulsa).
-  // ====================================================
+    myProfile.nome;
 
   const customerPhone =
-    document
-      .getElementById("customerPhone")
-      .value
-      .trim()
-      .replace(/\D/g, "");
+    somenteDigitos(myProfile.telefone);
+
+  const customerCpf =
+    somenteDigitos(myProfile.cpf);
+
+  const deliveryAddress = {
+    ...myProfile.endereco
+  };
 
 
   // ====================================================
@@ -1118,6 +1273,37 @@ async function finalizeSale() {
 
   const payment =
     paymentInput.value;
+
+
+  // ====================================================
+  // STATUS INICIAL DO PEDIDO (RASTREIO)
+  //
+  // Pix nasce "aguardando_pagamento" (o admin confirma
+  // o Pix à mão). Dinheiro/cartão nascem "recebido".
+  // As Security Rules exigem exatamente essa regra, então
+  // ninguém cria um pedido Pix já marcado como pago.
+  // ====================================================
+
+  const status =
+    statusInicial(payment);
+
+
+  // Dono do pedido: só ele (e o admin) pode lê-lo depois
+  const userId =
+    window.currentUser
+      ? window.currentUser.uid
+      : null;
+
+
+  if (!userId) {
+
+    showToast(
+      "Faça login para finalizar o pedido."
+    );
+
+    return;
+
+  }
 
 
   // ====================================================
@@ -1389,8 +1575,15 @@ async function finalizeSale() {
               customerName,
 
             customerPhone:
-              customerPhone ||
-              null,
+              customerPhone,
+
+            // ---- dados de entrega (cópia do cadastro) ----
+
+            customerCpf:
+              customerCpf,
+
+            deliveryAddress:
+              deliveryAddress,
 
             payment:
               payment,
@@ -1410,8 +1603,26 @@ async function finalizeSale() {
             createdAt:
               serverTimestamp(),
 
+            // ---- rastreio do pedido ----
+
+            userId:
+              userId,
+
+            tipo:
+              TIPO.DELIVERY,
+
             status:
-              "finalizada"
+              status,
+
+            statusUpdatedAt:
+              serverTimestamp(),
+
+            // horário de cada etapa (a cozinha preenche
+            // as próximas ao avançar o pedido)
+            statusTimes: {
+              [status]:
+                serverTimestamp()
+            }
 
           }
         );
@@ -1438,6 +1649,9 @@ async function finalizeSale() {
 
               telefone:
                 customerPhone,
+
+              cpf:
+                customerCpf,
 
               totalGasto:
                 increment(total),
@@ -1478,14 +1692,6 @@ async function finalizeSale() {
       checkoutModal
     );
 
-    document.getElementById(
-      "customerName"
-    ).value = "";
-
-    document.getElementById(
-      "customerPhone"
-    ).value = "";
-
 
     // ==================================================
     // RECARREGAR PRODUTOS (estoque atualizado)
@@ -1494,9 +1700,29 @@ async function finalizeSale() {
     await loadProducts();
 
 
-    showToast(
-      `Venda finalizada! Total: ${brl(total)}`
-    );
+    // ==================================================
+    // PRÓXIMO PASSO PARA O CLIENTE
+    //
+    // Pix: abre o QR Code para pagar.
+    // Outros: abre o rastreio do pedido.
+    // ==================================================
+
+    if (ehPix(payment)) {
+
+      openPixModal({
+        id: saleRef.id,
+        total
+      });
+
+    } else {
+
+      showToast(
+        `Pedido ${codigoPedido(saleRef.id)} recebido! Total: ${brl(total)}`
+      );
+
+      openOrdersModal();
+
+    }
 
 
   } catch (error) {
@@ -1539,6 +1765,1131 @@ document
 
 
 // ======================================================
+// CADASTRO DO CLIENTE (PERFIL)
+//
+// Documento "perfis/{uid}" com nome completo, CPF,
+// telefone e endereço de entrega. É obrigatório antes do
+// primeiro pedido:
+//   - abre sozinho depois do login se estiver incompleto;
+//   - o botão "Finalizar venda" não abre o pagamento
+//     enquanto ele não estiver completo;
+//   - as Security Rules recusam pedido de quem não tem
+//     perfil (proteção de verdade, não só na tela).
+// ======================================================
+
+const profileModal =
+  document.getElementById("profileModal");
+
+const profileForm =
+  document.getElementById("profileForm");
+
+const openProfileButton =
+  document.getElementById("openProfileButton");
+
+const profileAlert =
+  document.getElementById("profileAlert");
+
+const profileErrors =
+  document.getElementById("profileErrors");
+
+const profileFields = {
+  nome: document.getElementById("profileName"),
+  cpf: document.getElementById("profileCpf"),
+  telefone: document.getElementById("profilePhone"),
+  cep: document.getElementById("profileCep"),
+  rua: document.getElementById("profileStreet"),
+  numero: document.getElementById("profileNumber"),
+  complemento: document.getElementById("profileComplement"),
+  bairro: document.getElementById("profileDistrict"),
+  cidade: document.getElementById("profileCity"),
+  uf: document.getElementById("profileState"),
+  referencia: document.getElementById("profileReference")
+};
+
+
+const PROFILE_INTRO = {
+
+  primeiro:
+    "Antes do primeiro pedido, complete seu cadastro. " +
+    "Precisamos desses dados para entregar seu lanche. Você só preenche uma vez.",
+
+  pedido:
+    "Para finalizar o pedido, complete seu cadastro. " +
+    "Assim que salvar, seguimos para o pagamento.",
+
+  editar:
+    "Confira ou atualize seus dados de entrega."
+
+};
+
+
+function updateProfileAlert() {
+
+  profileAlert.classList.toggle(
+    "hidden",
+    perfilCompleto(myProfile)
+  );
+
+}
+
+
+async function loadProfile() {
+
+  try {
+
+    const snapshot =
+      await getDoc(
+        doc(
+          window.db,
+          "perfis",
+          window.currentUser.uid
+        )
+      );
+
+    myProfile =
+      snapshot.exists()
+        ? snapshot.data()
+        : null;
+
+  } catch (error) {
+
+    console.error(
+      "Erro ao carregar o cadastro:",
+      error
+    );
+
+    myProfile =
+      null;
+
+  }
+
+
+  profileLoaded =
+    true;
+
+  updateProfileAlert();
+
+
+  // Primeiro acesso (ou cadastro incompleto): já pede
+  if (!perfilCompleto(myProfile)) {
+
+    openProfileModal({
+      motivo: "primeiro"
+    });
+
+  }
+
+}
+
+
+function fillProfileForm(perfil) {
+
+  const e =
+    perfil?.endereco || {};
+
+  profileFields.nome.value = perfil?.nome || "";
+  profileFields.cpf.value = formatarCpf(perfil?.cpf || "");
+  profileFields.telefone.value = formatarTelefone(perfil?.telefone || "");
+  profileFields.cep.value = formatarCep(e.cep || "");
+  profileFields.rua.value = e.rua || "";
+  profileFields.numero.value = e.numero || "";
+  profileFields.complemento.value = e.complemento || "";
+  profileFields.bairro.value = e.bairro || "";
+  profileFields.cidade.value = e.cidade || "";
+  profileFields.uf.value = e.uf || "";
+  profileFields.referencia.value = e.referencia || "";
+
+}
+
+
+function openProfileModal({ motivo = "editar", depois = null } = {}) {
+
+  if (!profileLoaded) {
+    return;
+  }
+
+
+  afterProfileSave =
+    depois;
+
+  document.getElementById(
+    "profileIntro"
+  ).textContent =
+    PROFILE_INTRO[motivo] ||
+    PROFILE_INTRO.editar;
+
+  fillProfileForm(myProfile);
+
+  profileErrors.classList.add("hidden");
+
+  document.getElementById(
+    "profileCepStatus"
+  ).textContent = "";
+
+  profileModal.classList.remove(
+    "hidden"
+  );
+
+}
+
+
+function readProfileForm() {
+
+  const valor = campo =>
+    profileFields[campo].value
+      .trim()
+      .replace(/\s+/g, " ");
+
+  return {
+
+    nome:
+      valor("nome"),
+
+    cpf:
+      somenteDigitos(profileFields.cpf.value),
+
+    telefone:
+      somenteDigitos(profileFields.telefone.value),
+
+    endereco: {
+      cep: somenteDigitos(profileFields.cep.value),
+      rua: valor("rua"),
+      numero: valor("numero"),
+      complemento: valor("complemento"),
+      bairro: valor("bairro"),
+      cidade: valor("cidade"),
+      uf: valor("uf").toUpperCase(),
+      referencia: valor("referencia")
+    }
+
+  };
+
+}
+
+
+// ---- máscaras enquanto digita ----
+
+function mascara(input, formatar, maxDigitos) {
+
+  input.addEventListener(
+    "input",
+    () => {
+
+      const digitos =
+        somenteDigitos(input.value)
+          .slice(0, maxDigitos);
+
+      input.value =
+        formatar(digitos);
+
+    }
+  );
+
+}
+
+const mascaraCpf = d =>
+  d
+    .replace(/^(\d{3})(\d)/, "$1.$2")
+    .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
+    .replace(/\.(\d{3})(\d{1,2})$/, ".$1-$2");
+
+const mascaraTelefone = d =>
+  d.length <= 2
+    ? d.replace(/^(\d{1,2})/, "($1")
+    : d.length <= 6
+      ? d.replace(/^(\d{2})(\d+)/, "($1) $2")
+      : d.length <= 10
+        ? d.replace(/^(\d{2})(\d{4})(\d+)/, "($1) $2-$3")
+        : d.replace(/^(\d{2})(\d{5})(\d+)/, "($1) $2-$3");
+
+const mascaraCep = d =>
+  d.replace(/^(\d{5})(\d)/, "$1-$2");
+
+mascara(profileFields.cpf, mascaraCpf, 11);
+mascara(profileFields.telefone, mascaraTelefone, 11);
+mascara(profileFields.cep, mascaraCep, 8);
+
+profileFields.uf.addEventListener(
+  "input",
+  () => {
+    profileFields.uf.value =
+      profileFields.uf.value
+        .replace(/[^A-Za-z]/g, "")
+        .toUpperCase();
+  }
+);
+
+
+// ---- CEP: completa rua, bairro, cidade e UF ----
+
+profileFields.cep.addEventListener(
+  "input",
+  async () => {
+
+    const status =
+      document.getElementById("profileCepStatus");
+
+    if (somenteDigitos(profileFields.cep.value).length !== 8) {
+      status.textContent = "";
+      return;
+    }
+
+
+    status.textContent =
+      "Buscando endereço...";
+
+    const endereco =
+      await buscarCep(profileFields.cep.value);
+
+
+    if (!endereco) {
+
+      status.textContent =
+        "CEP não encontrado. Preencha à mão.";
+
+      return;
+
+    }
+
+
+    profileFields.rua.value = endereco.rua || profileFields.rua.value;
+    profileFields.bairro.value = endereco.bairro || profileFields.bairro.value;
+    profileFields.cidade.value = endereco.cidade || profileFields.cidade.value;
+    profileFields.uf.value = endereco.uf || profileFields.uf.value;
+
+    status.textContent =
+      "✔ Endereço encontrado";
+
+    profileFields.numero.focus();
+
+  }
+);
+
+
+// Some com o aviso de erro assim que o cliente corrige
+profileForm.addEventListener(
+  "input",
+  () => {
+    profileErrors.classList.add("hidden");
+  }
+);
+
+
+// ---- salvar ----
+
+profileForm.addEventListener(
+  "submit",
+  async event => {
+
+    event.preventDefault();
+
+
+    const perfil =
+      readProfileForm();
+
+    const problemas =
+      problemasDoPerfil(perfil);
+
+
+    if (problemas.length) {
+
+      profileErrors.textContent =
+        `Confira: ${problemas.join(", ")}.`;
+
+      profileErrors.classList.remove(
+        "hidden"
+      );
+
+      return;
+
+    }
+
+
+    profileErrors.classList.add(
+      "hidden"
+    );
+
+
+    const saveButton =
+      document.getElementById("saveProfileButton");
+
+    saveButton.disabled = true;
+    saveButton.textContent = "Salvando...";
+
+
+    try {
+
+      await setDoc(
+        doc(
+          window.db,
+          "perfis",
+          window.currentUser.uid
+        ),
+        {
+          ...perfil,
+          atualizadoEm:
+            serverTimestamp()
+        }
+      );
+
+
+      myProfile =
+        perfil;
+
+      updateProfileAlert();
+
+      closeModal(
+        profileModal
+      );
+
+      showToast(
+        "Cadastro salvo!"
+      );
+
+
+      // Veio do "Finalizar venda": segue para o pagamento
+      const proximo =
+        afterProfileSave;
+
+      afterProfileSave =
+        null;
+
+      if (proximo) {
+        proximo();
+      }
+
+    } catch (error) {
+
+      console.error(
+        "Erro ao salvar o cadastro:",
+        error
+      );
+
+      profileErrors.textContent =
+        `Não foi possível salvar: ${error.message}`;
+
+      profileErrors.classList.remove(
+        "hidden"
+      );
+
+    } finally {
+
+      saveButton.disabled = false;
+      saveButton.textContent = "Salvar cadastro";
+
+    }
+
+  }
+);
+
+
+openProfileButton.addEventListener(
+  "click",
+  () => {
+
+    openProfileModal({
+      motivo:
+        perfilCompleto(myProfile)
+          ? "editar"
+          : "primeiro"
+    });
+
+  }
+);
+
+
+document
+  .getElementById("closeProfileModal")
+  .addEventListener(
+    "click",
+    () => {
+
+      afterProfileSave =
+        null;
+
+      closeModal(
+        profileModal
+      );
+
+    }
+  );
+
+
+// ======================================================
+// RASTREIO DO PEDIDO (MEUS PEDIDOS)
+//
+// Escuta em tempo real (onSnapshot) os pedidos do cliente
+// logado: query em "vendas" com userId == uid. A Security
+// Rule de leitura só libera pedidos do próprio usuário, e
+// o Firestore exige que a consulta tenha esse mesmo filtro
+// — por isso o where() abaixo é obrigatório.
+//
+// Quando a cozinha muda o status no painel, o Firestore
+// avisa este listener, a tela se redesenha sozinha e o
+// cliente recebe um aviso (toast).
+// ======================================================
+
+const openOrdersButton =
+  document.getElementById("openOrdersButton");
+
+const ordersCount =
+  document.getElementById("ordersCount");
+
+const ordersModal =
+  document.getElementById("ordersModal");
+
+const ordersList =
+  document.getElementById("ordersList");
+
+const pixModal =
+  document.getElementById("pixModal");
+
+
+// Quantos pedidos antigos (entregues/cancelados) mostrar
+const MAX_PEDIDOS_ANTERIORES = 5;
+
+
+function mapOrder(documentSnapshot) {
+
+  const data =
+    documentSnapshot.data();
+
+  return {
+
+    id:
+      documentSnapshot.id,
+
+    status:
+      String(data.status || STATUS.FINALIZADA),
+
+    payment:
+      String(data.payment || "Não informado"),
+
+    total:
+      Number(data.total) || 0,
+
+    items:
+      Array.isArray(data.items)
+        ? data.items
+        : [],
+
+    // null enquanto o servidor não confirma o horário
+    createdAt:
+      data.createdAt || null,
+
+    statusTimes:
+      data.statusTimes || {},
+
+    tipo:
+      String(data.tipo || TIPO.DELIVERY),
+
+    mesa:
+      data.mesa || null
+
+  };
+
+}
+
+
+function orderTime(order) {
+
+  const date =
+    getSaleDate(order.createdAt);
+
+  // Pedido acabou de ser criado e o horário do servidor
+  // ainda não chegou
+  return date
+    ? date.getTime()
+    : Date.now();
+
+}
+
+
+function formatHour(timestamp) {
+
+  const date =
+    getSaleDate(timestamp);
+
+  if (!date) {
+    return "";
+  }
+
+  return date.toLocaleTimeString(
+    "pt-BR",
+    {
+      hour: "2-digit",
+      minute: "2-digit"
+    }
+  );
+
+}
+
+
+function startOrdersListener() {
+
+  if (
+    stopOrdersListener ||
+    !window.db ||
+    !window.currentUser ||
+    window.userRole === "visitante"
+  ) {
+    return;
+  }
+
+
+  openOrdersButton.classList.remove(
+    "hidden"
+  );
+
+
+  const ordersQuery =
+    query(
+      collection(
+        window.db,
+        "vendas"
+      ),
+      where(
+        "userId",
+        "==",
+        window.currentUser.uid
+      )
+    );
+
+
+  let primeiraCarga =
+    true;
+
+
+  stopOrdersListener =
+    onSnapshot(
+      ordersQuery,
+      snapshot => {
+
+        // Avisa o cliente quando o status muda
+        // (não na primeira carga, senão avisaria tudo)
+        if (!primeiraCarga) {
+
+          snapshot
+            .docChanges()
+            .forEach(
+              change => {
+
+                if (change.type !== "modified") {
+                  return;
+                }
+
+
+                const novoStatus =
+                  change.doc.data().status;
+
+                const anterior =
+                  myOrders.find(
+                    order =>
+                      order.id === change.doc.id
+                  );
+
+
+                if (
+                  !anterior ||
+                  anterior.status === novoStatus
+                ) {
+                  return;
+                }
+
+
+                showToast(
+                  `Pedido ${codigoPedido(change.doc.id)}: ${infoStatus(novoStatus).label}`
+                );
+
+
+                // Pix confirmado com o QR Code aberto:
+                // troca o QR pelo rastreio
+                if (
+                  pixOrderId === change.doc.id &&
+                  novoStatus !== STATUS.AGUARDANDO_PAGAMENTO
+                ) {
+
+                  closeModal(
+                    pixModal
+                  );
+
+                  pixOrderId =
+                    null;
+
+                  openOrdersModal();
+
+                }
+
+              }
+            );
+
+        }
+
+
+        primeiraCarga =
+          false;
+
+
+        myOrders =
+          snapshot.docs
+            .map(mapOrder)
+            .sort(
+              (a, b) =>
+                orderTime(b) -
+                orderTime(a)
+            );
+
+
+        renderOrders();
+
+      },
+      error => {
+
+        console.error(
+          "Erro ao acompanhar pedidos:",
+          error
+        );
+
+        ordersList.innerHTML = `
+          <div class="orders-empty">
+            <div>⚠️</div>
+            <strong>Não foi possível carregar seus pedidos</strong>
+            <span>${escapeHtml(error.message)}</span>
+          </div>
+        `;
+
+      }
+    );
+
+}
+
+
+function renderOrderTimeline(order) {
+
+  // Pedido fora do fluxo (cancelado / venda antiga)
+  if (!ETAPAS_PEDIDO.includes(order.status)) {
+    return "";
+  }
+
+
+  // Pix passa por "aguardando pagamento"; pedido de mesa
+  // não tem "saiu para entrega" (ver pedidos.js)
+  const etapas =
+    etapasDoPedido(order);
+
+
+  const atual =
+    etapas.indexOf(order.status);
+
+
+  return `
+    <ol class="order-timeline">
+      ${etapas
+        .map(
+          (etapa, index) => {
+
+            const estado =
+              index < atual ||
+              order.status === STATUS.ENTREGUE
+                ? "done"
+                : index === atual
+                  ? "current"
+                  : "todo";
+
+            const hora =
+              formatHour(
+                order.statusTimes[etapa]
+              );
+
+            return `
+              <li class="order-step ${estado}">
+                <span class="order-step-dot" aria-hidden="true"></span>
+                <span class="order-step-label">
+                  ${infoStatus(etapa).curto}
+                </span>
+                <small>${hora}</small>
+              </li>
+            `;
+
+          }
+        )
+        .join("")}
+    </ol>
+  `;
+
+}
+
+
+function renderOrderCard(order) {
+
+  const info =
+    infoStatus(order.status);
+
+  const itens =
+    order.items
+      .map(
+        item => `
+          <li>
+            <b>${Number(item.quantity) || 0}×</b>
+            ${escapeHtml(item.name || "Produto")}
+          </li>
+        `
+      )
+      .join("");
+
+  const quando =
+    order.createdAt
+      ? formatSaleDate(order.createdAt)
+      : "Agora mesmo";
+
+  const podePagar =
+    order.status ===
+    STATUS.AGUARDANDO_PAGAMENTO;
+
+
+  return `
+    <article class="order-card status-${escapeHtml(order.status)}">
+
+      <header class="order-card-head">
+
+        <div>
+          <strong class="order-code">
+            ${codigoPedido(order.id)}
+          </strong>
+          <span class="order-date">
+            ${escapeHtml(quando)}
+          </span>
+        </div>
+
+        <span class="order-status-badge status-${escapeHtml(order.status)}">
+          ${info.icone} ${escapeHtml(info.label)}
+        </span>
+
+      </header>
+
+      <p class="order-message">
+        ${
+          ehMesa(order)
+            ? `🍽 Mesa ${escapeHtml(String(order.mesa))} · `
+            : ""
+        }${escapeHtml(mensagemParaCliente(order))}
+      </p>
+
+      ${renderOrderTimeline(order)}
+
+      <ul class="order-items">
+        ${itens}
+      </ul>
+
+      <footer class="order-card-foot">
+        <span>
+          ${getPaymentIcon(order.payment)}
+          ${escapeHtml(order.payment)}
+        </span>
+        <strong>
+          ${brl(order.total)}
+        </strong>
+      </footer>
+
+      ${
+        podePagar
+          ? `
+            <button
+              class="primary-button order-pay-button"
+              type="button"
+              data-pay-order="${escapeHtml(order.id)}">
+              ⚡ Pagar com Pix
+            </button>
+          `
+          : ""
+      }
+
+    </article>
+  `;
+
+}
+
+
+function renderOrders() {
+
+  const ativos =
+    myOrders.filter(
+      order =>
+        STATUS_ATIVOS.includes(order.status)
+    );
+
+  const anteriores =
+    myOrders
+      .filter(
+        order =>
+          !STATUS_ATIVOS.includes(order.status)
+      )
+      .slice(
+        0,
+        MAX_PEDIDOS_ANTERIORES
+      );
+
+
+  // Contador no botão do topo
+  ordersCount.textContent =
+    ativos.length;
+
+  ordersCount.classList.toggle(
+    "hidden",
+    ativos.length === 0
+  );
+
+
+  if (!myOrders.length) {
+
+    ordersList.innerHTML = `
+      <div class="orders-empty">
+        <div>📦</div>
+        <strong>Você ainda não fez pedidos</strong>
+        <span>Quando fizer, o andamento aparece aqui em tempo real.</span>
+      </div>
+    `;
+
+    return;
+
+  }
+
+
+  ordersList.innerHTML = `
+    ${
+      ativos.length
+        ? `
+          <h3 class="orders-group-title">Em andamento</h3>
+          ${ativos.map(renderOrderCard).join("")}
+        `
+        : ""
+    }
+    ${
+      anteriores.length
+        ? `
+          <h3 class="orders-group-title">Anteriores</h3>
+          ${anteriores.map(renderOrderCard).join("")}
+        `
+        : ""
+    }
+  `;
+
+}
+
+
+function openOrdersModal() {
+
+  if (!stopOrdersListener) {
+
+    showToast(
+      "Entre na sua conta para acompanhar pedidos."
+    );
+
+    return;
+
+  }
+
+
+  renderOrders();
+
+  ordersModal.classList.remove(
+    "hidden"
+  );
+
+}
+
+
+// ======================================================
+// PIX — QR CODE DO PEDIDO
+//
+// Monta o "copia e cola" com o valor e o ID do pedido
+// (o ID vai como identificador da transação, ajudando o
+// admin a conferir no extrato) e desenha o QR Code.
+// ======================================================
+
+function openPixModal(order) {
+
+  pixOrderId =
+    order.id;
+
+
+  const codigo =
+    gerarPixCopiaECola({
+      ...PIX_CONFIG,
+      valor: order.total,
+      txid: order.id
+    });
+
+
+  document.getElementById(
+    "pixOrderCode"
+  ).textContent =
+    codigoPedido(order.id);
+
+  document.getElementById(
+    "pixTotal"
+  ).textContent =
+    brl(order.total);
+
+  document.getElementById(
+    "pixCode"
+  ).value =
+    codigo;
+
+
+  document
+    .getElementById("pixDemoWarning")
+    .classList.toggle(
+      "hidden",
+      PIX_CONFIG.chave !== CHAVE_PIX_EXEMPLO
+    );
+
+
+  const svg =
+    gerarQrCodeSvg(codigo);
+
+  document.getElementById(
+    "pixQr"
+  ).innerHTML =
+    svg ||
+    `<p class="pix-qr-fallback">
+       Não foi possível desenhar o QR Code agora.
+       Use o código "copia e cola" abaixo.
+     </p>`;
+
+
+  closeModal(
+    ordersModal
+  );
+
+  pixModal.classList.remove(
+    "hidden"
+  );
+
+}
+
+
+async function copyPixCode() {
+
+  const textarea =
+    document.getElementById("pixCode");
+
+  try {
+
+    await navigator.clipboard.writeText(
+      textarea.value
+    );
+
+  } catch {
+
+    // Navegadores sem acesso à área de transferência
+    textarea.select();
+    document.execCommand("copy");
+
+  }
+
+
+  showToast(
+    "Código Pix copiado!"
+  );
+
+}
+
+
+openOrdersButton.addEventListener(
+  "click",
+  openOrdersModal
+);
+
+
+document
+  .getElementById("closeOrdersModal")
+  .addEventListener(
+    "click",
+    () => {
+
+      closeModal(
+        ordersModal
+      );
+
+    }
+  );
+
+
+document
+  .getElementById("closePixModal")
+  .addEventListener(
+    "click",
+    () => {
+
+      closeModal(
+        pixModal
+      );
+
+      pixOrderId =
+        null;
+
+    }
+  );
+
+
+document
+  .getElementById("copyPixButton")
+  .addEventListener(
+    "click",
+    copyPixCode
+  );
+
+
+document
+  .getElementById("pixTrackButton")
+  .addEventListener(
+    "click",
+    () => {
+
+      closeModal(
+        pixModal
+      );
+
+      pixOrderId =
+        null;
+
+      openOrdersModal();
+
+    }
+  );
+
+
+// "Pagar com Pix" dentro de Meus pedidos
+ordersList.addEventListener(
+  "click",
+  event => {
+
+    const button =
+      event.target.closest(
+        "[data-pay-order]"
+      );
+
+    if (!button) {
+      return;
+    }
+
+
+    const order =
+      myOrders.find(
+        item =>
+          item.id === button.dataset.payOrder
+      );
+
+    if (order) {
+      openPixModal(order);
+    }
+
+  }
+);
+
+
+// ======================================================
 // FECHAR MODAIS COM ESC
 // ======================================================
 
@@ -1558,6 +2909,24 @@ document.addEventListener(
     closeModal(
       checkoutModal
     );
+
+    closeModal(
+      ordersModal
+    );
+
+    closeModal(
+      pixModal
+    );
+
+    pixOrderId =
+      null;
+
+    closeModal(
+      profileModal
+    );
+
+    afterProfileSave =
+      null;
 
   }
 );
@@ -1582,10 +2951,10 @@ renderCart();
 // carrega: index.html chama window.iniciarApp() só depois
 // que o Firebase confirma a sessão.
 //
-// ADMINISTRADOR: não usa o cardápio. Quem tem papel de
-// administrador é enviado direto para o painel
-// (admin.html). Para testar a página do cliente estando
-// logado como admin, abra index.html?cliente=1.
+// EQUIPE: não usa o cardápio. Cada papel vai direto para
+// a sua tela (admin.html, garcom.html, balcao.html,
+// cozinha.html — ver js/papeis.js). Para testar a página
+// do cliente logado como admin, abra index.html?cliente=1.
 // ======================================================
 
 window.iniciarApp = () => {
@@ -1597,8 +2966,11 @@ window.iniciarApp = () => {
 
 
   if (
-    window.userRole === "administrador" &&
-    !querVerComoCliente
+    ehEquipe(window.userRole) &&
+    !(
+      querVerComoCliente &&
+      window.userRole === "administrador"
+    )
   ) {
 
     // Esconde a página para não piscar o cardápio
@@ -1607,7 +2979,7 @@ window.iniciarApp = () => {
       "hidden";
 
     window.location.replace(
-      "admin.html"
+      PAGINA_DO_PAPEL[window.userRole]
     );
 
     return;
@@ -1616,5 +2988,23 @@ window.iniciarApp = () => {
 
 
   loadProducts();
+
+
+  // Só para quem está logado de verdade (visitante
+  // anônimo não compra): cadastro + rastreio em tempo real
+  if (
+    window.currentUser &&
+    window.userRole !== "visitante"
+  ) {
+
+    openProfileButton.classList.remove(
+      "hidden"
+    );
+
+    loadProfile();
+
+    startOrdersListener();
+
+  }
 
 };

@@ -16,6 +16,11 @@
 
   <link rel="stylesheet" href="css/style.css">
 
+  <!-- Gerador de QR Code (CDN, sem custo) — usado só no
+       pagamento com Pix (js/pix.js). Se não carregar, o
+       código "copia e cola" continua funcionando. -->
+  <script defer src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+
   <!-- ==================================================
        GUARDA ANTI-FLASH
 
@@ -63,6 +68,59 @@
 
 
     <div class="top-actions">
+
+      <!-- ==================================================
+           MEU CADASTRO
+
+           Só aparece para cliente logado de verdade. Abre o
+           formulário de perfil (nome, CPF, telefone e
+           endereço), obrigatório antes do primeiro pedido.
+           O "!" aparece enquanto o cadastro está incompleto.
+      =================================================== -->
+
+      <button
+        class="icon-button profile-button hidden"
+        id="openProfileButton"
+        type="button"
+        aria-label="Meu cadastro">
+
+        👤
+
+        <span
+          class="profile-alert hidden"
+          id="profileAlert">
+          !
+        </span>
+
+      </button>
+
+
+<!-- ==================================================
+           MEUS PEDIDOS (RASTREIO)
+
+           Só aparece para cliente logado de verdade (o
+           app.js tira o "hidden"). Visitante anônimo não
+           compra, então não tem pedido para acompanhar.
+           O número mostra quantos pedidos ainda estão em
+           andamento.
+      =================================================== -->
+
+      <button
+        class="icon-button orders-button hidden"
+        id="openOrdersButton"
+        type="button"
+        aria-label="Meus pedidos">
+
+        📦
+
+        <span
+          class="orders-count hidden"
+          id="ordersCount">
+          0
+        </span>
+
+      </button>
+
 
       <!-- BOTÃO DO CARRINHO -->
 
@@ -567,46 +625,45 @@
 
       </div>
 
-      <label
-        class="field-label"
-        for="customerName">
-
-        Cliente
-
-      </label>
-
-      <input
-        class="text-input"
-        id="customerName"
-        type="text"
-        placeholder="Nome do cliente"
-        autocomplete="off">
-
-
       <!-- ==================================================
-           CRM — TELEFONE DO CLIENTE
+           DADOS DE ENTREGA (vêm do cadastro do cliente)
 
-           Usado como identificador (ID do documento) na
-           coleção "clientes" no Firestore. Opcional: se
-           não for preenchido, a venda é registrada como
-           avulsa, sem vínculo de CRM.
+           Os campos de nome/telefone saíram daqui: o pedido
+           usa o perfil em "perfis/{uid}", que é obrigatório
+           antes de comprar. O botão "Alterar" abre o
+           cadastro para corrigir o endereço.
       =================================================== -->
 
-      <label
-        class="field-label"
-        for="customerPhone">
+      <div class="checkout-delivery">
 
-        Telefone do cliente (opcional)
+        <div class="checkout-delivery-head">
 
-      </label>
+          <span class="field-label">
+            Entregar para
+          </span>
 
-      <input
-        class="text-input"
-        id="customerPhone"
-        type="tel"
-        inputmode="tel"
-        placeholder="Ex: 11999998888"
-        autocomplete="off">
+          <button
+            class="checkout-delivery-edit"
+            id="editProfileFromCheckout"
+            type="button">
+            Alterar
+          </button>
+
+        </div>
+
+        <strong id="checkoutDeliveryName">
+          -
+        </strong>
+
+        <span id="checkoutDeliveryPhone">
+          -
+        </span>
+
+        <span id="checkoutDeliveryAddress">
+          -
+        </span>
+
+      </div>
 
 
       <span class="field-label">
@@ -687,6 +744,425 @@
 
 
 
+  <!-- ==================================================
+       MODAL DE CADASTRO DO CLIENTE (PERFIL)
+
+       Obrigatório antes do primeiro pedido: abre sozinho
+       depois do login se o cadastro estiver incompleto, e
+       também se o cliente tentar finalizar a compra sem
+       ele. Os dados ficam em "perfis/{uid}" e só o próprio
+       cliente e o administrador conseguem ler (regras do
+       Firestore).
+  =================================================== -->
+
+  <div
+    class="modal-backdrop hidden"
+    id="profileModal">
+
+    <div
+      class="modal checkout-modal profile-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="profileTitle">
+
+      <button
+        class="modal-close"
+        id="closeProfileModal"
+        type="button"
+        aria-label="Fechar">
+        ×
+      </button>
+
+      <span class="section-kicker">
+        CADASTRO
+      </span>
+
+      <h2 id="profileTitle">
+        Seus dados
+      </h2>
+
+      <p
+        class="profile-intro"
+        id="profileIntro">
+        Precisamos desses dados para entregar seu pedido.
+        Você só preenche uma vez.
+      </p>
+
+      <form
+        id="profileForm"
+        novalidate>
+
+        <label
+          class="field-label"
+          for="profileName">
+          Nome completo *
+        </label>
+
+        <input
+          class="text-input"
+          id="profileName"
+          type="text"
+          autocomplete="name"
+          maxlength="120"
+          placeholder="Ex: Maria da Silva Souza">
+
+        <div class="profile-row">
+
+          <div>
+
+            <label
+              class="field-label"
+              for="profileCpf">
+              CPF *
+            </label>
+
+            <input
+              class="text-input"
+              id="profileCpf"
+              type="text"
+              inputmode="numeric"
+              maxlength="14"
+              placeholder="000.000.000-00">
+
+          </div>
+
+          <div>
+
+            <label
+              class="field-label"
+              for="profilePhone">
+              Celular / WhatsApp *
+            </label>
+
+            <input
+              class="text-input"
+              id="profilePhone"
+              type="tel"
+              inputmode="tel"
+              autocomplete="tel-national"
+              maxlength="15"
+              placeholder="(11) 99999-8888">
+
+          </div>
+
+        </div>
+
+        <h3 class="profile-section-title">
+          Endereço de entrega
+        </h3>
+
+        <div class="profile-row profile-row-cep">
+
+          <div>
+
+            <label
+              class="field-label"
+              for="profileCep">
+              CEP *
+            </label>
+
+            <input
+              class="text-input"
+              id="profileCep"
+              type="text"
+              inputmode="numeric"
+              autocomplete="postal-code"
+              maxlength="9"
+              placeholder="00000-000">
+
+          </div>
+
+          <span
+            class="profile-cep-status"
+            id="profileCepStatus"
+            aria-live="polite">
+          </span>
+
+        </div>
+
+        <label
+          class="field-label"
+          for="profileStreet">
+          Rua *
+        </label>
+
+        <input
+          class="text-input"
+          id="profileStreet"
+          type="text"
+          autocomplete="address-line1"
+          maxlength="120">
+
+        <div class="profile-row profile-row-number">
+
+          <div>
+
+            <label
+              class="field-label"
+              for="profileNumber">
+              Número *
+            </label>
+
+            <input
+              class="text-input"
+              id="profileNumber"
+              type="text"
+              maxlength="10">
+
+          </div>
+
+          <div>
+
+            <label
+              class="field-label"
+              for="profileComplement">
+              Complemento
+            </label>
+
+            <input
+              class="text-input"
+              id="profileComplement"
+              type="text"
+              autocomplete="address-line2"
+              maxlength="60"
+              placeholder="Apto, bloco, casa...">
+
+          </div>
+
+        </div>
+
+        <label
+          class="field-label"
+          for="profileDistrict">
+          Bairro *
+        </label>
+
+        <input
+          class="text-input"
+          id="profileDistrict"
+          type="text"
+          maxlength="80">
+
+        <div class="profile-row profile-row-city">
+
+          <div>
+
+            <label
+              class="field-label"
+              for="profileCity">
+              Cidade *
+            </label>
+
+            <input
+              class="text-input"
+              id="profileCity"
+              type="text"
+              autocomplete="address-level2"
+              maxlength="80">
+
+          </div>
+
+          <div>
+
+            <label
+              class="field-label"
+              for="profileState">
+              UF *
+            </label>
+
+            <input
+              class="text-input"
+              id="profileState"
+              type="text"
+              autocomplete="address-level1"
+              maxlength="2"
+              placeholder="SP">
+
+          </div>
+
+        </div>
+
+        <label
+          class="field-label"
+          for="profileReference">
+          Ponto de referência
+        </label>
+
+        <input
+          class="text-input"
+          id="profileReference"
+          type="text"
+          maxlength="120"
+          placeholder="Ex: portão azul, perto da padaria">
+
+        <p
+          class="profile-errors hidden"
+          id="profileErrors"
+          role="alert">
+        </p>
+
+        <button
+          class="checkout-button profile-save-button"
+          id="saveProfileButton"
+          type="submit">
+          Salvar cadastro
+        </button>
+
+        <p class="profile-privacy">
+          🔒 Seus dados só são vistos por você e pela lanchonete,
+          e são usados apenas para a entrega do pedido.
+        </p>
+
+      </form>
+
+    </div>
+
+  </div>
+
+
+
+  <!-- ==================================================
+       MODAL DO PIX
+
+       Aberto logo depois que um pedido em Pix é criado
+       (status "aguardando_pagamento"), ou pelo botão
+       "Pagar com Pix" em Meus pedidos. Mostra o QR Code e
+       o código "copia e cola" com o valor já preenchido.
+       Não há gateway: o admin confirma o pagamento à mão.
+  =================================================== -->
+
+  <div
+    class="modal-backdrop hidden"
+    id="pixModal">
+
+    <div
+      class="modal checkout-modal pix-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="pixTitle">
+
+      <button
+        class="modal-close"
+        id="closePixModal"
+        type="button"
+        aria-label="Fechar">
+        ×
+      </button>
+
+      <span class="section-kicker">
+        PAGAMENTO
+      </span>
+
+      <h2 id="pixTitle">
+        Pague com Pix
+      </h2>
+
+      <div class="checkout-total">
+
+        <span>
+          Pedido <b id="pixOrderCode">#-----</b>
+        </span>
+
+        <strong id="pixTotal">
+          R$ 0,00
+        </strong>
+
+      </div>
+
+      <p
+        class="pix-demo-warning hidden"
+        id="pixDemoWarning">
+        ⚠️ QR Code de demonstração: a chave Pix ainda é a de
+        exemplo (configure em js/config-pix.js).
+      </p>
+
+      <div
+        class="pix-qr"
+        id="pixQr">
+      </div>
+
+      <span class="field-label">
+        Pix copia e cola
+      </span>
+
+      <textarea
+        class="text-input pix-code"
+        id="pixCode"
+        rows="3"
+        readonly></textarea>
+
+      <button
+        class="primary-button pix-copy-button"
+        id="copyPixButton"
+        type="button">
+        Copiar código
+      </button>
+
+      <p class="pix-help">
+        Abra o app do seu banco, escolha <b>Pix → Ler QR Code</b>
+        (ou <b>Pix copia e cola</b>) e confirme o pagamento.
+        Assim que a lanchonete confirmar o recebimento, seu
+        pedido vai para a cozinha.
+      </p>
+
+      <button
+        class="detail-button pix-track-button"
+        id="pixTrackButton"
+        type="button">
+        📦 Acompanhar pedido
+      </button>
+
+    </div>
+
+  </div>
+
+
+
+  <!-- ==================================================
+       MODAL MEUS PEDIDOS (RASTREIO EM TEMPO REAL)
+
+       Lista os pedidos do cliente logado. O status é
+       atualizado sozinho (onSnapshot do Firestore) quando
+       a lanchonete avança o pedido na tela da cozinha.
+  =================================================== -->
+
+  <div
+    class="modal-backdrop hidden"
+    id="ordersModal">
+
+    <div
+      class="modal checkout-modal orders-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="ordersTitle">
+
+      <button
+        class="modal-close"
+        id="closeOrdersModal"
+        type="button"
+        aria-label="Fechar">
+        ×
+      </button>
+
+      <span class="section-kicker">
+        AO VIVO
+      </span>
+
+      <h2 id="ordersTitle">
+        Meus pedidos
+      </h2>
+
+      <div
+        class="orders-list"
+        id="ordersList">
+      </div>
+
+    </div>
+
+  </div>
+
+
+
   <!-- TOAST -->
 
   <div
@@ -723,6 +1199,12 @@
       signOut,
       signInAnonymously
     } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+
+    import {
+      normalizarPapel,
+      ehEquipe,
+      PAGINA_DO_PAPEL
+    } from "./js/papeis.js";
 
 
     // ================================================
@@ -824,15 +1306,14 @@
           );
 
 
-        if (
-          userSnapshot.exists() &&
-          userSnapshot.data().role ===
-          "administrador"
-        ) {
-
+        // Papel da equipe (administrador, garcom,
+        // balconista, cozinha). Qualquer outra coisa
+        // continua "cliente".
+        if (userSnapshot.exists()) {
           role =
-            "administrador";
-
+            normalizarPapel(
+              userSnapshot.data().role
+            );
         }
 
       } catch (error) {
@@ -1100,17 +1581,20 @@
           ).has("cliente");
 
 
+        // EQUIPE NÃO USA O CARDÁPIO DO DELIVERY: cada papel
+        // vai para a sua tela (garçom, balcão, cozinha,
+        // admin). O admin ainda pode testar com ?cliente=1.
         if (
-          window.userRole === "administrador" &&
-          !querVerComoCliente
+          ehEquipe(window.userRole) &&
+          !(
+            querVerComoCliente &&
+            window.userRole === "administrador"
+          )
         ) {
-
           window.location.replace(
-            "admin.html"
+            PAGINA_DO_PAPEL[window.userRole]
           );
-
           return;
-
         }
 
 

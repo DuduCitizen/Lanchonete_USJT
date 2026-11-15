@@ -1732,3 +1732,298 @@ select.text-input option,
   html { scroll-behavior: auto; }
 
 }
+
+
+/* ==========================================================================
+   PEDIDOS — TELA DA COZINHA
+   Quadro com uma coluna por status. Cores iguais às do rastreio do
+   cliente (style.css):
+     aguardando pagamento -> âmbar    em preparo -> laranja
+     recebido             -> lima     pronto     -> verde neon
+========================================================================== */
+
+:root {
+  --st-pagamento: #ffc832;
+  --st-recebido: var(--lime);
+  --st-preparo: #ff9f1a;
+  --st-pronto: var(--neon);
+  --st-entrega: #3ad6ff;
+  --st-entregue: var(--gray);
+  --st-cancelado: var(--danger);
+}
+
+/* cor padrão sem especificidade: as classes .status-* sempre vencem */
+:where(.kitchen-column, .kitchen-card) { --st: var(--neon); }
+
+.status-aguardando_pagamento { --st: var(--st-pagamento); }
+.status-recebido             { --st: var(--st-recebido); }
+.status-em_preparo           { --st: var(--st-preparo); }
+.status-pronto               { --st: var(--st-pronto); }
+.status-saiu_para_entrega    { --st: var(--st-entrega); }
+.status-entregue             { --st: var(--st-entregue); }
+.status-cancelado            { --st: var(--st-cancelado); }
+
+/* Contador na navegação ----------------------------------------------------- */
+
+.admin-nav-item { position: relative; }
+
+.admin-nav-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  margin-left: auto;
+  padding: 0 5px;
+  border-radius: var(--radius-sm);
+  background: var(--neon);
+  color: var(--bg);
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 800;
+  box-shadow: var(--glow-sm);
+}
+
+/* Indicador "ao vivo" ---------------------------------------------------------- */
+
+.kitchen-live {
+  align-self: center;
+  padding: 7px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  color: var(--neon);
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  animation: livePulse 2s ease-in-out infinite;
+}
+
+.kitchen-live.is-offline { border-color: rgba(255, 77, 77, .5); color: var(--danger); animation: none; }
+
+@keyframes livePulse { 50% { opacity: .55; } }
+
+/* Quadro --------------------------------------------------------------------------- */
+
+.kitchen-board {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+
+.kitchen-column {
+  min-height: 180px;
+  padding: 12px;
+  border: 1.5px solid var(--line);
+  border-top: 3px solid var(--st);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.kitchen-column-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+  color: var(--st);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.kitchen-column-title b {
+  display: inline-grid;
+  place-items: center;
+  min-width: 24px;
+  height: 22px;
+  padding: 0 6px;
+  border: 1px solid var(--st);
+  border-radius: var(--radius-sm);
+  color: var(--white);
+  font-size: 11px;
+}
+
+.kitchen-column-body { display: grid; gap: 10px; }
+
+.kitchen-empty {
+  margin: 0;
+  padding: 18px 6px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--gray);
+  font-size: 12px;
+  text-align: center;
+}
+
+/* Cartão do pedido --------------------------------------------------------------- */
+
+.kitchen-card {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--st);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  animation: viewIn .22s ease-out;
+}
+
+.kitchen-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.kitchen-code { color: var(--white); font-family: var(--font-ui); font-size: 16px; letter-spacing: .06em; }
+
+.kitchen-elapsed { color: var(--text-soft); font-size: 11px; white-space: nowrap; }
+
+.kitchen-customer { color: var(--text-soft); font-size: 12px; overflow-wrap: anywhere; }
+
+.kitchen-items {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--white);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.kitchen-items b { color: var(--st); font-family: var(--font-ui); font-size: 12px; }
+
+.kitchen-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--line);
+  color: var(--text-soft);
+  font-size: 12px;
+}
+
+.kitchen-card-foot strong { color: var(--neon); font-family: var(--font-ui); font-size: 13px; }
+
+.kitchen-pix-check {
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid rgba(255, 200, 50, .45);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 200, 50, .07);
+  color: var(--text-soft);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.kitchen-pix-check b { color: var(--st-pagamento); }
+
+.kitchen-pix-check code {
+  color: var(--white);
+  font-size: 10px;
+  word-break: break-all;
+}
+
+.kitchen-actions { display: grid; gap: 6px; }
+
+.kitchen-actions .primary-button,
+.kitchen-actions .detail-button { width: 100%; min-height: 40px; padding: 9px 10px; }
+
+.kitchen-actions button:disabled { opacity: .5; cursor: wait; }
+
+.kitchen-cancel { border-color: rgba(255, 77, 77, .6); color: var(--danger); }
+
+@media (hover: hover) {
+  .kitchen-cancel:hover { background: var(--danger-soft); box-shadow: none; }
+}
+
+/* Tablet: 2 colunas · celular: 1 coluna ---------------------------------------- */
+
+@media (max-width: 1060px) {
+  .kitchen-board { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 900px) {
+  /* na barra inferior, o contador vira uma "bolinha" sobre o ícone */
+  .admin-nav-badge {
+    position: absolute;
+    top: 4px;
+    left: calc(50% + 6px);
+    min-width: 18px;
+    height: 18px;
+    margin: 0;
+    font-size: 9px;
+  }
+}
+
+@media (max-width: 720px) {
+  .kitchen-board { grid-template-columns: minmax(0, 1fr); }
+  .kitchen-column { min-height: 0; }
+  .kitchen-live { align-self: flex-start; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kitchen-live, .kitchen-card { animation: none; }
+}
+
+
+/* ==========================================================================
+   DADOS DO CLIENTE NOS PEDIDOS (cozinha e detalhes da venda)
+========================================================================== */
+
+.sale-info-wide { grid-column: 1 / -1; }
+
+.kitchen-customer {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.kitchen-customer strong { color: var(--white); font-size: 13px; }
+
+.kitchen-phone { width: fit-content; color: var(--text-soft); text-decoration: none; }
+
+.kitchen-address {
+  display: grid;
+  gap: 3px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg-soft);
+  color: var(--text-soft);
+}
+
+.kitchen-address small { color: var(--gray); font-size: 11px; }
+
+.kitchen-address a {
+  width: fit-content;
+  color: var(--neon);
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Quadro com 5 colunas (inclui "Em entrega") */
+.kitchen-board { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+
+@media (max-width: 1280px) {
+  .kitchen-board { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 900px) {
+  .kitchen-board { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 720px) {
+  .kitchen-board { grid-template-columns: minmax(0, 1fr); }
+}

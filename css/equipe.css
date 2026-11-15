@@ -1,0 +1,417 @@
+/* ==========================================================================
+   BYTE BURGER · TELAS DA EQUIPE (cozinha, balcão, garçom, QR das mesas)
+
+   Carregado DEPOIS do admin.css: reaproveita a identidade visual (cores,
+   fontes, botões, cartões de pedido .kitchen-*) e acrescenta só o que é
+   próprio dessas telas.
+========================================================================== */
+
+.equipe-main {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 30px clamp(14px, 3vw, 40px) 72px;
+}
+
+.equipe-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.sound-button.is-on { border-color: var(--neon); color: var(--neon); }
+
+/* Selo do tipo de pedido ----------------------------------------------------------- */
+
+.tipo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .05em;
+  white-space: nowrap;
+}
+
+.tipo-badge.mesa { border: 1px solid #c58cff; background: rgba(197, 140, 255, .12); color: #d9b3ff; }
+.tipo-badge.delivery { border: 1px solid #3ad6ff; background: rgba(58, 214, 255, .1); color: #3ad6ff; }
+
+/* ==========================================================================
+   COZINHA — FILA ÚNICA, DO MAIS ANTIGO PARA O MAIS NOVO
+========================================================================== */
+
+.fila-cozinha {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+
+.fila-card {
+  --st: var(--st-recebido, #b6ff00);
+  position: relative;
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1.5px solid var(--line);
+  border-top: 4px solid var(--st);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.fila-card.status-em_preparo { --st: #ff9f1a; box-shadow: 0 0 18px rgba(255, 159, 26, .18); }
+
+.fila-posicao {
+  position: absolute;
+  top: -14px;
+  left: 14px;
+  padding: 3px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--st);
+  color: var(--bg);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.fila-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.fila-code { color: var(--white); font-family: var(--font-ui); font-size: 18px; letter-spacing: .05em; }
+
+.fila-tempo { color: var(--text-soft); font-size: 12px; white-space: nowrap; }
+
+.fila-itens {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--white);
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.fila-itens b { color: var(--st); font-family: var(--font-ui); font-size: 15px; }
+
+.fila-status { color: var(--st); font-family: var(--font-ui); font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+
+.fila-card .primary-button { width: 100%; min-height: 52px; font-size: 13px; }
+
+.fila-vazia {
+  grid-column: 1 / -1;
+  padding: 60px 20px;
+  border: 1.5px dashed var(--line);
+  border-radius: var(--radius);
+  color: var(--text-soft);
+  text-align: center;
+  font-size: 15px;
+}
+
+.fila-vazia div { margin-bottom: 10px; font-size: 40px; }
+
+/* ==========================================================================
+   GARÇOM — FEITO PARA CELULAR
+========================================================================== */
+
+.garcom-main { max-width: 760px; padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+
+.garcom-tabs {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 50;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
+  border-top: 2px solid var(--neon);
+  background: rgba(5, 5, 5, .97);
+}
+
+.garcom-tab {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  min-height: 58px;
+  padding: 6px 2px;
+  border: 1.5px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-soft);
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.garcom-tab span:first-child { font-size: 20px; }
+
+.garcom-tab.is-active { border-color: var(--neon); background: var(--neon-soft-2); color: var(--neon); }
+
+.garcom-tab .admin-nav-badge {
+  position: absolute;
+  top: 4px;
+  left: calc(50% + 8px);
+  margin: 0;
+}
+
+/* Grade de mesas */
+.mesas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 10px;
+}
+
+.mesa-box {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  min-height: 104px;
+  padding: 12px 10px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text-soft);
+  text-align: left;
+}
+
+.mesa-box strong { color: var(--white); font-family: var(--font-ui); font-size: 18px; }
+.mesa-box small { font-size: 11px; line-height: 1.35; }
+.mesa-box .mesa-total { color: var(--neon); font-family: var(--font-ui); font-size: 13px; font-weight: 800; }
+
+.mesa-box.ocupada { border-color: var(--neon); background: var(--neon-soft); box-shadow: var(--glow-sm); }
+.mesa-box.tem-pronto { border-color: #ff9f1a; box-shadow: 0 0 14px rgba(255, 159, 26, .3); }
+
+.mesa-flag {
+  width: fit-content;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  background: #ff9f1a;
+  color: var(--bg);
+  font-family: var(--font-ui);
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.garcom-legenda { margin: 0 0 14px; color: var(--text-soft); font-size: 13px; }
+
+/* Lista "prontos para levar" */
+.prontos-lista { display: grid; gap: 12px; }
+
+/* Folha (modal) da conta da mesa */
+.conta-sheet { width: min(620px, 100%); padding: 26px 22px; }
+
+.conta-pedido {
+  margin-bottom: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--st, var(--neon));
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+}
+
+.conta-pedido-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+
+.conta-pedido-head span:first-child { color: var(--white); font-family: var(--font-ui); font-size: 13px; }
+
+.conta-itens { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; font-size: 13px; }
+.conta-itens li { display: flex; justify-content: space-between; gap: 10px; color: var(--white); }
+.conta-itens li span:last-child { color: var(--text-soft); white-space: nowrap; }
+
+.conta-pedido .detail-button { width: 100%; min-height: 38px; margin-top: 10px; }
+
+.conta-resumo {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 16px;
+  border: 1.5px solid var(--neon);
+  border-radius: var(--radius-sm);
+  background: var(--neon-soft);
+}
+
+.conta-total-linha { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.conta-total-linha span { color: var(--text-soft); font-family: var(--font-ui); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+.conta-total-linha strong { color: var(--neon); font-family: var(--font-ui); font-size: 28px; }
+
+.conta-dividir { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; color: var(--text-soft); font-size: 13px; }
+
+.conta-dividir input { width: 70px; min-height: 40px; text-align: center; }
+
+.conta-dividir strong { color: var(--white); }
+
+.conta-pagamentos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+
+.conta-pagamentos label { position: relative; }
+.conta-pagamentos input { position: absolute; opacity: 0; }
+
+.conta-pagamentos span {
+  display: grid;
+  place-items: center;
+  min-height: 46px;
+  padding: 6px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text-soft);
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.conta-pagamentos input:checked + span { border-color: var(--neon); background: var(--neon-soft-2); color: var(--neon); }
+.conta-pagamentos input:focus-visible + span { outline: 2px solid var(--lime); outline-offset: 2px; }
+
+.conta-aviso {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 159, 26, .55);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 159, 26, .08);
+  color: #ffbf66;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* Novo pedido pelo garçom */
+.novo-pedido-mesa { display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 10px; margin-bottom: 16px; }
+
+.novo-pedido-mesa select { min-height: 46px; }
+
+.cardapio-garcom { display: grid; gap: 8px; }
+
+.cardapio-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.cardapio-item strong { display: block; color: var(--white); font-size: 14px; }
+.cardapio-item small { color: var(--text-soft); font-size: 12px; }
+.cardapio-item.sem-estoque { opacity: .45; }
+
+.qtd-control { display: flex; align-items: center; gap: 6px; }
+
+.qtd-control button {
+  width: 38px;
+  height: 38px;
+  border: 1.5px solid var(--neon);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--neon);
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.qtd-control span { min-width: 22px; color: var(--white); font-family: var(--font-ui); text-align: center; }
+
+.novo-pedido-rodape {
+  position: sticky;
+  bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 12px;
+  border: 1.5px solid var(--neon);
+  border-radius: var(--radius-sm);
+  background: rgba(5, 5, 5, .96);
+}
+
+.novo-pedido-rodape strong { color: var(--neon); font-family: var(--font-ui); font-size: 18px; }
+
+/* ==========================================================================
+   QR CODES DAS MESAS (impressão)
+========================================================================== */
+
+.qr-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.qr-card {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 16px;
+  border: 2px solid var(--neon);
+  border-radius: var(--radius);
+  background: #ffffff;
+  color: #000000;
+  text-align: center;
+  break-inside: avoid;
+}
+
+.qr-card svg { width: 100%; max-width: 180px; height: auto; }
+.qr-card strong { font-family: var(--font-ui); font-size: 22px; letter-spacing: .06em; }
+.qr-card small { font-size: 11px; line-height: 1.4; }
+.qr-card code { font-size: 9px; word-break: break-all; color: #555555; }
+
+.qr-config { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; margin-bottom: 20px; }
+.qr-config .text-input { min-width: min(420px, 100%); }
+
+@media print {
+  body { background: #ffffff !important; }
+  .topbar, .view-header, .qr-config, .no-print { display: none !important; }
+  .equipe-main { padding: 0; max-width: none; }
+  .qr-grid { grid-template-columns: repeat(3, 1fr); gap: 10mm; }
+  .qr-card { border: 1px solid #000000; box-shadow: none; }
+}
+
+@media (max-width: 720px) {
+  .equipe-main { padding-top: 22px; }
+  .conta-pagamentos { grid-template-columns: repeat(2, 1fr); }
+  .fila-itens { font-size: 16px; }
+}
+
+
+/* Selo de status (mesmo visual do rastreio do cliente) */
+.order-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  padding: 5px 9px;
+  border: 1px solid var(--st, var(--neon));
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--st, var(--neon)) 14%, transparent);
+  color: var(--st, var(--neon));
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  white-space: nowrap;
+}
+
+.status-entregue { --st: var(--neon); }
+
+/* Balcão: 4 colunas */
+#balcaoBoard { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+@media (max-width: 1180px) {
+  #balcaoBoard { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 720px) {
+  #balcaoBoard { grid-template-columns: minmax(0, 1fr); }
+}

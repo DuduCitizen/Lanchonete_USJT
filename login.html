@@ -260,6 +260,31 @@
        MOSTRAR ERRO
     ================================================= */
 
+    // ================================================
+    // PARA ONDE IR DEPOIS DO LOGIN
+    //
+    // Padrão: index.html (que manda cada papel para a sua
+    // tela). Quem veio da mesa chega aqui com
+    // login.html?voltar=mesa.html?mesa=7 e volta para a
+    // mesa dele. Só aceita páginas deste próprio site
+    // (nada de link externo), para ninguém usar o login
+    // para mandar a pessoa para um site falso.
+    // ================================================
+
+    function destinoDepoisDoLogin() {
+
+      const voltar =
+        new URLSearchParams(
+          window.location.search
+        ).get("voltar") || "";
+
+      return /^[a-z0-9_-]+\.html(\?[A-Za-z0-9=&_-]*)?$/.test(voltar)
+        ? voltar
+        : "index.html";
+
+    }
+
+
     function showError(message) {
 
       errorMessage.textContent =
@@ -352,7 +377,7 @@
           setTimeout(() => {
 
             window.location.href =
-              "index.html";
+              destinoDepoisDoLogin();
 
           }, 500);
 
@@ -530,7 +555,7 @@
           setTimeout(() => {
 
             window.location.href =
-              "index.html";
+              destinoDepoisDoLogin();
 
           }, 500);
 

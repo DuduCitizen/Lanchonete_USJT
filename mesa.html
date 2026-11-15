@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#050505">
+
+  <title>Byte Burger | Mesa</title>
+
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Cg fill='%2339ff14'%3E%3Crect x='4' y='1' width='8' height='1'/%3E%3Crect x='3' y='2' width='10' height='1'/%3E%3Crect x='2' y='3' width='12' height='2'/%3E%3Crect x='1' y='6' width='14' height='1'/%3E%3Crect x='2' y='11' width='12' height='1'/%3E%3Crect x='3' y='12' width='10' height='2'/%3E%3C/g%3E%3Crect x='2' y='8' width='12' height='2' fill='%23b6ff00'/%3E%3C/svg%3E">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;500;600;700;800&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/style.css">
+
+  <!-- Escondida até o login ser confirmado (js/mesa.js) -->
+  <style>
+    body {
+      visibility: hidden;
+    }
+  </style>
+</head>
+
+<body class="mesa-page">
+
+  <!-- ==================================================
+       PÁGINA DA MESA (CLIENTE NO RESTAURANTE FÍSICO)
+
+       Aberta pelo QR Code colado na mesa:
+         mesa.html?mesa=7
+
+       O cliente entra com a conta dele (login normal, sem
+       o cadastro de endereço do delivery), escolhe os
+       lanches e envia. O pedido vai para a fila da cozinha
+       com o número da mesa. NÃO paga aqui: o garçom fecha
+       a conta no final, na maquininha.
+
+       Pode cancelar só enquanto o pedido está "Recebido"
+       (a cozinha ainda não começou).
+  =================================================== -->
+
+  <header class="topbar">
+
+    <div class="brand">
+
+      <div class="brand-icon">
+        <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges" aria-hidden="true"><g fill="#39ff14"><rect x="4" y="1" width="8" height="1"/><rect x="3" y="2" width="10" height="1"/><rect x="2" y="3" width="12" height="2"/><rect x="1" y="6" width="14" height="1"/><rect x="2" y="11" width="12" height="1"/><rect x="3" y="12" width="10" height="2"/></g><rect x="2" y="8" width="12" height="2" fill="#b6ff00"/><g fill="#050505"><rect x="6" y="2" width="1" height="1"/><rect x="9" y="2" width="1" height="1"/><rect x="7" y="3" width="1" height="1"/></g></svg>
+      </div>
+
+      <div>
+        <h1>BYT<em>E</em></h1>
+        <span>Burger • Salão</span>
+      </div>
+
+    </div>
+
+
+    <div class="top-actions">
+
+      <span
+        class="mesa-badge"
+        id="mesaBadge">
+        🍽 Mesa
+      </span>
+
+      <button
+        class="icon-button"
+        id="openMesaOrdersButton"
+        type="button"
+        aria-label="Pedidos da mesa">
+
+        🧾
+
+        <span
+          class="hidden"
+          id="mesaOrdersCount">
+          0
+        </span>
+
+      </button>
+
+      <button
+        class="topbar-button"
+        id="logoutButton"
+        type="button"
+        aria-label="Sair">
+
+        <span aria-hidden="true">🚪</span>
+        <span class="mesa-logout-label">Sair</span>
+
+      </button>
+
+    </div>
+
+  </header>
+
+
+
+  <!-- MESA INVÁLIDA (link sem ?mesa= ou número fora do salão) -->
+
+  <main
+    class="page mesa-invalida hidden"
+    id="mesaInvalida">
+
+    <div class="empty-state">
+
+      <div>
+        🍽
+      </div>
+
+      <h3>
+        Mesa não identificada
+      </h3>
+
+      <p>
+        Escaneie o QR Code que está na sua mesa para fazer o pedido.
+        Se o problema continuar, chame o garçom.
+      </p>
+
+    </div>
+
+  </main>
+
+
+
+  <!-- CARDÁPIO -->
+
+  <main
+    class="page"
+    id="mesaConteudo">
+
+    <section class="hero mesa-hero">
+
+      <div>
+
+        <span class="eyebrow">
+          PEDIDO NA MESA
+        </span>
+
+        <h2 id="mesaTitulo">
+          Mesa
+        </h2>
+
+        <p>
+          Escolha seus lanches e envie para a cozinha.
+          Você paga ao garçom no final, na maquininha.
+        </p>
+
+      </div>
+
+    </section>
+
+
+    <section class="toolbar">
+
+      <div
+        class="categories"
+        id="mesaCategorias">
+      </div>
+
+    </section>
+
+
+    <div
+      id="mesaProdutos"
+      class="product-grid">
+    </div>
+
+  </main>
+
+
+
+  <!-- BARRA DO CARRINHO (fixa no rodapé) -->
+
+  <div
+    class="mesa-cartbar hidden"
+    id="mesaCartBar">
+
+    <span id="mesaCartResumo">
+      🛒 0 itens
+    </span>
+
+    <button
+      class="checkout-button"
+      id="openMesaCartButton"
+      type="button">
+      Ver pedido
+    </button>
+
+  </div>
+
+
+
+  <!-- ==================================================
+       MODAL DO CARRINHO
+  =================================================== -->
+
+  <div
+    class="modal-backdrop hidden"
+    id="mesaCartModal">
+
+    <div
+      class="modal checkout-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="mesaCartTitle">
+
+      <button
+        class="modal-close"
+        id="closeMesaCartModal"
+        type="button"
+        aria-label="Fechar">
+        ×
+      </button>
+
+      <span class="section-kicker">
+        SEU PEDIDO
+      </span>
+
+      <h2 id="mesaCartTitle">
+        Confira
+      </h2>
+
+      <div
+        class="mesa-cart-itens"
+        id="mesaCartItens">
+      </div>
+
+      <div class="checkout-total">
+
+        <span>
+          Total deste pedido
+        </span>
+
+        <strong id="mesaCartTotal">
+          R$ 0,00
+        </strong>
+
+      </div>
+
+      <p class="mesa-cart-aviso">
+        O pagamento é feito no final, com o garçom.
+      </p>
+
+      <button
+        class="checkout-button"
+        id="enviarPedidoMesa"
+        type="button">
+        Enviar para a cozinha
+      </button>
+
+    </div>
+
+  </div>
+
+
+
+  <!-- ==================================================
+       MODAL PEDIDOS DA MESA (RASTREIO EM TEMPO REAL)
+  =================================================== -->
+
+  <div
+    class="modal-backdrop hidden"
+    id="mesaOrdersModal">
+
+    <div
+      class="modal checkout-modal orders-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="mesaOrdersTitle">
+
+      <button
+        class="modal-close"
+        id="closeMesaOrdersModal"
+        type="button"
+        aria-label="Fechar">
+        ×
+      </button>
+
+      <span class="section-kicker">
+        AO VIVO
+      </span>
+
+      <h2 id="mesaOrdersTitle">
+        Seus pedidos
+      </h2>
+
+      <div
+        class="orders-list"
+        id="mesaOrdersList">
+      </div>
+
+    </div>
+
+  </div>
+
+
+
+  <!-- ==================================================
+       CONFIRMAÇÃO DE CANCELAMENTO (AVISO DA FILA)
+  =================================================== -->
+
+  <div
+    class="modal-backdrop hidden"
+    id="cancelarModal">
+
+    <div
+      class="modal checkout-modal cancelar-modal"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="cancelarTitle">
+
+      <span class="section-kicker">
+        CANCELAR PEDIDO
+      </span>
+
+      <h2 id="cancelarTitle">
+        Tem certeza?
+      </h2>
+
+      <div class="fila-aviso">
+
+        <strong>
+          ⚠️ Você vai perder o seu lugar na fila.
+        </strong>
+
+        <p>
+          A cozinha prepara os pedidos do mais antigo para o mais
+          novo. Se você cancelar e pedir de novo, o novo pedido
+          entra no <b>fim da fila</b>, depois de todos os outros.
+        </p>
+
+        <p
+          id="cancelarResumo">
+        </p>
+
+      </div>
+
+      <div class="cancelar-acoes">
+
+        <button
+          class="detail-button"
+          id="voltarCancelar"
+          type="button">
+          Voltar
+        </button>
+
+        <button
+          class="checkout-button cancelar-confirmar"
+          id="confirmarCancelar"
+          type="button">
+          Sim, cancelar
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+
+  <!-- TOAST -->
+
+  <div
+    class="toast hidden"
+    id="toast"
+    role="status"
+    aria-live="polite">
+  </div>
+
+
+  <script type="module" src="js/mesa.js"></script>
+
+</body>
+
+</html>

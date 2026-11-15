@@ -4,6 +4,10 @@
 // Módulos: Início, Vendas (histórico), Produtos (com
 // calculadora de custo x lucro), Relatórios e Financeiro.
 //
+// O dia a dia dos pedidos NÃO fica aqui: o balcão
+// (balcao.html), a cozinha (cozinha.html) e o garçom
+// (garcom.html) têm telas próprias. O dono vê os números.
+//
 // O controle de acesso fica no script de autenticação do
 // admin.html (só administrador chega até aqui) e, de
 // verdade, nas Security Rules do Firestore. Este arquivo é
@@ -39,12 +43,30 @@ import {
   fetchProducts
 } from "./utils.js";
 
+import {
+  TIPO,
+  infoStatus,
+  contaNoFaturamento
+} from "./pedidos.js";
+
+import {
+  formatarCpf,
+  formatarTelefone,
+  formatarEndereco
+} from "./perfil.js";
+
 
 // ======================================================
 // ESTADO
 // ======================================================
 
 let products = [];
+
+// "sales" = só o que conta como faturamento (pago). É a
+// lista usada por Início, Vendas, Relatórios e Financeiro.
+// Ficam de fora: Pix ainda não confirmado, pedidos
+// cancelados e pedidos de mesa com a conta ainda aberta
+// (entram quando o garçom fecha a conta).
 let sales = [];
 let expenses = [];
 
@@ -336,6 +358,9 @@ async function loadView(name) {
   }
 
 
+  
+
+
   if (name === "sales") {
 
     await loadSales();
@@ -492,7 +517,7 @@ async function loadSales() {
       );
 
 
-    sales =
+    const allSales =
       snapshot.docs.map(
         documentSnapshot => {
 
@@ -513,6 +538,24 @@ async function loadSales() {
             customerPhone:
               data.customerPhone ||
               null,
+
+            customerCpf:
+              data.customerCpf ||
+              null,
+
+            deliveryAddress:
+              data.deliveryAddress ||
+              null,
+
+            // restaurante físico: mesa e conta
+            tipo:
+              String(data.tipo || TIPO.DELIVERY),
+
+            mesa:
+              data.mesa || null,
+
+            contaStatus:
+              data.contaStatus || null,
 
             payment:
               String(
@@ -549,8 +592,15 @@ async function loadSales() {
       );
 
 
-    // Da mais recente para a mais antiga
+    // Só pedidos pagos entram nos números do painel
+    sales =
+      allSales.filter(
+        sale =>
+          contaNoFaturamento(sale)
+      );
 
+
+    // Da mais recente para a mais antiga
     sales.sort(
       (a, b) => {
 
@@ -2036,6 +2086,29 @@ function openSaleDetails(saleId) {
   $("saleDetailsCustomer").textContent =
     sale.customerName;
 
+
+  // ---- dados de entrega (cadastro do cliente) ----
+
+  $("saleDetailsPhoneItem").classList.toggle("hidden", !sale.customerPhone);
+  $("saleDetailsCpfItem").classList.toggle("hidden", !sale.customerCpf);
+  $("saleDetailsAddressItem").classList.toggle("hidden", !sale.deliveryAddress);
+
+  $("saleDetailsPhone").textContent =
+    formatarTelefone(sale.customerPhone || "");
+
+  $("saleDetailsCpf").textContent =
+    formatarCpf(sale.customerCpf || "");
+
+  $("saleDetailsAddress").textContent =
+    [
+      formatarEndereco(sale.deliveryAddress),
+      sale.deliveryAddress?.referencia
+        ? `Ref.: ${sale.deliveryAddress.referencia}`
+        : ""
+    ]
+      .filter(Boolean)
+      .join(" · ");
+
   $("saleDetailsPayment").textContent =
     `${getPaymentIcon(sale.payment)} ${sale.payment}`;
 
@@ -2049,12 +2122,12 @@ function openSaleDetails(saleId) {
     $("saleDetailsStatus");
 
   statusElement.textContent =
-    sale.status;
+    infoStatus(sale.status).label;
 
   statusElement.className =
     "sale-status";
 
-  if (sale.status === "finalizada") {
+  if (contaNoFaturamento(sale)) {
 
     statusElement.classList.add(
       "success"
@@ -4096,14 +4169,6 @@ window.iniciarAdmin = () => {
 
   iniciado = true;
 
-  window.iniciarAdmin = () => {
-
-  if (iniciado) {
-    return;
-  }
-
-  iniciado = true;
-
 
   // Mês atual como padrão no dashboard (uma vez só)
 
@@ -4115,21 +4180,7 @@ window.iniciarAdmin = () => {
   }
 
 
-  const fromHash =
-    window.location.hash
-      .replace("#", "");
-
-
-  showView(
-    VIEWS.includes(fromHash)
-      ? fromHash
-      : "home",
-    {
-      updateHash: false
-    }
-  );
-
-};
+  
 
 
   const fromHash =

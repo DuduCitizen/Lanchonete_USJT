@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#050505">
+  <meta name="robots" content="noindex, nofollow">
+
+  <title>Byte Burger | Garçom</title>
+
+  <link rel="icon"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Cg fill='%2339ff14'%3E%3Crect x='4' y='1' width='8' height='1'/%3E%3Crect x='3' y='2' width='10' height='1'/%3E%3Crect x='2' y='3' width='12' height='2'/%3E%3Crect x='1' y='6' width='14' height='1'/%3E%3Crect x='2' y='11' width='12' height='1'/%3E%3Crect x='3' y='12' width='10' height='2'/%3E%3C/g%3E%3Crect x='2' y='8' width='12' height='2' fill='%23b6ff00'/%3E%3C/svg%3E">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;500;600;700;800&family=Orbitron:wght@400;500;600;700;800;900&display=swap"
+    rel="stylesheet">
+
+  <link rel="stylesheet" href="css/admin.css">
+  <link rel="stylesheet" href="css/equipe.css">
+
+  <!-- Escondida até o login e o papel serem confirmados
+       (js/equipe.js → protegerPagina) -->
+  <style>
+    body {
+      visibility: hidden;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ==================================================
+       TELA DO GARÇOM (papel "garcom") — feita para celular
+
+       Três abas:
+         Mesas   -> uma caixa por mesa; tocar abre a CONTA
+                    (pedidos não pagos, total, dividir,
+                    forma de pagamento, fechar conta)
+         Prontos -> lanches de mesa que a cozinha terminou:
+                    levar e marcar "Entregue na mesa"
+         Anotar  -> fazer o pedido pelo cliente
+       O número de mesas fica em js/config-restaurante.js.
+  =================================================== -->
+
+  <header class="topbar">
+
+    <div class="brand">
+
+      <div class="brand-icon">
+        <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges" aria-hidden="true">
+          <g fill="#39ff14">
+            <rect x="4" y="1" width="8" height="1" />
+            <rect x="3" y="2" width="10" height="1" />
+            <rect x="2" y="3" width="12" height="2" />
+            <rect x="1" y="6" width="14" height="1" />
+            <rect x="2" y="11" width="12" height="1" />
+            <rect x="3" y="12" width="10" height="2" />
+          </g>
+          <rect x="2" y="8" width="12" height="2" fill="#b6ff00" />
+          <g fill="#050505">
+            <rect x="6" y="2" width="1" height="1" />
+            <rect x="9" y="2" width="1" height="1" />
+            <rect x="7" y="3" width="1" height="1" />
+          </g>
+        </svg>
+      </div>
+
+      <div>
+        <h1>BYT<em>E</em></h1>
+        <span>Burger • Garçom</span>
+      </div>
+
+    </div>
+
+    <div class="top-actions">
+
+      <div class="user-badge">
+        <span class="avatar" id="userAvatar">
+          ..
+        </span>
+        <span id="userRoleLabel">
+          ...
+        </span>
+      </div>
+
+      <button class="history-button" id="logoutButton" type="button" aria-label="Sair">
+        <span aria-hidden="true">🚪</span>
+        <span class="btn-label">Sair</span>
+      </button>
+
+    </div>
+
+  </header>
+
+  <main class="equipe-main garcom-main">
+
+    <!-- ================= MESAS ================= -->
+
+    <section data-garcom-view="mesas">
+
+      <div class="view-header">
+        <div>
+          <h2>Mesas</h2>
+          <p class="view-subtitle">
+            Toque numa mesa para ver a conta, conferir com os clientes
+            e fechar na maquininha.
+          </p>
+        </div>
+        <a class="detail-button no-print" href="qr-mesas.html">
+          QR das mesas
+        </a>
+      </div>
+
+      <p class="garcom-legenda">
+        Verde = conta aberta · Laranja = tem lanche pronto para levar
+      </p>
+
+      <div class="mesas-grid" id="mesasGrid">
+      </div>
+
+    </section>
+
+
+    <!-- ============ PRONTOS PARA LEVAR ============ -->
+
+    <section class="hidden" data-garcom-view="prontos">
+
+      <div class="view-header">
+        <div>
+          <h2>Prontos para levar</h2>
+          <p class="view-subtitle">
+            Lanches que a cozinha terminou. Leve até a mesa e marque como entregue.
+          </p>
+        </div>
+      </div>
+
+      <div class="prontos-lista" id="prontosLista">
+      </div>
+
+    </section>
+
+
+    <!-- ============== NOVO PEDIDO ============== -->
+
+    <section class="hidden" data-garcom-view="novo">
+
+      <div class="view-header">
+        <div>
+          <h2>Anotar pedido</h2>
+          <p class="view-subtitle">
+            Para clientes que preferem pedir com você. O pedido vai
+            direto para a fila da cozinha.
+          </p>
+        </div>
+      </div>
+
+      <div class="novo-pedido-mesa">
+        <div>
+          <label class="field-label" for="novoPedidoMesa">Mesa</label>
+          <select class="text-input" id="novoPedidoMesa"></select>
+        </div>
+      </div>
+
+      <div class="cardapio-garcom" id="cardapioGarcom">
+      </div>
+
+      <div class="novo-pedido-rodape">
+        <div>
+          <small class="garcom-legenda" id="novoPedidoQtd">0 itens</small>
+          <strong id="novoPedidoTotal">R$ 0,00</strong>
+        </div>
+        <button class="primary-button" id="enviarNovoPedido" type="button" disabled>
+          Enviar para a cozinha
+        </button>
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <!-- ABAS (rodapé, estilo app) -->
+
+  <nav class="garcom-tabs" aria-label="Telas do garçom">
+
+    <button class="garcom-tab is-active" type="button" data-tab="mesas">
+      <span aria-hidden="true">🍽</span>
+      <span>Mesas</span>
+    </button>
+
+    <button class="garcom-tab" type="button" data-tab="prontos">
+      <span aria-hidden="true">🔔</span>
+      <span>Prontos</span>
+      <span class="admin-nav-badge hidden" id="prontosBadge">0</span>
+    </button>
+
+    <button class="garcom-tab" type="button" data-tab="novo">
+      <span aria-hidden="true">📝</span>
+      <span>Anotar</span>
+    </button>
+
+  </nav>
+
+
+  <!-- ==================================================
+       CONTA DA MESA
+
+       Todos os pedidos não pagos da mesa (de qualquer
+       pessoa que pediu ali). O garçom confere com os
+       clientes, passa o total na maquininha, escolhe a
+       forma de pagamento e fecha a conta. A mesa fica livre.
+  =================================================== -->
+
+  <div class="modal-backdrop hidden" id="contaModal">
+
+    <div class="modal conta-sheet" role="dialog" aria-modal="true" aria-labelledby="contaTitulo">
+
+      <button class="modal-close" id="fecharContaModal" type="button" aria-label="Fechar">
+        ×
+      </button>
+
+      <h2 id="contaTitulo">
+        Mesa
+      </h2>
+
+      <p class="view-subtitle" id="contaSubtitulo">
+      </p>
+
+      <div id="contaPedidos">
+      </div>
+
+      <div class="conta-resumo" id="contaResumo">
+
+        <div class="conta-total-linha">
+          <span>Total da mesa</span>
+          <strong id="contaTotal">R$ 0,00</strong>
+        </div>
+
+        <div class="conta-dividir">
+          <label for="contaPessoas">Dividir por</label>
+          <input class="text-input" id="contaPessoas" type="number" min="1" max="30" value="1" inputmode="numeric">
+          <span>pessoa(s):</span>
+          <strong id="contaPorPessoa">R$ 0,00</strong>
+          <span>cada</span>
+        </div>
+
+        <span class="field-label">Forma de pagamento (maquininha)</span>
+
+        <div class="conta-pagamentos">
+          <label><input type="radio" name="contaPagamento" value="Débito" checked><span>💳 Débito</span></label>
+          <label><input type="radio" name="contaPagamento" value="Crédito"><span>💳 Crédito</span></label>
+          <label><input type="radio" name="contaPagamento" value="PIX"><span>⚡ Pix</span></label>
+          <label><input type="radio" name="contaPagamento" value="Dinheiro"><span>💵 Dinheiro</span></label>
+        </div>
+
+        <p class="conta-aviso hidden" id="contaAviso">
+        </p>
+
+        <button class="checkout-button" id="fecharContaButton" type="button">
+          Fechar conta
+        </button>
+
+      </div>
+
+      <button class="detail-button hidden" id="anotarParaMesa" type="button" style="width:100%;margin-top:14px;">
+        📝 Anotar pedido para esta mesa
+      </button>
+
+    </div>
+
+  </div>
+
+  <div class="toast hidden" id="toast" role="status" aria-live="polite">
+  </div>
+
+  <script type="module" src="js/garcom.js"></script>
+
+</body>
+
+</html>
