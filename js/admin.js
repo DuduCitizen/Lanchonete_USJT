@@ -19,6 +19,8 @@
 // em js/utils.js.
 // ======================================================
 
+import { carregarCrm } from "./crm.js";
+
 import {
   collection,
   getDocs,
@@ -88,7 +90,8 @@ const VIEWS = [
   "sales",
   "products",
   "reports",
-  "finance"
+  "finance",
+  "crm"
 ];
 
 
@@ -410,6 +413,12 @@ async function loadView(name) {
     ]);
 
     renderFinance();
+
+  }
+
+  if (name === "crm") {
+
+    await carregarCrm();
 
   }
 

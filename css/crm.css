@@ -1,0 +1,228 @@
+/* ==========================================================================
+   BYTE BURGER · CRM (módulo Clientes do painel)
+   Carregar DEPOIS do admin.css. Reaproveita as variáveis e os componentes
+   dele (history-card, history-stat-card, sale-cell, modal...).
+========================================================================== */
+
+/* Filtros por segmento ------------------------------------------------------ */
+
+.crm-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.crm-sort { display: flex; flex-direction: column; gap: 6px; }
+
+.crm-sort label {
+  color: var(--text-soft);
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .08em;
+}
+
+.crm-sort select {
+  min-width: 170px;
+  min-height: 46px;
+  padding: 12px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-sm);
+  outline: none;
+  background: var(--bg);
+  color: var(--white);
+  font-size: 14px;
+}
+
+.crm-sort select:focus { border-color: var(--neon); box-shadow: var(--glow-sm); }
+.crm-sort select option { background: #0d100d; color: var(--white); }
+
+.crm-segmentos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.crm-segmento {
+  min-height: 38px;
+  padding: 8px 14px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-soft);
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  transition: all .15s ease;
+}
+
+.crm-segmento.is-active {
+  border-color: var(--neon);
+  background: var(--neon-soft-2);
+  color: var(--neon);
+  box-shadow: var(--glow-sm);
+}
+
+.crm-contagem {
+  margin-left: auto;
+  color: var(--text-soft);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  letter-spacing: .06em;
+}
+
+/* Tags de perfil -------------------------------------------------------------- */
+
+.crm-tag {
+  display: inline-block;
+  padding: 4px 8px;
+  border: 1px solid var(--tag, var(--line-strong));
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--tag, var(--neon)) 14%, transparent);
+  color: var(--tag, var(--neon));
+  font-family: var(--font-ui);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  white-space: nowrap;
+}
+
+.crm-tag-vip { --tag: #ffc832; }
+.crm-tag-recorrente { --tag: var(--neon); }
+.crm-tag-novo { --tag: #3ad6ff; }
+.crm-tag-ocasional { --tag: var(--text-soft); }
+.crm-tag-inativo { --tag: var(--danger); }
+
+/* Tabela ------------------------------------------------------------------------ */
+
+.crm-head, .crm-row {
+  display: grid;
+  grid-template-columns: 1.7fr 1.3fr .6fr 1fr 1fr 1fr;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 20px;
+}
+
+.crm-head {
+  background: var(--bg-soft);
+  border-bottom: 1.5px solid var(--line-strong);
+}
+
+.crm-head span {
+  color: var(--neon);
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .1em;
+}
+
+.crm-row {
+  border-bottom: 1px dashed var(--line);
+  cursor: pointer;
+  transition: background .12s ease;
+}
+
+.crm-row:last-child { border-bottom: 0; }
+.crm-row:focus-visible { outline: 2px solid var(--neon); outline-offset: -2px; }
+
+.crm-tags-cell { flex-direction: row; flex-wrap: wrap; gap: 4px; }
+
+.crm-nome-cell strong { color: var(--white); }
+
+@media (hover: hover) {
+  .crm-row:hover { background: var(--neon-soft); }
+}
+
+/* Modal do cliente ---------------------------------------------------------------- */
+
+.crm-modal { padding: 32px; }
+
+.crm-modal-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+
+.crm-modal-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.crm-modal-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg-soft);
+}
+
+.crm-modal-stat span {
+  color: var(--text-soft);
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .05em;
+}
+
+.crm-modal-stat strong {
+  color: var(--neon);
+  font-family: var(--font-ui);
+  font-size: 16px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.crm-whatsapp {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 22px;
+  text-decoration: none;
+}
+
+.crm-pedidos { max-height: 280px; overflow-y: auto; }
+
+.crm-pedido .sale-detail-item-main span { line-height: 1.4; }
+
+/* Responsivo -------------------------------------------------------------------------- */
+
+@media (max-width: 1060px) {
+
+  .crm-head { display: none; }
+
+  .crm-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px 16px;
+    padding: 16px 18px;
+  }
+
+  .crm-row .sale-cell::before {
+    content: attr(data-label);
+    color: var(--gray);
+    font-family: var(--font-ui);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .08em;
+  }
+
+  .crm-nome-cell, .crm-tags-cell { grid-column: 1 / -1; }
+  .crm-tags-cell::before { width: 100%; }
+
+}
+
+@media (max-width: 720px) {
+
+  .crm-toolbar { flex-direction: column; align-items: stretch; }
+  .crm-sort select { width: 100%; min-width: 0; font-size: 16px; }
+  .crm-contagem { margin-left: 0; }
+  .crm-modal { padding: 24px 16px calc(24px + var(--safe-bottom)); }
+  .crm-modal-stats { grid-template-columns: 1fr; }
+  .crm-whatsapp { width: 100%; }
+
+}

@@ -19,6 +19,7 @@
     rel="stylesheet">
 
   <link rel="stylesheet" href="css/admin.css">
+  <link rel="stylesheet" href="css/crm.css">
 
   <!-- Chart.js (CDN, sem custo) — usado só pelo dashboard do Início -->
   <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
@@ -159,6 +160,13 @@
         <span class="admin-nav-icon" aria-hidden="true">💼</span>
         <span class="admin-nav-label">Financeiro</span>
 
+      </button>
+
+      <button class="admin-nav-item" type="button" data-view="crm">
+
+        <span class="admin-nav-icon" aria-hidden="true">👥</span>
+        <span class="admin-nav-label">Clientes</span>
+      
       </button>
 
     </nav>
@@ -957,6 +965,105 @@
 
       </section>
 
+      <section class="admin-view hidden" id="view-crm" data-view-panel="crm">
+
+        <div class="view-header">
+          <div>
+            <h2>Clientes</h2>
+            <p class="view-subtitle">
+              Quem compra, quanto gasta e quem sumiu. Clique num cliente para ver os detalhes.
+            </p>
+          </div>
+        </div>
+      
+        <div class="history-stats">
+      
+          <div class="history-stat-card">
+            <div class="history-stat-icon">👥</div>
+            <div>
+              <span>Clientes com compra</span>
+              <strong id="crmKpiTotal">0</strong>
+            </div>
+          </div>
+      
+          <div class="history-stat-card">
+            <div class="history-stat-icon">🔥</div>
+            <div>
+              <span>Ativos (últimos 30 dias)</span>
+              <strong id="crmKpiAtivos">0</strong>
+            </div>
+          </div>
+      
+          <div class="history-stat-card">
+            <div class="history-stat-icon">📈</div>
+            <div>
+              <span>Ticket médio</span>
+              <strong id="crmKpiTicket">R$ 0,00</strong>
+            </div>
+          </div>
+      
+          <div class="history-stat-card">
+            <div class="history-stat-icon">✨</div>
+            <div>
+              <span>Novos no mês</span>
+              <strong id="crmKpiNovos">0</strong>
+            </div>
+          </div>
+      
+        </div>
+      
+        <div class="crm-toolbar">
+      
+          <div class="history-search">
+            <span aria-hidden="true">⌕</span>
+            <input id="crmSearchInput" type="search"
+              placeholder="Buscar por nome, telefone ou CPF..." autocomplete="off">
+          </div>
+      
+          <div class="crm-sort">
+            <label for="crmSortSelect">Ordenar por</label>
+            <select id="crmSortSelect">
+              <option value="gasto">Maior gasto</option>
+              <option value="compras">Mais compras</option>
+              <option value="recente">Compra mais recente</option>
+              <option value="nome">Nome (A-Z)</option>
+            </select>
+          </div>
+      
+        </div>
+      
+        <div class="crm-segmentos" id="crmSegmentos">
+          <button class="crm-segmento is-active" type="button" data-segmento="todos">Todos</button>
+          <button class="crm-segmento" type="button" data-segmento="vip">VIP</button>
+          <button class="crm-segmento" type="button" data-segmento="recorrente">Recorrentes</button>
+          <button class="crm-segmento" type="button" data-segmento="novo">Novos</button>
+          <button class="crm-segmento" type="button" data-segmento="ocasional">Ocasionais</button>
+          <button class="crm-segmento" type="button" data-segmento="inativo">Inativos</button>
+          <span class="crm-contagem" id="crmContagem"></span>
+        </div>
+      
+        <div class="history-card">
+      
+          <div class="crm-head">
+            <span>Cliente</span>
+            <span>Perfil</span>
+            <span>Compras</span>
+            <span>Total gasto</span>
+            <span>Ticket médio</span>
+            <span>Última compra</span>
+          </div>
+      
+          <div id="crmLista"></div>
+      
+          <div id="crmEmpty" class="history-empty hidden">
+            <div>👥</div>
+            <h3>Nenhum cliente encontrado</h3>
+            <p>Ajuste a busca ou o segmento selecionado.</p>
+          </div>
+      
+        </div>
+      
+      </section>
 
     </main>
 
@@ -1503,6 +1610,78 @@
   </div>
 
 
+  <div class="modal-backdrop hidden" id="crmModal">
+
+    <div class="modal sale-details-modal crm-modal" role="dialog" aria-modal="true" aria-labelledby="crmModalNome">
+  
+      <button class="modal-close" id="closeCrmModal" type="button" aria-label="Fechar">×</button>
+  
+      <div class="sale-details-header">
+        <h2 id="crmModalNome">Cliente</h2>
+        <div class="crm-modal-tags" id="crmModalTags"></div>
+      </div>
+  
+      <div class="crm-modal-stats">
+        <div class="crm-modal-stat">
+          <span>Compras</span>
+          <strong id="crmModalCompras">0</strong>
+        </div>
+        <div class="crm-modal-stat">
+          <span>Total gasto</span>
+          <strong id="crmModalGasto">R$ 0,00</strong>
+        </div>
+        <div class="crm-modal-stat">
+          <span>Ticket médio</span>
+          <strong id="crmModalTicket">R$ 0,00</strong>
+        </div>
+      </div>
+  
+      <div class="sale-details-info">
+  
+        <div class="sale-info-item">
+          <span>Telefone</span>
+          <strong id="crmModalTelefone">-</strong>
+        </div>
+  
+        <div class="sale-info-item">
+          <span>CPF</span>
+          <strong id="crmModalCpf">-</strong>
+        </div>
+  
+        <div class="sale-info-item">
+          <span>Cliente desde</span>
+          <strong id="crmModalDesde">-</strong>
+        </div>
+  
+        <div class="sale-info-item">
+          <span>Última compra</span>
+          <strong id="crmModalUltima">-</strong>
+        </div>
+  
+        <div class="sale-info-item sale-info-wide">
+          <span>Endereço</span>
+          <strong id="crmModalEndereco">-</strong>
+        </div>
+  
+      </div>
+  
+      <a class="detail-button crm-whatsapp" id="crmWhatsapp" href="#" target="_blank" rel="noopener">
+        💬 Chamar no WhatsApp
+      </a>
+  
+      <div class="sale-details-items">
+        <div class="sale-details-section-title"><span>Mais comprados</span></div>
+        <div class="sale-items-list" id="crmModalTop"></div>
+      </div>
+  
+      <div class="sale-details-items">
+        <div class="sale-details-section-title"><span>Histórico de pedidos</span></div>
+        <div class="sale-items-list crm-pedidos" id="crmModalPedidos"></div>
+      </div>
+  
+    </div>
+  
+  </div>
 
   <!-- TOAST -->
 
