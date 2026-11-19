@@ -41,7 +41,7 @@ O **Byte Burger** atende dois tipos de cliente numa mesma plataforma:
 
 | Tipo | Como pede | Como paga |
 |------|-----------|-----------|
-| **Delivery** (fast food) | Pelo cardápio digital (`index.html`) | Antes, no app: Pix, dinheiro, débito ou crédito |
+| **Delivery** (fast food) | Pelo cardápio digital (`index.html`) | Antes, no app: Somente Pix ate o momento |
 | **Mesa** (salão) | Escaneando o QR Code da mesa (`mesa.html?mesa=N`) | No final, com o garçom, na maquininha |
 
 Os dois tipos de pedido caem **na mesma fila da cozinha**, ordenados do mais antigo para o mais novo. Cada funcionário tem uma tela própria, de acordo com o seu papel.
